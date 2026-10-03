@@ -7,8 +7,8 @@
 
     <DockPanel>
         <Border DockPanel.Dock="Top"
-                Background="{StaticResource PincelDePanel}"
-                BorderBrush="{StaticResource PincelDeBorde}"
+                Background="{DynamicResource PincelDePanel}"
+                BorderBrush="{DynamicResource PincelDeBorde}"
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -19,7 +19,7 @@
                 </StackPanel>
 
                 <TextBlock Grid.Column="1" Margin="16,0" VerticalAlignment="Center" FontSize="11.5"
-                           Foreground="{StaticResource PincelDeTextoSecundario}" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource PincelDeTextoSecundario}" TextTrimming="CharacterEllipsis"
                            Text="Amarillo: modificada · Verde: nueva · Rojo: se eliminará" />
 
                 <Button Grid.Column="2" Classes="Primario" Content="Guardar cambios" Command="{Binding GuardarCambiosCommand}" />

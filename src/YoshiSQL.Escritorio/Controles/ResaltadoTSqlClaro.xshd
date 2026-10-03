@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colores de T-SQL para el tema claro de YoshiSQL, inspirados en SSMS -->
+<SyntaxDefinition name="TSQL-YoshiSQL-Claro" extensions=".sql" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Comentario" foreground="#008000" />
+  <Color name="Texto" foreground="#A31515" />
+  <Color name="Numero" foreground="#098658" />
+  <Color name="PalabraClave" foreground="#0000FF" />
+  <Color name="Funcion" foreground="#AF00DB" />
+  <Color name="ObjetoDelSistema" foreground="#267F99" />
+  <Color name="Operador" foreground="#6E7781" />
+  <Color name="Variable" foreground="#001080" />
+  <Color name="Separador" foreground="#3E8E2A" fontWeight="bold" />
+
+  <RuleSet ignoreCase="true">
+    <Span color="Comentario" begin="--" />
+    <Span color="Comentario" multiline="true" begin="/\*" end="\*/" />
+    <Span color="Texto" multiline="true">
+      <Begin>N?'</Begin>
+      <End>'</End>
+      <RuleSet>
+        <Span begin="''" end="" />
+      </RuleSet>
+    </Span>
+
+    <Rule color="Separador">^\s*GO\b</Rule>
+    <Rule color="Variable">@@?[\w]+</Rule>
+    <Rule color="Numero">\b0x[0-9a-fA-F]+\b|\b\d+(\.\d+)?\b</Rule>
+    <Rule color="ObjetoDelSistema">\bsys\.\w+|\bINFORMATION_SCHEMA\.\w+|\bsp_\w+|\bxp_\w+</Rule>
+
+    <Keywords color="PalabraClave">
+      <Word>ADD</Word><Word>ALL</Word><Word>ALTER</Word><Word>AND</Word><Word>ANY</Word><Word>AS</Word>
+      <Word>ASC</Word><Word>AUTHORIZATION</Word><Word>BACKUP</Word><Word>BEGIN</Word><Word>BETWEEN</Word>
+      <Word>BREAK</Word><Word>BY</Word><Word>CASCADE</Word><Word>CASE</Word><Word>CATCH</Word><Word>CHECK</Word>
+      <Word>CHECKPOINT</Word><Word>CLOSE</Word><Word>CLUSTERED</Word><Word>COLLATE</Word><Word>COLUMN</Word>
+      <Word>COMMIT</Word><Word>CONSTRAINT</Word><Word>CONTINUE</Word><Word>CREATE</Word><Word>CROSS</Word>
+      <Word>CURSOR</Word><Word>DATABASE</Word><Word>DEALLOCATE</Word><Word>DECLARE</Word><Word>DEFAULT</Word>
+      <Word>DELETE</Word><Word>DENY</Word><Word>DESC</Word><Word>DISTINCT</Word><Word>DROP</Word><Word>ELSE</Word>
+      <Word>END</Word><Word>ESCAPE</Word><Word>EXCEPT</Word><Word>EXEC</Word><Word>EXECUTE</Word><Word>EXISTS</Word>
+      <Word>FETCH</Word><Word>FOR</Word><Word>FOREIGN</Word><Word>FROM</Word><Word>FULL</Word><Word>FUNCTION</Word>
+      <Word>GOTO</Word><Word>GRANT</Word><Word>GROUP</Word><Word>HAVING</Word><Word>IDENTITY</Word><Word>IF</Word>
+      <Word>IN</Word><Word>INDEX</Word><Word>INNER</Word><Word>INSERT</Word><Word>INTERSECT</Word><Word>INTO</Word>
+      <Word>IS</Word><Word>JOIN</Word><Word>KEY</Word><Word>LEFT</Word><Word>LIKE</Word><Word>MERGE</Word>
+      <Word>NOCHECK</Word><Word>NONCLUSTERED</Word><Word>NOT</Word><Word>NULL</Word><Word>OF</Word><Word>OFF</Word>
+      <Word>ON</Word><Word>OPEN</Word><Word>OPTION</Word><Word>OR</Word><Word>ORDER</Word><Word>OUTER</Word>
+      <Word>OUTPUT</Word><Word>OVER</Word><Word>PARTITION</Word><Word>PERCENT</Word><Word>PIVOT</Word>
+      <Word>PRIMARY</Word><Word>PRINT</Word><Word>PROC</Word><Word>PROCEDURE</Word><Word>RAISERROR</Word>
+      <Word>REFERENCES</Word><Word>RESTORE</Word><Word>RETURN</Word><Word>RETURNS</Word><Word>REVOKE</Word>
+      <Word>RIGHT</Word><Word>ROLLBACK</Word><Word>ROWS</Word><Word>SAVE</Word><Word>SCHEMA</Word>
+      <Word>SELECT</Word><Word>SET</Word><Word>TABLE</Word><Word>THEN</Word><Word>THROW</Word><Word>TOP</Word>
+      <Word>TRAN</Word><Word>TRANSACTION</Word><Word>TRIGGER</Word><Word>TRUNCATE</Word><Word>TRY</Word>
+      <Word>UNION</Word><Word>UNIQUE</Word><Word>UNPIVOT</Word><Word>UPDATE</Word><Word>USE</Word>
+      <Word>VALUES</Word><Word>VIEW</Word><Word>WAITFOR</Word><Word>WHEN</Word><Word>WHERE</Word>
+      <Word>WHILE</Word><Word>WITH</Word><Word>NOCOUNT</Word><Word>OFFSET</Word><Word>NEXT</Word><Word>ONLY</Word>
+      <Word>APPLY</Word><Word>MATCHED</Word><Word>TARGET</Word><Word>SOURCE</Word>
+      <Word>INT</Word><Word>BIGINT</Word><Word>SMALLINT</Word><Word>TINYINT</Word><Word>BIT</Word>
+      <Word>DECIMAL</Word><Word>NUMERIC</Word><Word>MONEY</Word><Word>FLOAT</Word><Word>REAL</Word>
+      <Word>CHAR</Word><Word>VARCHAR</Word><Word>NCHAR</Word><Word>NVARCHAR</Word><Word>TEXT</Word><Word>NTEXT</Word>
+      <Word>DATE</Word><Word>TIME</Word><Word>DATETIME</Word><Word>DATETIME2</Word><Word>DATETIMEOFFSET</Word>
+      <Word>SMALLDATETIME</Word><Word>UNIQUEIDENTIFIER</Word><Word>BINARY</Word><Word>VARBINARY</Word>
+      <Word>XML</Word><Word>MAX</Word>
+    </Keywords>
+
+    <Keywords color="Funcion">
+      <Word>COUNT</Word><Word>SUM</Word><Word>AVG</Word><Word>MIN</Word><Word>ISNULL</Word><Word>COALESCE</Word>
+      <Word>CAST</Word><Word>CONVERT</Word><Word>TRY_CAST</Word><Word>TRY_CONVERT</Word><Word>GETDATE</Word>
+      <Word>SYSDATETIME</Word><Word>DATEADD</Word><Word>DATEDIFF</Word><Word>DATEPART</Word><Word>DATENAME</Word>
+      <Word>YEAR</Word><Word>MONTH</Word><Word>DAY</Word><Word>LEN</Word><Word>SUBSTRING</Word><Word>REPLACE</Word>
+      <Word>UPPER</Word><Word>LOWER</Word><Word>LTRIM</Word><Word>RTRIM</Word><Word>TRIM</Word><Word>CONCAT</Word>
+      <Word>STRING_AGG</Word><Word>STRING_SPLIT</Word><Word>CHARINDEX</Word><Word>FORMAT</Word><Word>ROUND</Word>
+      <Word>ABS</Word><Word>NEWID</Word><Word>ROW_NUMBER</Word><Word>RANK</Word><Word>DENSE_RANK</Word>
+      <Word>LAG</Word><Word>LEAD</Word><Word>IIF</Word><Word>CHOOSE</Word><Word>OBJECT_ID</Word>
+      <Word>OBJECT_NAME</Word><Word>DB_NAME</Word><Word>DB_ID</Word><Word>SCOPE_IDENTITY</Word>
+      <Word>SERVERPROPERTY</Word><Word>QUOTENAME</Word><Word>NULLIF</Word><Word>JSON_VALUE</Word>
+    </Keywords>
+
+    <Rule color="Operador">[=&lt;&gt;!+\-*/%,;()]</Rule>
+  </RuleSet>
+</SyntaxDefinition>

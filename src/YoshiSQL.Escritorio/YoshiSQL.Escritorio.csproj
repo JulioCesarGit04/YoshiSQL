@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Controles\ResaltadoTSql.xshd" LogicalName="ResaltadoTSql.xshd" />
+    <EmbeddedResource Include="Controles\ResaltadoTSqlClaro.xshd" LogicalName="ResaltadoTSqlClaro.xshd" />
   </ItemGroup>
 
 </Project>

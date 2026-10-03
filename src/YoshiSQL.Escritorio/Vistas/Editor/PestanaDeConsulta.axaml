@@ -12,12 +12,14 @@
                              Document="{Binding Documento}"
                              Seleccion="{Binding Seleccion, Mode=OneWayToSource}"
                              ProveedorDeSugerencias="{Binding}"
-                             FontFamily="{StaticResource FuenteMonoespaciada}"
-                             FontSize="14"
+                             FontFamily="{DynamicResource FuenteDelEditor}"
+                             FontSize="{DynamicResource TamanoDeLetraDelEditor}"
+                             ShowLineNumbers="{DynamicResource MostrarNumerosDeLinea}"
+                             WordWrap="{DynamicResource AjustarLineasLargas}"
                              Padding="4,6,0,0"
-                             Background="{StaticResource PincelDeFondo}"
-                             Foreground="{StaticResource PincelDeTexto}"
-                             LineNumbersForeground="#5C6370" />
+                             Background="{DynamicResource PincelDeFondo}"
+                             Foreground="{DynamicResource PincelDeTexto}"
+                             LineNumbersForeground="{DynamicResource PincelDeNumerosDeLinea}" />
 
         <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
 

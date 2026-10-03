@@ -18,6 +18,7 @@ public static class RegistroDeInfraestructura
         servicios.AddSingleton<IRepositorioDeDiagramas, RepositorioDeDiagramasJson>();
         servicios.AddSingleton<IRepositorioDeSesion, RepositorioDeSesionJson>();
         servicios.AddSingleton<IRepositorioDeHistorial, RepositorioDeHistorialJson>();
+        servicios.AddSingleton<IRepositorioDePreferencias, RepositorioDePreferenciasJson>();
 
         servicios.AddSingleton<IExportadorDeResultados, ExportadorCsv>();
         servicios.AddSingleton<IExportadorDeResultados, ExportadorJson>();

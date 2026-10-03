@@ -1,27 +1,52 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
 
-    <!-- Paleta de YoshiSQL: oscura, sobria y con el verde Yoshi como acento -->
-    <Color x:Key="ColorDeFondo">#17191C</Color>
-    <Color x:Key="ColorDePanel">#1F2124</Color>
-    <Color x:Key="ColorDePanelElevado">#26292D</Color>
-    <Color x:Key="ColorDeBorde">#33363B</Color>
-    <Color x:Key="ColorDeTexto">#E4E6EA</Color>
-    <Color x:Key="ColorDeTextoSecundario">#959BA3</Color>
-    <Color x:Key="ColorDeAcento">#6CC24A</Color>
-    <Color x:Key="ColorDeAcentoOscuro">#4E9A33</Color>
-    <Color x:Key="ColorDeError">#F07178</Color>
-    <Color x:Key="ColorDeAdvertencia">#E5C07B</Color>
+    <!--
+        Paleta de YoshiSQL en sus dos versiones. Las vistas usan siempre DynamicResource
+        para que el cambio de tema se aplique al instante sin reiniciar.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="PincelDeFondo" Color="#17191C" />
+            <SolidColorBrush x:Key="PincelDePanel" Color="#1F2124" />
+            <SolidColorBrush x:Key="PincelDePanelElevado" Color="#26292D" />
+            <SolidColorBrush x:Key="PincelDeBorde" Color="#33363B" />
+            <SolidColorBrush x:Key="PincelDeTexto" Color="#E4E6EA" />
+            <SolidColorBrush x:Key="PincelDeTextoSecundario" Color="#959BA3" />
+            <SolidColorBrush x:Key="PincelDeAcento" Color="#6CC24A" />
+            <SolidColorBrush x:Key="PincelDeTextoSobreAcento" Color="#10130F" />
+            <SolidColorBrush x:Key="PincelDeError" Color="#F07178" />
+            <SolidColorBrush x:Key="PincelDeAdvertencia" Color="#E5C07B" />
+            <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#30353C" />
+            <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#3C4148" />
+            <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#C08B93A0" />
+            <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#5C6370" />
+        </ResourceDictionary>
 
-    <SolidColorBrush x:Key="PincelDeFondo" Color="{StaticResource ColorDeFondo}" />
-    <SolidColorBrush x:Key="PincelDePanel" Color="{StaticResource ColorDePanel}" />
-    <SolidColorBrush x:Key="PincelDePanelElevado" Color="{StaticResource ColorDePanelElevado}" />
-    <SolidColorBrush x:Key="PincelDeBorde" Color="{StaticResource ColorDeBorde}" />
-    <SolidColorBrush x:Key="PincelDeTexto" Color="{StaticResource ColorDeTexto}" />
-    <SolidColorBrush x:Key="PincelDeTextoSecundario" Color="{StaticResource ColorDeTextoSecundario}" />
-    <SolidColorBrush x:Key="PincelDeAcento" Color="{StaticResource ColorDeAcento}" />
-    <SolidColorBrush x:Key="PincelDeError" Color="{StaticResource ColorDeError}" />
-    <SolidColorBrush x:Key="PincelDeAdvertencia" Color="{StaticResource ColorDeAdvertencia}" />
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="PincelDeFondo" Color="#FBFBFC" />
+            <SolidColorBrush x:Key="PincelDePanel" Color="#F0F2F5" />
+            <SolidColorBrush x:Key="PincelDePanelElevado" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="PincelDeBorde" Color="#D5D9DF" />
+            <SolidColorBrush x:Key="PincelDeTexto" Color="#1F2328" />
+            <SolidColorBrush x:Key="PincelDeTextoSecundario" Color="#5F6670" />
+            <SolidColorBrush x:Key="PincelDeAcento" Color="#3E8E2A" />
+            <SolidColorBrush x:Key="PincelDeTextoSobreAcento" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="PincelDeError" Color="#C8323C" />
+            <SolidColorBrush x:Key="PincelDeAdvertencia" Color="#9A6700" />
+            <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#E8EBEF" />
+            <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#C9CED6" />
+            <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#B05F6672" />
+            <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#9AA0A6" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
 
     <FontFamily x:Key="FuenteMonoespaciada">Cascadia Code, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace</FontFamily>
+
+    <!-- Valores iniciales del editor; se reemplazan con las preferencias del usuario al iniciar -->
+    <FontFamily x:Key="FuenteDelEditor">Cascadia Code, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace</FontFamily>
+    <sys:Double x:Key="TamanoDeLetraDelEditor">14</sys:Double>
+    <sys:Boolean x:Key="MostrarNumerosDeLinea">True</sys:Boolean>
+    <sys:Boolean x:Key="AjustarLineasLargas">False</sys:Boolean>
 </ResourceDictionary>

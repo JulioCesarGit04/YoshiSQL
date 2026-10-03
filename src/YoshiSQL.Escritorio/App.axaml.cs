@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using YoshiSQL.Aplicacion.Errores;
+using YoshiSQL.Aplicacion.Preferencias;
 using YoshiSQL.Escritorio.Controles;
 using YoshiSQL.Escritorio.ModelosDeVista;
 using YoshiSQL.Escritorio.Servicios;
@@ -25,6 +26,7 @@ public partial class App : Application
         {
             var proveedorDeServicios = ContenedorDeDependencias.Construir();
             RegistrarCapturaDeErroresDeLaInterfaz(proveedorDeServicios.GetRequiredService<IServicioDeErrores>());
+            AplicarPreferenciasGuardadas(proveedorDeServicios);
 
             var modeloPrincipal = proveedorDeServicios.GetRequiredService<VentanaPrincipalModeloDeVista>();
             escritorio.MainWindow = new VentanaPrincipal { DataContext = modeloPrincipal };
@@ -32,6 +34,31 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Las preferencias (tema, letra del editor) se aplican antes de mostrar la ventana
+    /// para que no se vea un cambio de colores al iniciar.
+    /// </summary>
+    private static void AplicarPreferenciasGuardadas(IServiceProvider proveedorDeServicios)
+    {
+        var servicioDePreferencias = proveedorDeServicios.GetRequiredService<ServicioDePreferencias>();
+
+        try
+        {
+            // Se lee en un hilo aparte para no bloquear el hilo de la interfaz esperando su propio contexto
+            Task.Run(() => servicioDePreferencias.CargarAsync(CancellationToken.None)).GetAwaiter().GetResult();
+        }
+        catch (Exception error)
+        {
+            proveedorDeServicios.GetRequiredService<IServicioDeErrores>()
+                .RegistrarYDescribir(error, new ContextoDeError("Cargar preferencias"));
+        }
+
+        AplicadorDePreferencias.Aplicar(servicioDePreferencias.Actuales);
+
+        // Crear el aplicador lo suscribe a los cambios que el usuario haga desde Preferencias
+        proveedorDeServicios.GetRequiredService<AplicadorDePreferencias>();
     }
 
     /// <summary>

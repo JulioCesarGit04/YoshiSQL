@@ -7,8 +7,8 @@
     <DockPanel>
         <!-- Barra del diagrama -->
         <Border DockPanel.Dock="Top"
-                Background="{StaticResource PincelDePanel}"
-                BorderBrush="{StaticResource PincelDeBorde}"
+                Background="{DynamicResource PincelDePanel}"
+                BorderBrush="{DynamicResource PincelDeBorde}"
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -17,7 +17,7 @@
                             ToolTip.Tip="Volver a leer las tablas y relaciones del servidor" />
                     <Button Classes="Herramienta" Content="Reorganizar" Command="{Binding ReorganizarCommand}"
                             ToolTip.Tip="Acomodar todas las tablas automáticamente" />
-                    <Rectangle Width="1" Margin="8,4" Fill="{StaticResource PincelDeBorde}" />
+                    <Rectangle Width="1" Margin="8,4" Fill="{DynamicResource PincelDeBorde}" />
                     <Button Classes="Herramienta" Content="Alejar" Command="{Binding AlejarCommand}" />
                     <Button Classes="Herramienta" Content="{Binding ZoomVisible}" MinWidth="56"
                             Command="{Binding RestablecerZoomCommand}" ToolTip.Tip="Volver al 100%" />
@@ -25,12 +25,12 @@
                 </StackPanel>
 
                 <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="11.5"
-                           Foreground="{StaticResource PincelDeTextoSecundario}"
+                           Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="Arrastra las tablas por su encabezado  ·  Ctrl + rueda para zoom" />
             </Grid>
         </Border>
 
-        <Panel Background="{StaticResource PincelDeFondo}">
+        <Panel Background="{DynamicResource PincelDeFondo}">
             <ScrollViewer x:Name="Desplazador"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
@@ -57,14 +57,14 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:TablaDelDiagramaModeloDeVista">
                                     <Border Width="{x:Static vm:TablaDelDiagramaModeloDeVista.Ancho}"
-                                            Background="{StaticResource PincelDePanelElevado}"
-                                            BorderBrush="#3C4148"
+                                            Background="{DynamicResource PincelDePanelElevado}"
+                                            BorderBrush="{DynamicResource PincelDeBordeDeTarjeta}"
                                             BorderThickness="1"
                                             CornerRadius="6"
                                             BoxShadow="0 6 18 0 #55000000">
                                         <StackPanel>
                                             <Border Height="{x:Static vm:TablaDelDiagramaModeloDeVista.AlturaDelEncabezado}"
-                                                    Background="#30353C"
+                                                    Background="{DynamicResource PincelDeEncabezadoDeTarjeta}"
                                                     CornerRadius="5,5,0,0"
                                                     Padding="10,0"
                                                     Cursor="SizeAll"
@@ -95,7 +95,7 @@
                                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                                             <TextBlock Grid.Column="2" Text="{Binding TipoVisible}" FontSize="11.5"
                                                                        Margin="8,0,0,0" VerticalAlignment="Center"
-                                                                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+                                                                       Foreground="{DynamicResource PincelDeTextoSecundario}" />
                                                         </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -119,13 +119,13 @@
                                         <!-- Línea ancha e invisible: facilita pasar el mouse para ver el detalle -->
                                         <Polyline Points="{Binding Puntos}" Stroke="Transparent" StrokeThickness="6"
                                                   ToolTip.Tip="{Binding Descripcion}" />
-                                        <Polyline Points="{Binding Puntos}" Stroke="#C08B93A0" StrokeThickness="1.4"
+                                        <Polyline Points="{Binding Puntos}" Stroke="{DynamicResource PincelDeLineaDeRelacion}" StrokeThickness="1.4"
                                                   StrokeJoin="Round" IsHitTestVisible="False" />
-                                        <Ellipse Width="8" Height="8" Stroke="#7D8590" StrokeThickness="1.4"
-                                                 Fill="{StaticResource PincelDeFondo}" IsHitTestVisible="False"
+                                        <Ellipse Width="8" Height="8" Stroke="{DynamicResource PincelDeLineaDeRelacion}" StrokeThickness="1.4"
+                                                 Fill="{DynamicResource PincelDeFondo}" IsHitTestVisible="False"
                                                  Canvas.Left="{Binding MarcadorDeOrigenIzquierda}"
                                                  Canvas.Top="{Binding MarcadorDeOrigenArriba}" />
-                                        <Ellipse Width="8" Height="8" Fill="{StaticResource PincelDeAdvertencia}"
+                                        <Ellipse Width="8" Height="8" Fill="{DynamicResource PincelDeAdvertencia}"
                                                  IsHitTestVisible="False"
                                                  Canvas.Left="{Binding MarcadorDeDestinoIzquierda}"
                                                  Canvas.Top="{Binding MarcadorDeDestinoArriba}" />
@@ -140,14 +140,14 @@
             <!-- Estados: cargando, error o base sin tablas -->
             <TextBlock IsVisible="{Binding EstaCargando}" Text="Cargando diagrama..."
                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+                       Foreground="{DynamicResource PincelDeTextoSecundario}" />
             <TextBlock IsVisible="{Binding NoTieneTablas}" Text="Esta base de datos todavía no tiene tablas."
                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+                       Foreground="{DynamicResource PincelDeTextoSecundario}" />
             <SelectableTextBlock IsVisible="{Binding MensajeDeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                  Text="{Binding MensajeDeError}" TextWrapping="Wrap" MaxWidth="520"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                 Foreground="{StaticResource PincelDeError}" />
+                                 Foreground="{DynamicResource PincelDeError}" />
         </Panel>
     </DockPanel>
 </UserControl>

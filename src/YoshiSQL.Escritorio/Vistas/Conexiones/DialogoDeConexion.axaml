@@ -12,11 +12,11 @@
 
     <StackPanel>
         <!-- Encabezado -->
-        <Border Background="{StaticResource PincelDePanel}" Padding="24,18"
-                BorderBrush="{StaticResource PincelDeBorde}" BorderThickness="0,0,0,1">
+        <Border Background="{DynamicResource PincelDePanel}" Padding="24,18"
+                BorderBrush="{DynamicResource PincelDeBorde}" BorderThickness="0,0,0,1">
             <StackPanel Spacing="2">
-                <TextBlock Text="YoshiSQL" FontSize="22" FontWeight="Light" Foreground="{StaticResource PincelDeAcento}" />
-                <TextBlock Text="Conectar a SQL Server" Foreground="{StaticResource PincelDeTextoSecundario}" />
+                <TextBlock Text="YoshiSQL" FontSize="22" FontWeight="Light" Foreground="{DynamicResource PincelDeAcento}" />
+                <TextBlock Text="Conectar a SQL Server" Foreground="{DynamicResource PincelDeTextoSecundario}" />
             </StackPanel>
         </Border>
 
@@ -36,7 +36,7 @@
                         <DataTemplate x:DataType="conexiones:PerfilDeConexion">
                             <TextBlock>
                                 <Run Text="{Binding NombreVisible}" />
-                                <Run Text="{Binding Usuario}" Foreground="{StaticResource PincelDeTextoSecundario}" />
+                                <Run Text="{Binding Usuario}" Foreground="{DynamicResource PincelDeTextoSecundario}" />
                             </TextBlock>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
@@ -81,7 +81,7 @@
         </Grid>
 
         <TextBlock Margin="24,0,24,8" TextWrapping="Wrap"
-                   Foreground="{StaticResource PincelDeError}"
+                   Foreground="{DynamicResource PincelDeError}"
                    Text="{Binding MensajeDeError}"
                    IsVisible="{Binding MensajeDeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 

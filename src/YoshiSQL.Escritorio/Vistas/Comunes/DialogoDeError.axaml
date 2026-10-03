@@ -8,11 +8,11 @@
         WindowStartupLocation="CenterOwner">
 
     <StackPanel>
-        <Border Background="{StaticResource PincelDePanel}" Padding="24,18"
-                BorderBrush="{StaticResource PincelDeBorde}" BorderThickness="0,0,0,1">
+        <Border Background="{DynamicResource PincelDePanel}" Padding="24,18"
+                BorderBrush="{DynamicResource PincelDeBorde}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Path Width="22" Height="22" Stretch="Uniform" StrokeThickness="1.6" StrokeLineCap="Round"
-                      Stroke="{StaticResource PincelDeError}"
+                      Stroke="{DynamicResource PincelDeError}"
                       Data="M8,1.5 A6.5,6.5 0 1 0 8.01,1.5 Z M8,4.5 V9 M8,11.25 V11.5" />
                 <TextBlock Text="Algo salió mal" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
@@ -21,15 +21,15 @@
         <StackPanel Margin="24,18" Spacing="14">
             <SelectableTextBlock x:Name="TextoDelMensaje" TextWrapping="Wrap" />
 
-            <Border x:Name="MarcoDelCodigo" Background="{StaticResource PincelDePanelElevado}" CornerRadius="4" Padding="12,8">
+            <Border x:Name="MarcoDelCodigo" Background="{DynamicResource PincelDePanelElevado}" CornerRadius="4" Padding="12,8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="Código del error:" Foreground="{StaticResource PincelDeTextoSecundario}" />
+                    <TextBlock Text="Código del error:" Foreground="{DynamicResource PincelDeTextoSecundario}" />
                     <SelectableTextBlock x:Name="TextoDelCodigo" FontFamily="{StaticResource FuenteMonoespaciada}"
-                                         FontWeight="SemiBold" Foreground="{StaticResource PincelDeAcento}" />
+                                         FontWeight="SemiBold" Foreground="{DynamicResource PincelDeAcento}" />
                 </StackPanel>
             </Border>
 
-            <TextBlock x:Name="TextoDeConfirmacion" Foreground="{StaticResource PincelDeAcento}" IsVisible="False" />
+            <TextBlock x:Name="TextoDeConfirmacion" Foreground="{DynamicResource PincelDeAcento}" IsVisible="False" />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="24,0,24,20">

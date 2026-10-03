@@ -25,6 +25,7 @@ internal static class ContenedorDeDependencias
 
         servicios.AddSingleton<IServicioDelSistemaOperativo, ServicioDelSistemaOperativo>();
         servicios.AddSingleton<IServicioDeErrores, ServicioDeErrores>();
+        servicios.AddSingleton<AplicadorDePreferencias>();
         servicios.AddSingleton<IServicioDeDialogos, ServicioDeDialogos>();
         servicios.AddSingleton<IServicioDeExportacionDeResultados, ServicioDeExportacionDeResultados>();
         servicios.AddSingleton<ServiciosDeConsulta>();

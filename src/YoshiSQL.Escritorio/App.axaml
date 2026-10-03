@@ -23,6 +23,10 @@
                                        ChromeLow="#2E3136"
                                        BaseHigh="#E4E6EA"
                                        ErrorText="#F07178" />
+                <ColorPaletteResources x:Key="Light"
+                                       Accent="#3E8E2A"
+                                       RegionColor="#FBFBFC"
+                                       ErrorText="#C8323C" />
             </FluentTheme.Palettes>
         </FluentTheme>
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />

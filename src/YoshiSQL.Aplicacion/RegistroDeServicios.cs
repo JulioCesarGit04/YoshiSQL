@@ -8,6 +8,7 @@ using YoshiSQL.Aplicacion.DisenoDeTablas;
 using YoshiSQL.Aplicacion.EdicionDeFilas;
 using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
+using YoshiSQL.Aplicacion.Preferencias;
 using YoshiSQL.Aplicacion.Scripts;
 using YoshiSQL.Aplicacion.Sesion;
 
@@ -30,6 +31,7 @@ public static class RegistroDeServicios
         servicios.AddSingleton<ServicioDeEdicionDeFilas>();
         servicios.AddSingleton<ServicioDeMonitor>();
         servicios.AddSingleton<ServicioDeRespaldos>();
+        servicios.AddSingleton<ServicioDePreferencias>();
         servicios.AddSingleton<ServicioDeArchivosSql>();
         servicios.AddSingleton<ServicioDeGeneracionDeScripts>();
         servicios.AddSingleton<ServicioDeDiagramas>();

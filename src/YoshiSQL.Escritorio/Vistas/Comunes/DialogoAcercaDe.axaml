@@ -9,21 +9,21 @@
 
     <StackPanel Margin="28,24" Spacing="16">
         <StackPanel Spacing="2">
-            <TextBlock Text="YoshiSQL" FontSize="28" FontWeight="Light" Foreground="{StaticResource PincelDeAcento}" />
+            <TextBlock Text="YoshiSQL" FontSize="28" FontWeight="Light" Foreground="{DynamicResource PincelDeAcento}" />
             <TextBlock Text="Entorno gráfico libre para SQL Server en Linux"
-                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+                       Foreground="{DynamicResource PincelDeTextoSecundario}" />
         </StackPanel>
 
         <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
-            <TextBlock Grid.Row="0" Text="Versión" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <TextBlock Grid.Row="0" Text="Versión" Foreground="{DynamicResource PincelDeTextoSecundario}" />
             <SelectableTextBlock Grid.Row="0" Grid.Column="1" x:Name="TextoDeVersion" />
-            <TextBlock Grid.Row="1" Text=".NET" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <TextBlock Grid.Row="1" Text=".NET" Foreground="{DynamicResource PincelDeTextoSecundario}" />
             <SelectableTextBlock Grid.Row="1" Grid.Column="1" x:Name="TextoDeDotNet" />
-            <TextBlock Grid.Row="2" Text="Sistema" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <TextBlock Grid.Row="2" Text="Sistema" Foreground="{DynamicResource PincelDeTextoSecundario}" />
             <SelectableTextBlock Grid.Row="2" Grid.Column="1" x:Name="TextoDelSistema" TextWrapping="Wrap" />
-            <TextBlock Grid.Row="3" Text="Configuración" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <TextBlock Grid.Row="3" Text="Configuración" Foreground="{DynamicResource PincelDeTextoSecundario}" />
             <SelectableTextBlock Grid.Row="3" Grid.Column="1" x:Name="TextoDeConfiguracion" TextWrapping="Wrap" />
-            <TextBlock Grid.Row="4" Text="Registros" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <TextBlock Grid.Row="4" Text="Registros" Foreground="{DynamicResource PincelDeTextoSecundario}" />
             <SelectableTextBlock Grid.Row="4" Grid.Column="1" x:Name="TextoDeRegistros" TextWrapping="Wrap" />
         </Grid>
 

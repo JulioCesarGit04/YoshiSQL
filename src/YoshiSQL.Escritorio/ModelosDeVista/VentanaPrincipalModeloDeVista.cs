@@ -186,6 +186,9 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private Task MostrarAcercaDeAsync() => _servicioDeDialogos.MostrarAcercaDeAsync();
 
     [RelayCommand]
+    private Task MostrarPreferenciasAsync() => _servicioDeDialogos.MostrarPreferenciasAsync();
+
+    [RelayCommand]
     private async Task CerrarPestanaAsync(DocumentoModeloDeVista? documento)
     {
         documento ??= DocumentoSeleccionado;

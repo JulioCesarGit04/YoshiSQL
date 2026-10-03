@@ -18,7 +18,7 @@
                 <Button Grid.Column="1" Content="Leer respaldo" Command="{Binding LeerRespaldoCommand}" />
             </Grid>
             <TextBlock Text="{Binding DescripcionDelRespaldo}" TextWrapping="Wrap" FontSize="12"
-                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+                       Foreground="{DynamicResource PincelDeTextoSecundario}" />
         </StackPanel>
 
         <StackPanel Spacing="4" IsEnabled="{Binding RespaldoLeido}">

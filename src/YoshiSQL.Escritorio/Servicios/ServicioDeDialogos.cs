@@ -4,10 +4,14 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using YoshiSQL.Aplicacion.Administracion;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.Preferencias;
+using Avalonia.Media;
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Escritorio.ModelosDeVista.Administracion;
 using YoshiSQL.Escritorio.ModelosDeVista.Conexiones;
 using YoshiSQL.Escritorio.Vistas.Administracion;
+using YoshiSQL.Escritorio.ModelosDeVista.Preferencias;
+using YoshiSQL.Escritorio.Vistas.Preferencias;
 using YoshiSQL.Escritorio.Vistas.Comunes;
 using YoshiSQL.Escritorio.Vistas.Conexiones;
 
@@ -22,14 +26,17 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     private readonly IServicioDeErrores _servicioDeErrores;
     private readonly IServicioDelSistemaOperativo _sistemaOperativo;
     private readonly ServicioDeRespaldos _servicioDeRespaldos;
+    private readonly ServicioDePreferencias _servicioDePreferencias;
 
     public ServicioDeDialogos(
         ServicioDeConexiones servicioDeConexiones,
         IServicioDeErrores servicioDeErrores,
         IServicioDelSistemaOperativo sistemaOperativo,
-        ServicioDeRespaldos servicioDeRespaldos)
+        ServicioDeRespaldos servicioDeRespaldos,
+        ServicioDePreferencias servicioDePreferencias)
     {
         _servicioDeRespaldos = servicioDeRespaldos;
+        _servicioDePreferencias = servicioDePreferencias;
         _servicioDeConexiones = servicioDeConexiones;
         _servicioDeErrores = servicioDeErrores;
         _sistemaOperativo = sistemaOperativo;
@@ -92,6 +99,18 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
             [new OpcionDeDialogo("Aceptar", true, EsPrincipal: true, EsCancelar: true)]);
 
         await dialogo.ShowDialog<object?>(ObtenerVentanaPrincipal());
+    }
+
+    public Task MostrarPreferenciasAsync()
+    {
+        var fuentesInstaladas = FontManager.Current.SystemFonts
+            .Select(fuente => fuente.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var modelo = new DialogoDePreferenciasModeloDeVista(_servicioDePreferencias, _servicioDeErrores, fuentesInstaladas);
+        return new DialogoDePreferencias(modelo).ShowDialog(ObtenerVentanaPrincipal());
     }
 
     public async Task MostrarRespaldoAsync(ServidorConectado servidor, string baseDeDatos)

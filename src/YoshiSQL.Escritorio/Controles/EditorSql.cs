@@ -18,7 +18,8 @@ namespace YoshiSQL.Escritorio.Controles;
 /// </summary>
 public sealed class EditorSql : TextEditor
 {
-    private const string NombreDelRecursoDeResaltado = "ResaltadoTSql.xshd";
+    private const string RecursoDeResaltadoOscuro = "ResaltadoTSql.xshd";
+    private const string RecursoDeResaltadoClaro = "ResaltadoTSqlClaro.xshd";
 
     public static readonly StyledProperty<IProveedorDeSugerencias?> ProveedorDeSugerenciasProperty =
         AvaloniaProperty.Register<EditorSql, IProveedorDeSugerencias?>(nameof(ProveedorDeSugerencias));
@@ -31,14 +32,16 @@ public sealed class EditorSql : TextEditor
             nameof(Seleccion),
             defaultBindingMode: BindingMode.OneWayToSource);
 
-    private static readonly Lazy<IHighlightingDefinition> DefinicionDeResaltado = new(CargarDefinicionDeResaltado);
+    private static readonly Lazy<IHighlightingDefinition> ResaltadoOscuro = new(() => CargarDefinicionDeResaltado(RecursoDeResaltadoOscuro));
+    private static readonly Lazy<IHighlightingDefinition> ResaltadoClaro = new(() => CargarDefinicionDeResaltado(RecursoDeResaltadoClaro));
 
     private readonly SearchPanel _panelDeBusqueda;
     private CompletionWindow? _ventanaDeSugerencias;
 
     public EditorSql()
     {
-        SyntaxHighlighting = DefinicionDeResaltado.Value;
+        AplicarResaltadoDelTema();
+        ActualThemeVariantChanged += (_, _) => AplicarResaltadoDelTema();
         ShowLineNumbers = true;
         Options.ConvertTabsToSpaces = true;
         Options.IndentationSize = 4;
@@ -180,11 +183,15 @@ public sealed class EditorSql : TextEditor
         Seleccion = segmento is null ? RangoDeTexto.Vacio : new RangoDeTexto(segmento.Offset, segmento.Length);
     }
 
-    private static IHighlightingDefinition CargarDefinicionDeResaltado()
+    // Los colores de sintaxis dependen del fondo: se cambian junto con el tema
+    private void AplicarResaltadoDelTema() =>
+        SyntaxHighlighting = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light ? ResaltadoClaro.Value : ResaltadoOscuro.Value;
+
+    private static IHighlightingDefinition CargarDefinicionDeResaltado(string nombreDelRecurso)
     {
         var ensamblado = typeof(EditorSql).Assembly;
-        using var flujo = ensamblado.GetManifestResourceStream(NombreDelRecursoDeResaltado)
-            ?? throw new InvalidOperationException($"No se encontró el recurso '{NombreDelRecursoDeResaltado}'.");
+        using var flujo = ensamblado.GetManifestResourceStream(nombreDelRecurso)
+            ?? throw new InvalidOperationException($"No se encontró el recurso '{nombreDelRecurso}'.");
         using var lector = XmlReader.Create(flujo);
 
         return HighlightingLoader.Load(lector, HighlightingManager.Instance);

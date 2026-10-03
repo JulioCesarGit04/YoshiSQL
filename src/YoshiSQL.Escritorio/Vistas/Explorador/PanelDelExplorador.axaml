@@ -4,7 +4,7 @@
              xmlns:conv="using:YoshiSQL.Escritorio.Convertidores"
              x:Class="YoshiSQL.Escritorio.Vistas.Explorador.PanelDelExplorador"
              x:DataType="vm:ExploradorModeloDeVista"
-             Background="{StaticResource PincelDePanel}">
+             Background="{DynamicResource PincelDePanel}">
 
     <DockPanel>
         <Border DockPanel.Dock="Top" Padding="12,6,6,2">
@@ -14,7 +14,7 @@
                         ToolTip.Tip="Actualizar el elemento seleccionado"
                         IsEnabled="{Binding TieneServidores}"
                         Command="{Binding ActualizarCommand}">
-                    <Path Classes="Icono" Stroke="{StaticResource PincelDeTextoSecundario}"
+                    <Path Classes="Icono" Stroke="{DynamicResource PincelDeTextoSecundario}"
                           Data="M13,8 A5,5 0 1 1 11.5,4.5 M11.5,1.5 V4.5 H8.5" />
                 </Button>
             </Grid>
@@ -23,7 +23,7 @@
         <TextBlock DockPanel.Dock="Top"
                    IsVisible="{Binding !TieneServidores}"
                    Margin="12,8" TextWrapping="Wrap"
-                   Foreground="{StaticResource PincelDeTextoSecundario}"
+                   Foreground="{DynamicResource PincelDeTextoSecundario}"
                    Text="No hay servidores conectados." />
 
         <TreeView ItemsSource="{Binding Servidores}"

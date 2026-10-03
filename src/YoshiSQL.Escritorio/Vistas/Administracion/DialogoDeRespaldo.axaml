@@ -10,13 +10,13 @@
 
     <StackPanel Margin="24,20" Spacing="12">
         <TextBlock FontSize="18" FontWeight="SemiBold">
-            <Run Text="Respaldar " /><Run Text="{Binding BaseDeDatos}" Foreground="{StaticResource PincelDeAcento}" />
+            <Run Text="Respaldar " /><Run Text="{Binding BaseDeDatos}" Foreground="{DynamicResource PincelDeAcento}" />
         </TextBlock>
 
         <StackPanel Spacing="4">
             <TextBlock Text="Archivo de respaldo (ruta en el servidor)" />
             <TextBox Text="{Binding RutaDelArchivo}" FontFamily="{StaticResource FuenteMonoespaciada}" />
-            <TextBlock FontSize="11.5" TextWrapping="Wrap" Foreground="{StaticResource PincelDeTextoSecundario}"
+            <TextBlock FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource PincelDeTextoSecundario}"
                        Text="SQL Server escribe el archivo con su propio usuario: la carpeta debe existir en el servidor y tener permisos para el servicio de SQL Server." />
         </StackPanel>
 

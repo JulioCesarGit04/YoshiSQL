@@ -3,7 +3,7 @@
              xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Historial"
              x:Class="YoshiSQL.Escritorio.Vistas.Historial.PanelDelHistorial"
              x:DataType="vm:HistorialModeloDeVista"
-             Background="{StaticResource PincelDePanel}">
+             Background="{DynamicResource PincelDePanel}">
 
     <DockPanel>
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="10,8">
@@ -13,7 +13,7 @@
         </Grid>
 
         <TextBlock DockPanel.Dock="Top" IsVisible="{Binding EstaVacio}" Margin="12,4" TextWrapping="Wrap"
-                   Foreground="{StaticResource PincelDeTextoSecundario}"
+                   Foreground="{DynamicResource PincelDeTextoSecundario}"
                    Text="Aquí aparecerán las consultas que ejecutes." />
 
         <ListBox ItemsSource="{Binding Entradas}"
@@ -34,15 +34,15 @@
                         </Grid.ContextMenu>
 
                         <Ellipse Width="6" Height="6" Margin="0,6,0,0" VerticalAlignment="Top"
-                                 Fill="{StaticResource PincelDeAcento}" IsVisible="{Binding !TerminoConErrores}" />
+                                 Fill="{DynamicResource PincelDeAcento}" IsVisible="{Binding !TerminoConErrores}" />
                         <Ellipse Width="6" Height="6" Margin="0,6,0,0" VerticalAlignment="Top"
-                                 Fill="{StaticResource PincelDeError}" IsVisible="{Binding TerminoConErrores}" />
+                                 Fill="{DynamicResource PincelDeError}" IsVisible="{Binding TerminoConErrores}" />
 
                         <StackPanel Grid.Column="1" Spacing="2">
                             <TextBlock Text="{Binding Resumen}" FontFamily="{StaticResource FuenteMonoespaciada}"
                                        FontSize="12" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding Detalle}" FontSize="11"
-                                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+                                       Foreground="{DynamicResource PincelDeTextoSecundario}" />
                         </StackPanel>
                     </Grid>
                 </DataTemplate>

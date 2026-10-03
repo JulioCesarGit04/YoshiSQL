@@ -23,6 +23,8 @@ public interface IServicioDeDialogos
 
     Task MostrarAcercaDeAsync();
 
+    Task MostrarPreferenciasAsync();
+
     Task MostrarRespaldoAsync(ServidorConectado servidor, string baseDeDatos);
 
     /// <returns>Verdadero si se restauró una base de datos.</returns>
