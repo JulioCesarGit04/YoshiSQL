@@ -360,44 +360,60 @@ YoshiSQL/
 
 
 --------------------------------------------------------------------------------
-7. ESTADO ACTUAL Y CAMBIOS RESPECTO AL PLAN (2026-10-03)
+7. ESTADO ACTUAL (2026-10-03) - versión 0.5.0
 --------------------------------------------------------------------------------
 
-    Fase 1 implementada: conexión, explorador desplegable, editor con resaltado,
-    ejecutar todo o la selección (F5), separador GO (incluido "GO 5"),
-    resultados, mensajes, varias pestañas, abrir/guardar .sql, cancelar consulta,
-    scripts desde el menú contextual (SELECT TOP 1000, CREATE TABLE, DROP...).
+    Funciones implementadas
+    -----------------------
+    Conexión y explorador   Conexiones guardadas con contraseña cifrada, árbol con carga
+                            perezosa, menú contextual, actualizar, seguridad (inicios de
+                            sesión, usuarios, roles).
+    Editor                  Resaltado T-SQL, autocompletado, buscar/reemplazar, formatear,
+                            ejecutar todo o la selección, GO y GO n, cancelar.
+    Resultados              Grilla, mensajes con salto a la línea del error, exportar a
+                            CSV/JSON/Excel, copiar con encabezados, plan de ejecución.
+    Objetos                 Modificar (ALTER) y generar CREATE/DROP de vistas, procedimientos
+                            y funciones; diagramas; diseñador de tablas; editar filas.
+    Administración          Monitor de actividad, respaldo y restauración.
+    Robustez                Registro de errores con código, aviso amigable, captura global,
+                            autoguardado cada 10 s, restauración de pestañas y recuperación
+                            tras un cierre inesperado.
+    Preferencias            Tema claro/oscuro/sistema, letra y tamaño del editor.
 
-    Archivos agregados durante la implementación:
-    Dominio/Esquema/ObjetoDeEsquema.cs        Base común de Tabla, Vista, Procedimiento y Funcion
-    Dominio/Conexiones/DatosDeAcceso.cs       Perfil + contraseña en memoria (oculta en ToString)
-    Dominio/Consultas/ColumnaDeResultado.cs
-    Dominio/Contratos/ISesionDeConsulta.cs    Conexión propia de cada pestaña (USE y #temporales persisten)
-    Aplicacion/Conexiones/ServidorConectado.cs   (reemplaza a SesionActiva.cs)
-    Aplicacion/Consultas/FragmentoDeCodigo.cs, ConsultaEjecutada.cs
-    Aplicacion/Scripts/ServicioDeGeneracionDeScripts.cs
-    Infraestructura/SqlServer/SesionDeConsultaSqlServer.cs
-    Infraestructura/SqlServer/LectorDeConsultasDeCatalogo.cs
-    Infraestructura/SqlServer/DelimitadorDeIdentificadores.cs
-    Infraestructura/SqlServer/ConsultasDeCatalogo/ObtenerServidor.sql
-    Infraestructura/Persistencia/EscritorDeArchivosSeguro.cs   Escritura atómica con permisos 600
-    Escritorio/Servicios/                      IServicioDeDialogos, ServicioDeDialogos, RespuestaAlCerrar
-    Escritorio/ModelosDeVista/Explorador/      FabricaDeNodos, ContextoDelNodo, AccionDelNodo,
-                                               IAccionesDelExplorador, TipoDeNodo
-    Escritorio/ModelosDeVista/Editor/RangoDeTexto.cs
-    Escritorio/Vistas/Comunes/                 DialogoDeMensaje (Guardar / No guardar / Aceptar)
-    Escritorio/Controles/CatalogoDeIconos.cs   Íconos dibujados con geometría (reemplaza Recursos/Iconos)
-    Escritorio/Estilos/Controles.axaml         (TemaOscuro/TemaClaro/Tipografia quedan para la fase 5)
+    Atajos de teclado
+    -----------------
+    F5 / Ctrl+E   Ejecutar              Ctrl+N        Nueva consulta
+    Alt+Pause     Cancelar              Ctrl+O        Abrir archivo
+    Ctrl+L        Plan estimado         Ctrl+S        Guardar
+    Ctrl+M        Incluir plan real     Ctrl+Shift+S  Guardar como
+    Ctrl+Espacio  Autocompletar         Ctrl+W        Cerrar pestaña
+    Ctrl+F        Buscar                Ctrl+H        Reemplazar
+    Ctrl+Shift+F  Formatear SQL         Ctrl+,        Preferencias
 
-    Fase 4 (diagramas) implementada:
-    Dominio/Diagramas/                         PosicionEnElDiagrama, DisposicionDeDiagrama
-    Aplicacion/Diagramas/                      ServicioDeDiagramas, OrganizadorDeDiagrama, TamanoDeNodo
-    Infraestructura/Persistencia/RepositorioDeDiagramasJson.cs   ~/.config/yoshisql/diagramas/
-    Infraestructura/SqlServer/ConsultasDeCatalogo/ListarColumnasDeTodasLasTablas.sql
-    Escritorio/ModelosDeVista/DocumentoModeloDeVista.cs   Base de toda pestaña (consulta, diagrama...)
-    Escritorio/ModelosDeVista/Diagramas/       Pestaña, tabla, columna y relación del diagrama
-    Escritorio/Vistas/Diagramas/PestanaDeDiagrama.axaml
+    Dónde guarda sus archivos
+    -------------------------
+    ~/.config/yoshisql/        conexiones.json, credenciales.json (cifrado), clave.bin,
+                               preferencias.json, diagramas/
+    ~/.local/state/yoshisql/   registros/ (log diario, 14 días), sesion.json, historial.json,
+                               recuperados/
 
-    Pendiente para fases siguientes:
-    - DisenoDeTablas (diseñador visual de tablas).
-    - Tema claro, autocompletado, exportar a CSV, ventana de historial.
+    Capas agregadas durante la implementación
+    -----------------------------------------
+    Dominio:          Autocompletado, Diseno, Edicion, Planes, Respaldos, Seguridad,
+                      Actividad, Preferencias, Sesion (además de Esquema, Conexiones,
+                      Consultas, Diagramas, Contratos y Errores).
+    Aplicacion:       Administracion, Autocompletado, DisenoDeTablas, EdicionDeFilas,
+                      Errores, Preferencias, Sesion.
+    Infraestructura:  Exportacion (CSV, JSON, Excel y texto tabulado sin dependencias).
+    Escritorio:       Registro (Serilog), Servicios, y un modelo de vista + vista por cada
+                      tipo de pestaña (consulta, diagrama, diseño, edición, monitor).
+
+    Pruebas automáticas: 119 (Dominio 19, Aplicacion 32, Infraestructura 68).
+
+    Pendiente
+    ---------
+    - Instalador (.deb / AppImage) con ícono en el menú de aplicaciones.
+    - Valores predeterminados (DEFAULT) en el diseñador de tablas.
+    - Otros motores (PostgreSQL, MySQL): la arquitectura ya lo permite con un
+      nuevo proveedor en Infraestructura.
+    - Probar todas las funciones contra el servidor real.
