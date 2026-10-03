@@ -5,6 +5,7 @@ public enum TipoDeNodo
     Servidor,
     Carpeta,
     CarpetaDeBasesDeDatos,
+    CarpetaDeTablas,
     BaseDeDatos,
     BaseDeDatosSinConexion,
     Diagrama,

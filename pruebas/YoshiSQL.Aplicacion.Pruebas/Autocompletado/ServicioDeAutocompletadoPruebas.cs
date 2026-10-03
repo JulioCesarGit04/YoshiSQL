@@ -168,6 +168,7 @@ public class ServicioDeAutocompletadoPruebas
         public IDivisorDeLotes DivisorDeLotes => throw new NotSupportedException();
         public IGeneradorDeScripts GeneradorDeScripts => throw new NotSupportedException();
         public IFormateadorDeSql Formateador => throw new NotSupportedException();
+        public IReadOnlyList<string> TiposDeDatoSugeridos => [];
         public Task ProbarConexionAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
     }
 }

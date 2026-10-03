@@ -72,6 +72,12 @@ public sealed partial class NodoDelArbolModeloDeVista : ModeloDeVistaBase
     public NodoDelArbolModeloDeVista? BuscarHijo(TipoDeNodo tipo) =>
         Hijos.FirstOrDefault(hijo => hijo.Tipo == tipo);
 
+    /// <summary>
+    /// Todos los nodos que ya se cargaron debajo de este, sin consultar al servidor.
+    /// </summary>
+    public IEnumerable<NodoDelArbolModeloDeVista> RecorrerDescendientesCargados() =>
+        Hijos.SelectMany(hijo => hijo.RecorrerDescendientesCargados().Prepend(hijo));
+
     public async Task RecargarAsync()
     {
         _hijosCargados = false;

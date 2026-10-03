@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.EdicionDeFilas"
+             xmlns:vistas="using:YoshiSQL.Escritorio.Vistas.EdicionDeFilas"
+             x:Class="YoshiSQL.Escritorio.Vistas.EdicionDeFilas.PestanaDeEdicionDeFilas"
+             x:DataType="vm:PestanaDeEdicionDeFilasModeloDeVista">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource PincelDePanel}"
+                BorderBrush="{StaticResource PincelDeBorde}"
+                BorderThickness="0,0,0,1"
+                Padding="8,4">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="Herramienta" Content="Agregar fila" Command="{Binding AgregarFilaCommand}" />
+                    <Button Classes="Herramienta" Content="Eliminar fila" Command="{Binding EliminarFilaCommand}" />
+                    <Button Classes="Herramienta" Content="Recargar" Command="{Binding CargarCommand}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" Margin="16,0" VerticalAlignment="Center" FontSize="11.5"
+                           Foreground="{StaticResource PincelDeTextoSecundario}" TextTrimming="CharacterEllipsis"
+                           Text="Amarillo: modificada · Verde: nueva · Rojo: se eliminará" />
+
+                <Button Grid.Column="2" Classes="Primario" Content="Guardar cambios" Command="{Binding GuardarCambiosCommand}" />
+            </Grid>
+        </Border>
+
+        <vistas:GrillaDeEdicion />
+    </DockPanel>
+</UserControl>

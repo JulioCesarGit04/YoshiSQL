@@ -1,6 +1,9 @@
 using System.Text;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
 using YoshiSQL.Dominio.Contratos;
+using YoshiSQL.Dominio.Diseno;
+using YoshiSQL.Dominio.Edicion;
+using YoshiSQL.Dominio.Errores;
 using YoshiSQL.Dominio.Esquema;
 using static YoshiSQL.Infraestructura.SqlServer.DelimitadorDeIdentificadores;
 
@@ -27,31 +30,64 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
     public string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas)
     {
-        var definiciones = columnas
+        var definicionesDeColumnas = columnas
             .OrderBy(columna => columna.Posicion)
-            .Select(DefinirColumna)
+            .Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos))
             .ToList();
 
-        var columnasDeLaLlave = columnas.Where(columna => columna.EsLlavePrimaria).ToList();
+        var columnasDeLaLlave = columnas.Where(columna => columna.EsLlavePrimaria).Select(columna => columna.Nombre).ToList();
 
-        if (columnasDeLaLlave.Count > 0)
-        {
-            var nombreDeLaLlave = Delimitar($"PK_{tabla.Nombre}");
-            var listaDeColumnas = string.Join(", ", columnasDeLaLlave.Select(columna => Delimitar(columna.Nombre)));
-            definiciones.Add($"CONSTRAINT {nombreDeLaLlave} PRIMARY KEY ({listaDeColumnas})");
-        }
+        return new StringBuilder()
+            .AppendLine($"USE {Delimitar(baseDeDatos)};")
+            .AppendLine("GO")
+            .AppendLine()
+            .AppendLine(CrearInstruccionCreateTable(tabla, definicionesDeColumnas, columnasDeLaLlave))
+            .Append("GO")
+            .ToString();
+    }
+
+    public string GenerarCambiosDeTabla(string baseDeDatos, DefinicionDeTabla? original, DefinicionDeTabla nueva)
+    {
+        var instrucciones = original is null
+            ? [CrearInstruccionCreateTable(
+                nueva.Tabla,
+                nueva.Columnas.Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos)).ToList(),
+                nueva.ColumnasDeLaLlavePrimaria.Select(columna => columna.Nombre).ToList())]
+            : CrearInstruccionesDeModificacion(original, nueva);
 
         var script = new StringBuilder()
             .AppendLine($"USE {Delimitar(baseDeDatos)};")
             .AppendLine("GO")
             .AppendLine()
-            .AppendLine($"CREATE TABLE {Delimitar(tabla.Esquema, tabla.Nombre)}")
-            .AppendLine("(")
-            .AppendLine(string.Join($",{Environment.NewLine}", definiciones.Select(linea => SangriaDeColumna + linea)))
-            .AppendLine(");")
-            .Append("GO");
+            .AppendLine("-- Si una instrucción falla, se deshacen todas")
+            .AppendLine("SET XACT_ABORT ON;")
+            .AppendLine("BEGIN TRANSACTION;")
+            .AppendLine();
 
-        return script.ToString();
+        foreach (var instruccion in instrucciones)
+        {
+            script.AppendLine(instruccion).AppendLine();
+        }
+
+        return script.AppendLine("COMMIT TRANSACTION;").Append("GO").ToString();
+    }
+
+    public IReadOnlyList<ComandoSql> GenerarComandosDeEdicion(Tabla tabla, IReadOnlyList<Columna> columnas, IReadOnlyList<CambioDeFila> cambios)
+    {
+        var posicionesDeLaLlave = Enumerable.Range(0, columnas.Count).Where(posicion => columnas[posicion].EsLlavePrimaria).ToList();
+
+        if (posicionesDeLaLlave.Count == 0)
+        {
+            throw new ErrorDeYoshiSql($"La tabla {tabla.NombreCompleto} no tiene llave primaria; no se puede identificar cada fila de forma segura.");
+        }
+
+        return cambios.Select(cambio => cambio.Tipo switch
+        {
+            EstadoDeFila.Nueva => CrearInsert(tabla, columnas, cambio),
+            EstadoDeFila.Modificada => CrearUpdate(tabla, columnas, cambio, posicionesDeLaLlave),
+            EstadoDeFila.Eliminada => CrearDelete(tabla, columnas, cambio, posicionesDeLaLlave),
+            _ => throw new ArgumentOutOfRangeException(nameof(cambios), cambio.Tipo, "Una fila sin cambios no genera instrucciones.")
+        }).ToList();
     }
 
     public string GenerarEliminacion(string baseDeDatos, ObjetoDeEsquema objeto)
@@ -114,16 +150,140 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         return string.Concat(definicion.AsSpan(0, tokenCreate.Offset), "ALTER", definicion.AsSpan(tokenCreate.Offset + tokenCreate.Text.Length));
     }
 
-    private static string DefinirColumna(Columna columna)
+    private static string CrearInstruccionCreateTable(Tabla tabla, IReadOnlyList<string> definicionesDeColumnas, IReadOnlyList<string> columnasDeLaLlave)
     {
-        var definicion = new StringBuilder($"{Delimitar(columna.Nombre)} {columna.TipoDeDato.Describir()}");
+        var lineas = definicionesDeColumnas.ToList();
 
-        if (columna.EsIdentidad)
+        if (columnasDeLaLlave.Count > 0)
+        {
+            lineas.Add($"CONSTRAINT {Delimitar($"PK_{tabla.Nombre}")} PRIMARY KEY ({UnirNombres(columnasDeLaLlave)})");
+        }
+
+        return new StringBuilder()
+            .AppendLine($"CREATE TABLE {Delimitar(tabla.Esquema, tabla.Nombre)}")
+            .AppendLine("(")
+            .AppendLine(string.Join($",{Environment.NewLine}", lineas.Select(linea => SangriaDeColumna + linea)))
+            .Append(");")
+            .ToString();
+    }
+
+    /// <summary>
+    /// El orden importa: primero se quita la llave y las columnas eliminadas, luego se renombra,
+    /// se modifica y se agrega, y al final se vuelve a crear la llave primaria.
+    /// </summary>
+    private static List<string> CrearInstruccionesDeModificacion(DefinicionDeTabla original, DefinicionDeTabla nueva)
+    {
+        var cambios = CambiosDeTabla.Calcular(original, nueva);
+        var nombreDeLaTabla = Delimitar(nueva.Esquema, nueva.Nombre);
+        var instrucciones = new List<string>();
+
+        if (cambios.CambiaLaLlavePrimaria && original.NombreDeLaLlavePrimaria is not null)
+        {
+            instrucciones.Add($"ALTER TABLE {nombreDeLaTabla} DROP CONSTRAINT {Delimitar(original.NombreDeLaLlavePrimaria)};");
+        }
+
+        instrucciones.AddRange(cambios.ColumnasEliminadas.Select(columna =>
+            $"ALTER TABLE {nombreDeLaTabla} DROP COLUMN {Delimitar(columna.Nombre)};"));
+
+        instrucciones.AddRange(cambios.ColumnasRenombradas.Select(columna =>
+            $"EXEC sp_rename {EscribirTexto($"{nombreDeLaTabla}.{Delimitar(columna.NombreOriginal!)}")}, {EscribirTexto(columna.Nombre)}, N'COLUMN';"));
+
+        instrucciones.AddRange(cambios.ColumnasModificadas.Select(columna =>
+            $"ALTER TABLE {nombreDeLaTabla} ALTER COLUMN {Delimitar(columna.Nombre)} {columna.TipoDeDato.Describir()} {(columna.AdmiteNulos ? "NULL" : "NOT NULL")};"));
+
+        instrucciones.AddRange(cambios.ColumnasNuevas.Select(columna =>
+            $"ALTER TABLE {nombreDeLaTabla} ADD {DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos)};"));
+
+        var columnasDeLaLlave = nueva.ColumnasDeLaLlavePrimaria.Select(columna => columna.Nombre).ToList();
+
+        if (cambios.CambiaLaLlavePrimaria && columnasDeLaLlave.Count > 0)
+        {
+            var nombreDeLaLlave = original.NombreDeLaLlavePrimaria ?? $"PK_{nueva.Nombre}";
+            instrucciones.Add($"ALTER TABLE {nombreDeLaTabla} ADD CONSTRAINT {Delimitar(nombreDeLaLlave)} PRIMARY KEY ({UnirNombres(columnasDeLaLlave)});");
+        }
+
+        return instrucciones.Count > 0 ? instrucciones : ["-- No hay cambios que aplicar."];
+    }
+
+    private static ComandoSql CrearInsert(Tabla tabla, IReadOnlyList<Columna> columnas, CambioDeFila cambio)
+    {
+        // Las celdas vacías no se envían, para que se apliquen los valores predeterminados de la tabla
+        var posiciones = Enumerable.Range(0, columnas.Count)
+            .Where(posicion => EsEditable(columnas[posicion]) && cambio.ValoresNuevos[posicion] is not null)
+            .ToList();
+
+        if (posiciones.Count == 0)
+        {
+            return new ComandoSql($"INSERT INTO {Delimitar(tabla.Esquema, tabla.Nombre)} DEFAULT VALUES;", []);
+        }
+
+        var parametros = posiciones
+            .Select((posicion, indice) => new ParametroSql($"@v{indice}", ConvertidorDeValoresDeEdicion.Convertir(cambio.ValoresNuevos[posicion], columnas[posicion])))
+            .ToList();
+
+        var texto = $"INSERT INTO {Delimitar(tabla.Esquema, tabla.Nombre)} ({UnirNombres(posiciones.Select(posicion => columnas[posicion].Nombre))}) "
+            + $"VALUES ({string.Join(", ", parametros.Select(parametro => parametro.Nombre))});";
+
+        return new ComandoSql(texto, parametros, FilasEsperadas: 1);
+    }
+
+    private static ComandoSql CrearUpdate(Tabla tabla, IReadOnlyList<Columna> columnas, CambioDeFila cambio, IReadOnlyList<int> posicionesDeLaLlave)
+    {
+        var posicionesModificadas = Enumerable.Range(0, columnas.Count)
+            .Where(posicion => EsEditable(columnas[posicion]) && !Equals(cambio.ValoresNuevos[posicion], cambio.ValoresOriginales[posicion]))
+            .ToList();
+
+        var asignaciones = posicionesModificadas
+            .Select((posicion, indice) => (Texto: $"{Delimitar(columnas[posicion].Nombre)} = @v{indice}",
+                Parametro: new ParametroSql($"@v{indice}", ConvertidorDeValoresDeEdicion.Convertir(cambio.ValoresNuevos[posicion], columnas[posicion]))))
+            .ToList();
+
+        var (condicion, parametrosDeLaLlave) = CrearCondicionPorLlave(columnas, cambio, posicionesDeLaLlave);
+        var texto = $"UPDATE {Delimitar(tabla.Esquema, tabla.Nombre)} SET {string.Join(", ", asignaciones.Select(asignacion => asignacion.Texto))} WHERE {condicion};";
+
+        return new ComandoSql(texto, [.. asignaciones.Select(asignacion => asignacion.Parametro), .. parametrosDeLaLlave], FilasEsperadas: 1);
+    }
+
+    private static ComandoSql CrearDelete(Tabla tabla, IReadOnlyList<Columna> columnas, CambioDeFila cambio, IReadOnlyList<int> posicionesDeLaLlave)
+    {
+        var (condicion, parametrosDeLaLlave) = CrearCondicionPorLlave(columnas, cambio, posicionesDeLaLlave);
+        return new ComandoSql($"DELETE FROM {Delimitar(tabla.Esquema, tabla.Nombre)} WHERE {condicion};", parametrosDeLaLlave, FilasEsperadas: 1);
+    }
+
+    /// <summary>
+    /// La fila se ubica por los valores originales de su llave primaria, aunque el usuario los haya editado.
+    /// </summary>
+    private static (string Condicion, List<ParametroSql> Parametros) CrearCondicionPorLlave(
+        IReadOnlyList<Columna> columnas,
+        CambioDeFila cambio,
+        IReadOnlyList<int> posicionesDeLaLlave)
+    {
+        var parametros = posicionesDeLaLlave
+            .Select((posicion, indice) => new ParametroSql($"@k{indice}", cambio.ValoresOriginales[posicion]))
+            .ToList();
+
+        var condicion = string.Join(" AND ", posicionesDeLaLlave.Select((posicion, indice) => $"{Delimitar(columnas[posicion].Nombre)} = @k{indice}"));
+        return (condicion, parametros);
+    }
+
+    // Identidad y rowversion las asigna SQL Server; no se pueden escribir
+    private static bool EsEditable(Columna columna) =>
+        !columna.EsIdentidad && columna.TipoDeDato.Nombre is not ("timestamp" or "rowversion");
+
+    private static string UnirNombres(IEnumerable<string> nombres) => string.Join(", ", nombres.Select(nombre => Delimitar(nombre)));
+
+    private static string EscribirTexto(string texto) => $"N'{texto.Replace("'", "''", StringComparison.Ordinal)}'";
+
+    private static string DefinirColumna(string nombre, TipoDeDato tipoDeDato, bool esIdentidad, bool admiteNulos)
+    {
+        var definicion = new StringBuilder($"{Delimitar(nombre)} {tipoDeDato.Describir()}");
+
+        if (esIdentidad)
         {
             definicion.Append(" IDENTITY(1,1)");
         }
 
-        definicion.Append(columna.AdmiteNulos ? " NULL" : " NOT NULL");
+        definicion.Append(admiteNulos ? " NULL" : " NOT NULL");
 
         return definicion.ToString();
     }

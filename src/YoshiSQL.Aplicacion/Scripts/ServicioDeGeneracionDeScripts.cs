@@ -27,22 +27,6 @@ public sealed class ServicioDeGeneracionDeScripts
     public string GenerarCreacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         _generadorDeScripts.GenerarCreacionDeBaseDeDatos(nombreDeLaBaseDeDatos);
 
-    /// <summary>
-    /// Script de ejemplo para crear una tabla nueva, listo para que el usuario lo adapte.
-    /// </summary>
-    public string GenerarPlantillaDeTablaNueva(string baseDeDatos)
-    {
-        var tablaDeEjemplo = new Tabla("dbo", "NuevaTabla");
-        var columnasDeEjemplo = new[]
-        {
-            new Columna("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: true, Posicion: 1),
-            new Columna("Nombre", new TipoDeDato("nvarchar", 100), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 2),
-            new Columna("FechaDeCreacion", new TipoDeDato("datetime2"), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 3)
-        };
-
-        return _generadorDeScripts.GenerarCreacionDeTabla(baseDeDatos, tablaDeEjemplo, columnasDeEjemplo);
-    }
-
     public string GenerarEliminacion(string baseDeDatos, ObjetoDeEsquema objeto) =>
         _generadorDeScripts.GenerarEliminacion(baseDeDatos, objeto);
 

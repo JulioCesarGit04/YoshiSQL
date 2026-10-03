@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.EdicionDeFilas;
 using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Aplicacion.Scripts;
@@ -111,8 +112,7 @@ public sealed class FabricaDeNodos
         nodo.EstablecerAcciones(
             AccionDeNuevaConsulta(contexto),
             AccionDeVerDiagrama(contexto),
-            AccionQueAbreScript("Nueva tabla...", contexto,
-                () => _generadorDeScripts.GenerarPlantillaDeTablaNueva(baseDeDatos.Nombre)),
+            AccionDeNuevaTabla(contexto),
             AccionQueAbreScript("Generar script DROP DATABASE", contexto with { BaseDeDatos = null },
                 () => _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(baseDeDatos.Nombre)),
             AccionDeActualizar(nodo));
@@ -122,7 +122,7 @@ public sealed class FabricaDeNodos
 
     private IReadOnlyList<NodoDelArbolModeloDeVista> CrearCarpetasDeBaseDeDatos(ContextoDelNodo contexto)
     {
-        var carpetaDeTablas = CrearCarpeta("Tablas", contexto, async token =>
+        var carpetaDeTablas = CrearCarpeta("Tablas", contexto, TipoDeNodo.CarpetaDeTablas, async token =>
             (await _servicioDelExplorador.ObtenerTablasAsync(contexto.Servidor, contexto.BaseDeDatosOPredeterminada, token))
                 .Select(tabla => CrearNodoDeTabla(contexto, tabla)));
 
@@ -139,8 +139,7 @@ public sealed class FabricaDeNodos
                 .Select(funcion => CrearNodoDeProgramacion(contexto, funcion, TipoDeNodo.Funcion)));
 
         carpetaDeTablas.EstablecerAcciones(
-            AccionQueAbreScript("Nueva tabla...", contexto,
-                () => _generadorDeScripts.GenerarPlantillaDeTablaNueva(contexto.BaseDeDatosOPredeterminada)),
+            AccionDeNuevaTabla(contexto),
             AccionDeActualizar(carpetaDeTablas));
 
         return [CrearCarpetaDeDiagramas(contexto), carpetaDeTablas, carpetaDeVistas, carpetaDeProcedimientos, carpetaDeFunciones];
@@ -179,6 +178,9 @@ public sealed class FabricaDeNodos
 
         nodo.EstablecerAcciones(
             AccionDeSeleccionarFilas(contexto, tabla),
+            new AccionDelNodo($"Editar las primeras {ServicioDeEdicionDeFilas.CantidadDeFilasAEditar} filas",
+                ComandoSeguro("Editar filas", contexto, () => _acciones.AbrirEdicionDeFilasAsync(contexto, tabla))),
+            new AccionDelNodo("Diseñar", ComandoSeguro("Diseñar tabla", contexto, () => _acciones.AbrirDisenadorDeTablaAsync(contexto, tabla))),
             new AccionDelNodo("Generar script CREATE TABLE", ComandoSeguro("Generar script CREATE TABLE", contexto, async () =>
             {
                 var script = await _generadorDeScripts.GenerarCreacionDeTablaAsync(contexto.Servidor, baseDeDatos, tabla, CancellationToken.None);
@@ -245,11 +247,18 @@ public sealed class FabricaDeNodos
     private NodoDelArbolModeloDeVista CrearCarpeta(
         string texto,
         ContextoDelNodo contexto,
+        Func<CancellationToken, Task<IEnumerable<NodoDelArbolModeloDeVista>>> obtenerHijos) =>
+        CrearCarpeta(texto, contexto, TipoDeNodo.Carpeta, obtenerHijos);
+
+    private NodoDelArbolModeloDeVista CrearCarpeta(
+        string texto,
+        ContextoDelNodo contexto,
+        TipoDeNodo tipo,
         Func<CancellationToken, Task<IEnumerable<NodoDelArbolModeloDeVista>>> obtenerHijos)
     {
         var carpeta = new NodoDelArbolModeloDeVista(
             texto,
-            TipoDeNodo.Carpeta,
+            tipo,
             contexto,
             ProtegerCarga($"Cargar {texto.ToLowerInvariant()}", contexto, async token => (await obtenerHijos(token)).ToList()));
 
@@ -275,6 +284,9 @@ public sealed class FabricaDeNodos
                 contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, CancellationToken.None);
             await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
         }));
+
+    private AccionDelNodo AccionDeNuevaTabla(ContextoDelNodo contexto) =>
+        new("Nueva tabla...", ComandoSeguro("Nueva tabla", contexto, () => _acciones.AbrirDisenadorDeTablaAsync(contexto, tabla: null)));
 
     private AccionDelNodo AccionDeVerDiagrama(ContextoDelNodo contexto) =>
         new("Ver diagrama", ComandoSeguro("Abrir diagrama", contexto, () => _acciones.AbrirDiagramaAsync(contexto)));

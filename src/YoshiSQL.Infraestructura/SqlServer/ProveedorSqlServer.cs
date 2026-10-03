@@ -35,6 +35,13 @@ public sealed class ProveedorSqlServer : IProveedorDeBaseDeDatos
 
     public IAnalizadorDeContextoSql AnalizadorDeContexto { get; }
 
+    public IReadOnlyList<string> TiposDeDatoSugeridos { get; } =
+    [
+        "int", "bigint", "smallint", "tinyint", "bit", "decimal(18,2)", "numeric(18,0)", "money", "float", "real",
+        "date", "time", "datetime", "datetime2", "datetimeoffset", "char(10)", "varchar(50)", "varchar(max)",
+        "nchar(10)", "nvarchar(50)", "nvarchar(100)", "nvarchar(max)", "varbinary(max)", "uniqueidentifier", "xml"
+    ];
+
     public async Task ProbarConexionAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion)
     {
         var sesion = await Ejecutor.AbrirSesionAsync(

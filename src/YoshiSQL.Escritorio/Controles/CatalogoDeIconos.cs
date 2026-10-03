@@ -12,6 +12,7 @@ public static class CatalogoDeIconos
     {
         [TipoDeNodo.Servidor] = Crear("M2.5,2.5 H13.5 V7 H2.5 Z M2.5,9 H13.5 V13.5 H2.5 Z M5,4.75 H5.5 M5,11.25 H5.5", "#AEB4BC"),
         [TipoDeNodo.Carpeta] = Crear("M1.5,4 V13 H14.5 V5.5 H7.5 L6,4 Z", "#D9B66A"),
+        [TipoDeNodo.CarpetaDeTablas] = Crear("M1.5,4 V13 H14.5 V5.5 H7.5 L6,4 Z", "#D9B66A"),
         [TipoDeNodo.CarpetaDeBasesDeDatos] = Crear("M1.5,4 V13 H14.5 V5.5 H7.5 L6,4 Z", "#D9B66A"),
         [TipoDeNodo.BaseDeDatos] = Crear("M3,4 C3,2 13,2 13,4 V12 C13,14 3,14 3,12 Z M3,4 C3,6 13,6 13,4 M3,8 C3,10 13,10 13,8", "#6CC24A"),
         [TipoDeNodo.BaseDeDatosSinConexion] = Crear("M3,4 C3,2 13,2 13,4 V12 C13,14 3,14 3,12 Z M3,4 C3,6 13,6 13,4", "#6B7078"),

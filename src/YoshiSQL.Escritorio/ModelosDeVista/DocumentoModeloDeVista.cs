@@ -31,9 +31,15 @@ public abstract partial class DocumentoModeloDeVista : ModeloDeVistaBase, IAsync
     public partial string TextoDeEstado { get; protected set; } = "Listo";
 
     /// <summary>
-    /// Datos para volver a abrir esta pestaña la próxima vez que se inicie YoshiSQL.
+    /// Verdadero si cerrar la pestaña haría perder cambios que el usuario no aplicó (ej. en el diseñador).
     /// </summary>
-    public abstract PestanaGuardada CrearPestanaGuardada();
+    public virtual bool TieneCambiosSinAplicar => false;
+
+    /// <summary>
+    /// Datos para volver a abrir esta pestaña la próxima vez que se inicie YoshiSQL;
+    /// nulo si este tipo de pestaña no se restaura.
+    /// </summary>
+    public virtual PestanaGuardada? CrearPestanaGuardada() => null;
 
     public virtual ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

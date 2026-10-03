@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.DisenoDeTablas"
+             x:Class="YoshiSQL.Escritorio.Vistas.DisenoDeTablas.PestanaDeDisenoDeTabla"
+             x:DataType="vm:PestanaDeDisenoDeTablaModeloDeVista">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource PincelDePanel}"
+                BorderBrush="{StaticResource PincelDeBorde}"
+                BorderThickness="0,0,0,1"
+                Padding="12,8">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+                <TextBlock Text="Tabla" VerticalAlignment="Center" Foreground="{StaticResource PincelDeTextoSecundario}" />
+                <TextBox Grid.Column="1" Text="{Binding Esquema}" Width="80" IsEnabled="{Binding EsTablaNueva}"
+                         ToolTip.Tip="Esquema" />
+                <TextBlock Grid.Column="2" Text="." VerticalAlignment="Center" />
+                <TextBox Grid.Column="3" Text="{Binding NombreDeLaTabla}" Width="220" IsEnabled="{Binding EsTablaNueva}"
+                         ToolTip.Tip="Nombre de la tabla" />
+
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4">
+                    <Button Classes="Herramienta" Content="Agregar columna" Command="{Binding AgregarColumnaCommand}" />
+                    <Button Classes="Herramienta" Content="Quitar columna" Command="{Binding QuitarColumnaCommand}" />
+                    <Button Classes="Herramienta" Content="Ver script" Command="{Binding VerScriptCommand}"
+                            ToolTip.Tip="Abrir el script de cambios en una consulta, sin aplicarlo" />
+                    <Button Classes="Primario" Content="Aplicar cambios" Command="{Binding AplicarCommand}" Margin="6,0,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Padding="12,8" IsVisible="{Binding TieneErroresDeValidacion}"
+                Background="{StaticResource PincelDePanel}" BorderBrush="{StaticResource PincelDeBorde}" BorderThickness="0,1,0,0">
+            <ItemsControl ItemsSource="{Binding ErroresDeValidacion}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <SelectableTextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource PincelDeError}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <DataGrid ItemsSource="{Binding Columnas}"
+                  SelectedItem="{Binding ColumnaSeleccionada}"
+                  AutoGenerateColumns="False"
+                  CanUserSortColumns="False"
+                  CanUserReorderColumns="False"
+                  HeadersVisibility="Column"
+                  SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Nombre de la columna" Binding="{Binding Nombre}" Width="2*" />
+                <DataGridTemplateColumn Header="Tipo de dato" Width="2*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
+                            <TextBlock Text="{Binding TipoDeDato}" VerticalAlignment="Center" Margin="12,0"
+                                       FontFamily="{StaticResource FuenteMonoespaciada}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
+                            <AutoCompleteBox Text="{Binding TipoDeDato}"
+                                             ItemsSource="{Binding TiposDeDatoSugeridos}"
+                                             FilterMode="StartsWith"
+                                             MinimumPrefixLength="0"
+                                             FontFamily="{StaticResource FuenteMonoespaciada}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+                <!-- Casillas dentro de la celda para marcarlas con un solo clic -->
+                <DataGridTemplateColumn Header="Permite nulos" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
+                            <CheckBox IsChecked="{Binding AdmiteNulos}" HorizontalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Llave primaria" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
+                            <CheckBox IsChecked="{Binding EsLlavePrimaria}" HorizontalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Identidad" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
+                            <CheckBox IsChecked="{Binding EsIdentidad}" HorizontalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

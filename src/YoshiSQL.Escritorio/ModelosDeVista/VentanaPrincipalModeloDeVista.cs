@@ -10,6 +10,10 @@ using YoshiSQL.Aplicacion.Scripts;
 using YoshiSQL.Aplicacion.Sesion;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Escritorio.ModelosDeVista.Diagramas;
+using YoshiSQL.Escritorio.ModelosDeVista.DisenoDeTablas;
+using YoshiSQL.Escritorio.ModelosDeVista.EdicionDeFilas;
+using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Aplicacion.Autocompletado;
 using YoshiSQL.Escritorio.ModelosDeVista.Editor;
 using YoshiSQL.Escritorio.ModelosDeVista.Explorador;
 using YoshiSQL.Escritorio.ModelosDeVista.Historial;
@@ -17,7 +21,7 @@ using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista;
 
-public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador, IAccionesDelHistorial
+public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador, IAccionesDelHistorial, IAccionesDelDiseno
 {
     private const string PrefijoDeConsultaNueva = "SQLQuery";
 
@@ -30,6 +34,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private readonly IServicioDelSistemaOperativo _sistemaOperativo;
     private readonly ServicioDeSesion _servicioDeSesion;
     private readonly HistorialDeConsultas _historialDeConsultas;
+    private readonly ServiciosDeDiseno _serviciosDeDiseno;
     private int _contadorDeConsultasNuevas;
 
     public VentanaPrincipalModeloDeVista(
@@ -42,8 +47,10 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         IServicioDeErrores servicioDeErrores,
         IServicioDelSistemaOperativo sistemaOperativo,
         ServicioDeSesion servicioDeSesion,
-        HistorialDeConsultas historialDeConsultas)
+        HistorialDeConsultas historialDeConsultas,
+        ServiciosDeDiseno serviciosDeDiseno)
     {
+        _serviciosDeDiseno = serviciosDeDiseno;
         _historialDeConsultas = historialDeConsultas;
         _servicioDeSesion = servicioDeSesion;
         _servicioDeErrores = servicioDeErrores;
@@ -254,6 +261,33 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         }
     }
 
+    public async Task AbrirDisenadorDeTablaAsync(ContextoDelNodo contexto, Tabla? tabla)
+    {
+        var disenador = new PestanaDeDisenoDeTablaModeloDeVista(
+            contexto.Servidor, contexto.BaseDeDatosOPredeterminada, tabla, _serviciosDeDiseno, this);
+
+        AgregarDocumento(disenador);
+        await disenador.CargarCommand.ExecuteAsync(null);
+    }
+
+    public async Task AbrirEdicionDeFilasAsync(ContextoDelNodo contexto, Tabla tabla)
+    {
+        var edicion = new PestanaDeEdicionDeFilasModeloDeVista(
+            contexto.Servidor, contexto.BaseDeDatosOPredeterminada, tabla, _serviciosDeDiseno);
+
+        AgregarDocumento(edicion);
+        await edicion.CargarCommand.ExecuteAsync(null);
+    }
+
+    public Task AbrirScriptEnConsultaAsync(ServidorConectado servidor, string baseDeDatos, string script) =>
+        AbrirNuevaConsultaAsync(new ContextoDelNodo(servidor, baseDeDatos), script, ejecutarAlAbrir: false);
+
+    public async Task NotificarTablasModificadasAsync(ServidorConectado servidor, string baseDeDatos)
+    {
+        _serviciosDeConsulta.Autocompletado.InvalidarCatalogo(servidor, baseDeDatos);
+        await Explorador.ActualizarTablasAsync(servidor, baseDeDatos);
+    }
+
     public void DesconectarServidor(ContextoDelNodo contexto) => Explorador.QuitarServidor(contexto.Servidor);
 
     /// <param name="nombreDelArchivo">Nombre a usar; si es nulo se genera uno nuevo (SQLQuery1.sql, SQLQuery2.sql...).</param>
@@ -330,6 +364,15 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     /// </summary>
     private async Task<bool> ConfirmarCierreAsync(DocumentoModeloDeVista documento)
     {
+        if (documento.TieneCambiosSinAplicar)
+        {
+            return await _servicioDeDialogos.ConfirmarAsync(
+                "Cambios sin aplicar",
+                $"\"{documento.Titulo.TrimEnd(' ', '*')}\" tiene cambios que no se aplicaron. ¿Deseas descartarlos?",
+                "Descartar",
+                "Cancelar");
+        }
+
         if (documento is not PestanaDeConsultaModeloDeVista { TieneCambiosSinGuardar: true } pestana)
         {
             return true;

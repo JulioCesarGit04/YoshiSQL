@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using YoshiSQL.Aplicacion;
 using YoshiSQL.Escritorio.ModelosDeVista;
+using YoshiSQL.Escritorio.ModelosDeVista.DisenoDeTablas;
 using YoshiSQL.Escritorio.ModelosDeVista.Editor;
 using YoshiSQL.Escritorio.Servicios;
 using YoshiSQL.Infraestructura;
@@ -27,6 +28,7 @@ internal static class ContenedorDeDependencias
         servicios.AddSingleton<IServicioDeDialogos, ServicioDeDialogos>();
         servicios.AddSingleton<IServicioDeExportacionDeResultados, ServicioDeExportacionDeResultados>();
         servicios.AddSingleton<ServiciosDeConsulta>();
+        servicios.AddSingleton<ServiciosDeDiseno>();
         servicios.AddSingleton<VentanaPrincipalModeloDeVista>();
 
         return servicios.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });

@@ -3,6 +3,8 @@ using YoshiSQL.Aplicacion.Autocompletado;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Consultas;
 using YoshiSQL.Aplicacion.Diagramas;
+using YoshiSQL.Aplicacion.DisenoDeTablas;
+using YoshiSQL.Aplicacion.EdicionDeFilas;
 using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Aplicacion.Scripts;
@@ -23,6 +25,8 @@ public static class RegistroDeServicios
         servicios.AddSingleton<ServicioDeFormatoSql>();
         servicios.AddSingleton<ServicioDeExportacion>();
         servicios.AddSingleton<ServicioDeAutocompletado>();
+        servicios.AddSingleton<ServicioDeDisenoDeTablas>();
+        servicios.AddSingleton<ServicioDeEdicionDeFilas>();
         servicios.AddSingleton<ServicioDeArchivosSql>();
         servicios.AddSingleton<ServicioDeGeneracionDeScripts>();
         servicios.AddSingleton<ServicioDeDiagramas>();

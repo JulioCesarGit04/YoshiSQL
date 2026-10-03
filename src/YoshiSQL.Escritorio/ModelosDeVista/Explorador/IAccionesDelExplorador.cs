@@ -1,3 +1,5 @@
+using YoshiSQL.Dominio.Esquema;
+
 namespace YoshiSQL.Escritorio.ModelosDeVista.Explorador;
 
 /// <summary>
@@ -8,6 +10,11 @@ public interface IAccionesDelExplorador
     Task AbrirNuevaConsultaAsync(ContextoDelNodo contexto, string textoInicial, bool ejecutarAlAbrir);
 
     Task AbrirDiagramaAsync(ContextoDelNodo contexto);
+
+    /// <param name="tabla">Tabla a modificar; nula para diseñar una tabla nueva.</param>
+    Task AbrirDisenadorDeTablaAsync(ContextoDelNodo contexto, Tabla? tabla);
+
+    Task AbrirEdicionDeFilasAsync(ContextoDelNodo contexto, Tabla tabla);
 
     void DesconectarServidor(ContextoDelNodo contexto);
 }

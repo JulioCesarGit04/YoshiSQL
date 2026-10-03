@@ -68,6 +68,21 @@ public sealed partial class ExploradorModeloDeVista : ModeloDeVistaBase
         }
     }
 
+    /// <summary>
+    /// Vuelve a leer las tablas de una base de datos, solo si el usuario ya había desplegado esa carpeta.
+    /// </summary>
+    public async Task ActualizarTablasAsync(ServidorConectado servidor, string baseDeDatos)
+    {
+        var carpetaDeTablas = BuscarNodoDeServidor(servidor)?
+            .RecorrerDescendientesCargados()
+            .FirstOrDefault(nodo => nodo.Tipo == TipoDeNodo.CarpetaDeTablas && nodo.Contexto?.BaseDeDatos == baseDeDatos);
+
+        if (carpetaDeTablas is { HijosCargados: true })
+        {
+            await carpetaDeTablas.RecargarAsync();
+        }
+    }
+
     public void QuitarServidor(ServidorConectado servidor)
     {
         var nodo = BuscarNodoDeServidor(servidor);

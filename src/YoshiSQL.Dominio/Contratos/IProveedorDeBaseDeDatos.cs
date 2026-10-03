@@ -23,6 +23,11 @@ public interface IProveedorDeBaseDeDatos
     IAnalizadorDeContextoSql AnalizadorDeContexto { get; }
 
     /// <summary>
+    /// Tipos de dato que se ofrecen en el diseñador de tablas, ej. "int" o "nvarchar(50)".
+    /// </summary>
+    IReadOnlyList<string> TiposDeDatoSugeridos { get; }
+
+    /// <summary>
     /// Verifica que el servidor responda; lanza ErrorDeConexion si no es posible.
     /// </summary>
     Task ProbarConexionAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion);

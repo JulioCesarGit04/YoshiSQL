@@ -290,8 +290,15 @@ public sealed partial class VentanaPrincipalModeloDeVista
             .Where(documento => !esCierreFinal || documento is not PestanaDeConsultaModeloDeVista { TieneCambiosSinGuardar: true, RutaDelArchivo: null })
             .ToList();
 
-        var pestanas = documentosAGuardar
-            .Select(documento => documento.CrearPestanaGuardada())
+        var documentosRestaurables = documentosAGuardar
+            .Select(documento => (Documento: documento, Pestana: documento.CrearPestanaGuardada()))
+            .Where(par => par.Pestana is not null)
+            .ToList();
+
+        documentosAGuardar = documentosRestaurables.Select(par => par.Documento).ToList();
+
+        var pestanas = documentosRestaurables
+            .Select(par => par.Pestana!)
             .Select(pestana => esCierreFinal && pestana.TieneCambiosSinGuardar
                 ? pestana with { Texto = null, TieneCambiosSinGuardar = false }
                 : pestana)

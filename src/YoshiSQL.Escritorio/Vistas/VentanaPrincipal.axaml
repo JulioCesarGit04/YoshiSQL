@@ -7,6 +7,10 @@
         xmlns:vistasEditor="using:YoshiSQL.Escritorio.Vistas.Editor"
         xmlns:diagramas="using:YoshiSQL.Escritorio.ModelosDeVista.Diagramas"
         xmlns:vistasDiagramas="using:YoshiSQL.Escritorio.Vistas.Diagramas"
+        xmlns:diseno="using:YoshiSQL.Escritorio.ModelosDeVista.DisenoDeTablas"
+        xmlns:vistasDiseno="using:YoshiSQL.Escritorio.Vistas.DisenoDeTablas"
+        xmlns:edicion="using:YoshiSQL.Escritorio.ModelosDeVista.EdicionDeFilas"
+        xmlns:vistasEdicion="using:YoshiSQL.Escritorio.Vistas.EdicionDeFilas"
         x:Class="YoshiSQL.Escritorio.Vistas.VentanaPrincipal"
         x:DataType="vm:VentanaPrincipalModeloDeVista"
         Title="YoshiSQL"
@@ -21,6 +25,12 @@
         </DataTemplate>
         <DataTemplate DataType="diagramas:PestanaDeDiagramaModeloDeVista">
             <vistasDiagramas:PestanaDeDiagrama />
+        </DataTemplate>
+        <DataTemplate DataType="diseno:PestanaDeDisenoDeTablaModeloDeVista">
+            <vistasDiseno:PestanaDeDisenoDeTabla />
+        </DataTemplate>
+        <DataTemplate DataType="edicion:PestanaDeEdicionDeFilasModeloDeVista">
+            <vistasEdicion:PestanaDeEdicionDeFilas />
         </DataTemplate>
     </Window.DataTemplates>
 
