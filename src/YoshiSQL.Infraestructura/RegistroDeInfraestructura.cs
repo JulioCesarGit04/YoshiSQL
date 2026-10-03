@@ -15,6 +15,7 @@ public static class RegistroDeInfraestructura
         servicios.AddSingleton<IRepositorioDeScripts, RepositorioDeScriptsEnDisco>();
         servicios.AddSingleton<IAlmacenDeCredenciales, AlmacenDeCredencialesCifrado>();
         servicios.AddSingleton<IRepositorioDeDiagramas, RepositorioDeDiagramasJson>();
+        servicios.AddSingleton<IRepositorioDeSesion, RepositorioDeSesionJson>();
 
         servicios.AgregarProveedorSqlServer();
 

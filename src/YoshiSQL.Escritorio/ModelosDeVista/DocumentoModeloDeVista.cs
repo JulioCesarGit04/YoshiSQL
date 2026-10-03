@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Dominio.Sesion;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista;
 
@@ -28,6 +29,11 @@ public abstract partial class DocumentoModeloDeVista : ModeloDeVistaBase, IAsync
 
     [ObservableProperty]
     public partial string TextoDeEstado { get; protected set; } = "Listo";
+
+    /// <summary>
+    /// Datos para volver a abrir esta pestaña la próxima vez que se inicie YoshiSQL.
+    /// </summary>
+    public abstract PestanaGuardada CrearPestanaGuardada();
 
     public virtual ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

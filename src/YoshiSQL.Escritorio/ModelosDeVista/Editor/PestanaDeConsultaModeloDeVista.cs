@@ -4,10 +4,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Consultas;
+using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
+using YoshiSQL.Dominio.Sesion;
 using YoshiSQL.Escritorio.ModelosDeVista.Resultados;
+using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista.Editor;
 
@@ -18,6 +21,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
 {
     private readonly ServicioDeEjecucion _servicioDeEjecucion;
     private readonly ServicioDelExplorador _servicioDelExplorador;
+    private readonly IServicioDeErrores _servicioDeErrores;
     private ISesionDeConsulta? _sesion;
     private CancellationTokenSource? _cancelacionDeLaEjecucion;
     private bool _estaCargandoTexto;
@@ -27,9 +31,11 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         string baseDeDatos,
         string nombreDelArchivo,
         ServicioDeEjecucion servicioDeEjecucion,
-        ServicioDelExplorador servicioDelExplorador)
+        ServicioDelExplorador servicioDelExplorador,
+        IServicioDeErrores servicioDeErrores)
         : base(servidor)
     {
+        _servicioDeErrores = servicioDeErrores;
         BaseDeDatosActual = baseDeDatos;
         NombreDelArchivo = nombreDelArchivo;
         _servicioDeEjecucion = servicioDeEjecucion;
@@ -113,9 +119,10 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
 
             ReemplazarBasesDeDatosDisponibles(nombresDisponibles);
         }
-        // Límite de la interfaz: si falla, la lista solo muestra la base actual
-        catch (Exception)
+        // Si falla, se registra y la lista muestra solo la base actual; la pestaña sigue siendo usable
+        catch (Exception error)
         {
+            _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Cargar la lista de bases de datos"));
             ReemplazarBasesDeDatosDisponibles([BaseDeDatosActual]);
         }
     }
@@ -125,6 +132,31 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         _estaCargandoTexto = true;
         Documento.Text = texto;
         _estaCargandoTexto = false;
+    }
+
+    public bool EstaVacia => RutaDelArchivo is null && !TieneCambiosSinGuardar && Documento.TextLength == 0;
+
+    /// <summary>
+    /// Se guarda el texto solo si no está en un archivo o si tiene cambios; si no, basta con la ruta.
+    /// </summary>
+    public override PestanaGuardada CrearPestanaGuardada()
+    {
+        var debeGuardarElTexto = TieneCambiosSinGuardar || RutaDelArchivo is null;
+
+        return new PestanaGuardada(
+            TipoDePestana.Consulta,
+            Servidor.Perfil.Id,
+            BaseDeDatosActual,
+            NombreDelArchivo,
+            RutaDelArchivo,
+            debeGuardarElTexto ? Documento.Text : null,
+            TieneCambiosSinGuardar);
+    }
+
+    public void RestaurarEstadoDelArchivo(string? rutaDelArchivo, bool tieneCambiosSinGuardar)
+    {
+        RutaDelArchivo = rutaDelArchivo;
+        TieneCambiosSinGuardar = tieneCambiosSinGuardar;
     }
 
     public void MarcarComoGuardado(string rutaDelArchivo)
@@ -162,10 +194,10 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
             Resultados.MostrarError("La consulta fue cancelada por el usuario.");
             TextoDeEstado = "Consulta cancelada.";
         }
-        // Límite de la interfaz: el error se muestra en "Mensajes" en lugar de cerrar la aplicación
+        // El error se registra y se muestra en la pestaña "Mensajes" en lugar de cerrar la aplicación
         catch (Exception error)
         {
-            Resultados.MostrarError(error.Message);
+            Resultados.MostrarError(_servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Ejecutar consulta")));
             TextoDeEstado = "La consulta no se pudo ejecutar.";
         }
         finally
@@ -239,7 +271,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         }
         catch (Exception error)
         {
-            Resultados.MostrarError(error.Message);
+            Resultados.MostrarError(_servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Cambiar de base de datos")));
             BaseDeDatosActual = _sesion.BaseDeDatosActual;
         }
     }
@@ -264,6 +296,9 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
             BasesDeDatosDisponibles.Add(baseDeDatos);
         }
     }
+
+    private ContextoDeError CrearContextoDeError(string accion) =>
+        new(accion, Servidor.Perfil.NombreVisible, BaseDeDatosActual);
 
     private void MarcarCambiosSinGuardar()
     {

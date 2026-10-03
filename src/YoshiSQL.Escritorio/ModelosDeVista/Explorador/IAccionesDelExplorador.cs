@@ -10,6 +10,4 @@ public interface IAccionesDelExplorador
     Task AbrirDiagramaAsync(ContextoDelNodo contexto);
 
     void DesconectarServidor(ContextoDelNodo contexto);
-
-    Task MostrarErrorAsync(string mensaje);
 }

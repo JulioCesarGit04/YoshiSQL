@@ -10,6 +10,15 @@ public partial class VentanaPrincipal : Window
     public VentanaPrincipal()
     {
         InitializeComponent();
+        Opened += AlAbrirLaVentana;
+    }
+
+    private async void AlAbrirLaVentana(object? remitente, EventArgs argumentos)
+    {
+        if (DataContext is VentanaPrincipalModeloDeVista modelo)
+        {
+            await modelo.IniciarAsync();
+        }
     }
 
     /// <summary>

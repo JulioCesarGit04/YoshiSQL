@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="YoshiSQL.Escritorio.Vistas.Comunes.DialogoAcercaDe"
+        Title="Acerca de YoshiSQL"
+        Width="480" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="28,24" Spacing="16">
+        <StackPanel Spacing="2">
+            <TextBlock Text="YoshiSQL" FontSize="28" FontWeight="Light" Foreground="{StaticResource PincelDeAcento}" />
+            <TextBlock Text="Entorno gráfico libre para SQL Server en Linux"
+                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+            <TextBlock Grid.Row="0" Text="Versión" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <SelectableTextBlock Grid.Row="0" Grid.Column="1" x:Name="TextoDeVersion" />
+            <TextBlock Grid.Row="1" Text=".NET" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <SelectableTextBlock Grid.Row="1" Grid.Column="1" x:Name="TextoDeDotNet" />
+            <TextBlock Grid.Row="2" Text="Sistema" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <SelectableTextBlock Grid.Row="2" Grid.Column="1" x:Name="TextoDelSistema" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="3" Text="Configuración" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <SelectableTextBlock Grid.Row="3" Grid.Column="1" x:Name="TextoDeConfiguracion" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="4" Text="Registros" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <SelectableTextBlock Grid.Row="4" Grid.Column="1" x:Name="TextoDeRegistros" TextWrapping="Wrap" />
+        </Grid>
+
+        <Button Classes="Primario" Content="Aceptar" HorizontalAlignment="Right" MinWidth="96"
+                IsDefault="True" IsCancel="True" Click="AlAceptar" />
+    </StackPanel>
+</Window>

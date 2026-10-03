@@ -1,8 +1,11 @@
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Aplicacion.Scripts;
+using YoshiSQL.Dominio.Errores;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista.Explorador;
 
@@ -15,15 +18,18 @@ public sealed class FabricaDeNodos
     private readonly ServicioDelExplorador _servicioDelExplorador;
     private readonly ServicioDeGeneracionDeScripts _generadorDeScripts;
     private readonly IAccionesDelExplorador _acciones;
+    private readonly IServicioDeErrores _servicioDeErrores;
 
     public FabricaDeNodos(
         ServicioDelExplorador servicioDelExplorador,
         ServicioDeGeneracionDeScripts generadorDeScripts,
-        IAccionesDelExplorador acciones)
+        IAccionesDelExplorador acciones,
+        IServicioDeErrores servicioDeErrores)
     {
         _servicioDelExplorador = servicioDelExplorador;
         _generadorDeScripts = generadorDeScripts;
         _acciones = acciones;
+        _servicioDeErrores = servicioDeErrores;
     }
 
     public NodoDelArbolModeloDeVista CrearNodoDeServidor(ServidorConectado servidor)
@@ -37,7 +43,11 @@ public sealed class FabricaDeNodos
 
         nodo.EstablecerAcciones(
             AccionDeNuevaConsulta(contexto),
-            new AccionDelNodo("Desconectar", new RelayCommand(() => _acciones.DesconectarServidor(contexto))),
+            new AccionDelNodo("Desconectar", ComandoSeguro("Desconectar", contexto, () =>
+            {
+                _acciones.DesconectarServidor(contexto);
+                return Task.CompletedTask;
+            })),
             AccionDeActualizar(nodo));
 
         return nodo;
@@ -49,7 +59,7 @@ public sealed class FabricaDeNodos
             "Bases de datos",
             TipoDeNodo.CarpetaDeBasesDeDatos,
             contexto,
-            token => CrearNodosDeBasesDeDatosAsync(contexto, token));
+            ProtegerCarga("Cargar bases de datos", contexto, token => CrearNodosDeBasesDeDatosAsync(contexto, token)));
 
         carpeta.EstablecerAcciones(
             AccionQueAbreScript("Nueva base de datos...", contexto,
@@ -169,7 +179,7 @@ public sealed class FabricaDeNodos
 
         nodo.EstablecerAcciones(
             AccionDeSeleccionarFilas(contexto, tabla),
-            new AccionDelNodo("Generar script CREATE TABLE", ComandoSeguro(async () =>
+            new AccionDelNodo("Generar script CREATE TABLE", ComandoSeguro("Generar script CREATE TABLE", contexto, async () =>
             {
                 var script = await _generadorDeScripts.GenerarCreacionDeTablaAsync(contexto.Servidor, baseDeDatos, tabla, CancellationToken.None);
                 await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
@@ -234,7 +244,7 @@ public sealed class FabricaDeNodos
             texto,
             TipoDeNodo.Carpeta,
             contexto,
-            async token => (await obtenerHijos(token)).ToList());
+            ProtegerCarga($"Cargar {texto.ToLowerInvariant()}", contexto, async token => (await obtenerHijos(token)).ToList()));
 
         carpeta.EstablecerAcciones(AccionDeActualizar(carpeta));
         return carpeta;
@@ -244,36 +254,59 @@ public sealed class FabricaDeNodos
         AccionQueAbreScript("Nueva consulta", contexto, () => string.Empty);
 
     private AccionDelNodo AccionDeVerDiagrama(ContextoDelNodo contexto) =>
-        new("Ver diagrama", ComandoSeguro(() => _acciones.AbrirDiagramaAsync(contexto)));
+        new("Ver diagrama", ComandoSeguro("Abrir diagrama", contexto, () => _acciones.AbrirDiagramaAsync(contexto)));
 
     private AccionDelNodo AccionDeSeleccionarFilas(ContextoDelNodo contexto, ObjetoDeEsquema objeto) =>
-        new($"Seleccionar las primeras {ServicioDeGeneracionDeScripts.FilasPorDefectoAlSeleccionar} filas", ComandoSeguro(() =>
+        new($"Seleccionar las primeras {ServicioDeGeneracionDeScripts.FilasPorDefectoAlSeleccionar} filas", ComandoSeguro("Seleccionar filas", contexto, () =>
         {
             var script = _generadorDeScripts.GenerarSeleccionDeFilas(contexto.BaseDeDatosOPredeterminada, objeto);
             return _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: true);
         }));
 
     private AccionDelNodo AccionQueAbreScript(string texto, ContextoDelNodo contexto, Func<string> generarScript) =>
-        new(texto, ComandoSeguro(() => _acciones.AbrirNuevaConsultaAsync(contexto, generarScript(), ejecutarAlAbrir: false)));
+        new(texto, ComandoSeguro(texto, contexto, () => _acciones.AbrirNuevaConsultaAsync(contexto, generarScript(), ejecutarAlAbrir: false)));
 
     private AccionDelNodo AccionDeActualizar(NodoDelArbolModeloDeVista nodo) =>
-        new("Actualizar", ComandoSeguro(nodo.RecargarAsync));
+        new("Actualizar", ComandoSeguro("Actualizar el explorador", nodo.Contexto, nodo.RecargarAsync));
 
     /// <summary>
-    /// Comando que muestra los errores al usuario en lugar de cerrar la aplicación.
+    /// Comando de menú que registra cualquier error y muestra un aviso en lugar de cerrar la aplicación.
     /// </summary>
-    private AsyncRelayCommand ComandoSeguro(Func<Task> accion) =>
+    private AsyncRelayCommand ComandoSeguro(string accion, ContextoDelNodo? contexto, Func<Task> ejecutar) =>
         new(async () =>
         {
             try
             {
-                await accion();
+                await ejecutar();
             }
             catch (Exception error)
             {
-                await _acciones.MostrarErrorAsync(error.Message);
+                await _servicioDeErrores.RegistrarYMostrarAsync(error, CrearContextoDeError(accion, contexto));
             }
         });
+
+    /// <summary>
+    /// Envuelve la carga de los hijos de un nodo: cualquier error queda registrado y el árbol
+    /// muestra un mensaje claro en lugar del detalle técnico.
+    /// </summary>
+    private Func<CancellationToken, Task<IReadOnlyList<NodoDelArbolModeloDeVista>>> ProtegerCarga(
+        string accion,
+        ContextoDelNodo contexto,
+        Func<CancellationToken, Task<IReadOnlyList<NodoDelArbolModeloDeVista>>> cargar) =>
+        async token =>
+        {
+            try
+            {
+                return await cargar(token);
+            }
+            catch (Exception error)
+            {
+                throw new ErrorDeYoshiSql(_servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError(accion, contexto)), error);
+            }
+        };
+
+    private static ContextoDeError CrearContextoDeError(string accion, ContextoDelNodo? contexto) =>
+        new(accion, contexto?.Servidor.Perfil.NombreVisible, contexto?.BaseDeDatos);
 
     private static string DescribirServidor(ServidorConectado servidor)
     {

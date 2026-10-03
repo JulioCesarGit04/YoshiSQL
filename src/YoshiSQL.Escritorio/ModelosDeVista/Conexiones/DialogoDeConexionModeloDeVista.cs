@@ -2,8 +2,9 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Dominio.Conexiones;
-using YoshiSQL.Dominio.Contratos;
+using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista.Conexiones;
 
@@ -16,12 +17,14 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
     private const string UsuarioPredeterminado = "sa";
 
     private readonly ServicioDeConexiones _servicioDeConexiones;
+    private readonly IServicioDeErrores _servicioDeErrores;
     private CancellationTokenSource? _cancelacionDeLaConexion;
     private Guid _idDelPerfilEnEdicion = Guid.NewGuid();
 
-    public DialogoDeConexionModeloDeVista(ServicioDeConexiones servicioDeConexiones)
+    public DialogoDeConexionModeloDeVista(ServicioDeConexiones servicioDeConexiones, IServicioDeErrores servicioDeErrores)
     {
         _servicioDeConexiones = servicioDeConexiones;
+        _servicioDeErrores = servicioDeErrores;
         AutenticacionSeleccionada = OpcionDeAutenticacion.Todas[0];
     }
 
@@ -74,9 +77,20 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
     /// </summary>
     public event EventHandler<ServidorConectado?>? CierreSolicitado;
 
-    public async Task CargarPerfilesGuardadosAsync()
+    /// <param name="idDelPerfilSugerido">Perfil a seleccionar; si es nulo se selecciona el más reciente.</param>
+    public async Task CargarPerfilesGuardadosAsync(Guid? idDelPerfilSugerido = null)
     {
-        var perfiles = await _servicioDeConexiones.ObtenerPerfilesGuardadosAsync(CancellationToken.None);
+        IReadOnlyList<PerfilDeConexion> perfiles;
+
+        try
+        {
+            perfiles = await _servicioDeConexiones.ObtenerPerfilesGuardadosAsync(CancellationToken.None);
+        }
+        catch (Exception error)
+        {
+            MensajeDeError = _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Leer conexiones guardadas"));
+            return;
+        }
 
         foreach (var perfil in perfiles)
         {
@@ -84,7 +98,8 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         }
 
         OnPropertyChanged(nameof(TienePerfilesGuardados));
-        PerfilSeleccionado = PerfilesGuardados.FirstOrDefault();
+        PerfilSeleccionado = PerfilesGuardados.FirstOrDefault(perfil => perfil.Id == idDelPerfilSugerido)
+            ?? PerfilesGuardados.FirstOrDefault();
     }
 
     partial void OnPerfilSeleccionadoChanged(PerfilDeConexion? value)
@@ -115,10 +130,10 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         {
             MensajeDeError = null;
         }
-        // Límite de la interfaz: cualquier fallo se muestra en la ventana
+        // El error se registra y se muestra dentro de la ventana de conexión
         catch (Exception error)
         {
-            MensajeDeError = error.Message;
+            MensajeDeError = _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Conectar al servidor", Servidor));
         }
         finally
         {
@@ -150,7 +165,16 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
             return;
         }
 
-        await _servicioDeConexiones.EliminarPerfilAsync(perfil, CancellationToken.None);
+        try
+        {
+            await _servicioDeConexiones.EliminarPerfilAsync(perfil, CancellationToken.None);
+        }
+        catch (Exception error)
+        {
+            MensajeDeError = _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Olvidar conexión guardada", perfil.NombreVisible));
+            return;
+        }
+
         PerfilesGuardados.Remove(perfil);
         PerfilSeleccionado = null;
         _idDelPerfilEnEdicion = Guid.NewGuid();
@@ -167,7 +191,15 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         BaseDeDatos = perfil.BaseDeDatosPredeterminada;
         RecordarContrasena = perfil.RecordarContrasena;
         ConfiarEnCertificadoDelServidor = perfil.ConfiarEnCertificadoDelServidor;
-        Contrasena = await _servicioDeConexiones.ObtenerContrasenaGuardadaAsync(perfil, CancellationToken.None) ?? string.Empty;
+        try
+        {
+            Contrasena = await _servicioDeConexiones.ObtenerContrasenaGuardadaAsync(perfil, CancellationToken.None) ?? string.Empty;
+        }
+        catch (Exception error)
+        {
+            Contrasena = string.Empty;
+            MensajeDeError = _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Leer contraseña guardada", perfil.NombreVisible));
+        }
     }
 
     private PerfilDeConexion CrearPerfil() => new()

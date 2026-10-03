@@ -110,7 +110,7 @@ public sealed partial class NodoDelArbolModeloDeVista : ModeloDeVistaBase
             var hijos = await _cargarHijos(CancellationToken.None);
             ReemplazarHijos(hijos);
         }
-        // Límite de la interfaz: cualquier fallo se muestra dentro del árbol en lugar de cerrar la aplicación
+        // La fábrica de nodos ya registró el error; aquí solo se muestra su mensaje dentro del árbol
         catch (Exception error)
         {
             _hijosCargados = false;

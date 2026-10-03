@@ -4,8 +4,10 @@ using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Consultas;
 using YoshiSQL.Aplicacion.Diagramas;
+using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Aplicacion.Scripts;
+using YoshiSQL.Aplicacion.Sesion;
 using YoshiSQL.Escritorio.ModelosDeVista.Diagramas;
 using YoshiSQL.Escritorio.ModelosDeVista.Editor;
 using YoshiSQL.Escritorio.ModelosDeVista.Explorador;
@@ -15,11 +17,16 @@ namespace YoshiSQL.Escritorio.ModelosDeVista;
 
 public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador
 {
+    private const string PrefijoDeConsultaNueva = "SQLQuery";
+
     private readonly ServicioDeEjecucion _servicioDeEjecucion;
     private readonly ServicioDelExplorador _servicioDelExplorador;
     private readonly ServicioDeArchivosSql _servicioDeArchivosSql;
     private readonly ServicioDeDiagramas _servicioDeDiagramas;
     private readonly IServicioDeDialogos _servicioDeDialogos;
+    private readonly IServicioDeErrores _servicioDeErrores;
+    private readonly IServicioDelSistemaOperativo _sistemaOperativo;
+    private readonly ServicioDeSesion _servicioDeSesion;
     private int _contadorDeConsultasNuevas;
 
     public VentanaPrincipalModeloDeVista(
@@ -28,15 +35,21 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         ServicioDeArchivosSql servicioDeArchivosSql,
         ServicioDeGeneracionDeScripts servicioDeGeneracionDeScripts,
         ServicioDeDiagramas servicioDeDiagramas,
-        IServicioDeDialogos servicioDeDialogos)
+        IServicioDeDialogos servicioDeDialogos,
+        IServicioDeErrores servicioDeErrores,
+        IServicioDelSistemaOperativo sistemaOperativo,
+        ServicioDeSesion servicioDeSesion)
     {
+        _servicioDeSesion = servicioDeSesion;
+        _servicioDeErrores = servicioDeErrores;
+        _sistemaOperativo = sistemaOperativo;
         _servicioDeDiagramas = servicioDeDiagramas;
         _servicioDeEjecucion = servicioDeEjecucion;
         _servicioDelExplorador = servicioDelExplorador;
         _servicioDeArchivosSql = servicioDeArchivosSql;
         _servicioDeDialogos = servicioDeDialogos;
 
-        var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this);
+        var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this, servicioDeErrores);
         Explorador = new ExploradorModeloDeVista(fabricaDeNodos);
     }
 
@@ -114,7 +127,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         }
         catch (Exception error)
         {
-            await _servicioDeDialogos.MostrarErrorAsync($"No se pudo abrir el archivo.\n{error.Message}");
+            await _servicioDeErrores.RegistrarYMostrarAsync(error, new ContextoDeError("Abrir archivo"));
         }
     }
 
@@ -135,6 +148,22 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             await GuardarPestanaAsync(pestana, pedirUbicacion: true);
         }
     }
+
+    [RelayCommand]
+    private async Task AbrirCarpetaDeRegistrosAsync()
+    {
+        try
+        {
+            _sistemaOperativo.AbrirCarpetaDeRegistros();
+        }
+        catch (Exception error)
+        {
+            await _servicioDeErrores.RegistrarYMostrarAsync(error, new ContextoDeError("Abrir carpeta de registros"));
+        }
+    }
+
+    [RelayCommand]
+    private Task MostrarAcercaDeAsync() => _servicioDeDialogos.MostrarAcercaDeAsync();
 
     [RelayCommand]
     private async Task CerrarPestanaAsync(DocumentoModeloDeVista? documento)
@@ -162,6 +191,8 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
                 return false;
             }
         }
+
+        await CerrarSesionCorrectamenteAsync();
 
         foreach (var documento in Documentos)
         {
@@ -197,25 +228,26 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             return;
         }
 
-        var diagrama = new PestanaDeDiagramaModeloDeVista(contexto.Servidor, baseDeDatos, _servicioDeDiagramas);
+        var diagrama = new PestanaDeDiagramaModeloDeVista(contexto.Servidor, baseDeDatos, _servicioDeDiagramas, _servicioDeErrores);
         AgregarDocumento(diagrama);
         await diagrama.CargarCommand.ExecuteAsync(null);
     }
 
     public void DesconectarServidor(ContextoDelNodo contexto) => Explorador.QuitarServidor(contexto.Servidor);
 
-    public Task MostrarErrorAsync(string mensaje) => _servicioDeDialogos.MostrarErrorAsync(mensaje);
-
-    private async Task<PestanaDeConsultaModeloDeVista> AgregarPestanaAsync(ContextoDelNodo contexto, string textoInicial)
+    /// <param name="nombreDelArchivo">Nombre a usar; si es nulo se genera uno nuevo (SQLQuery1.sql, SQLQuery2.sql...).</param>
+    private async Task<PestanaDeConsultaModeloDeVista> AgregarPestanaAsync(
+        ContextoDelNodo contexto,
+        string textoInicial,
+        string? nombreDelArchivo = null)
     {
-        _contadorDeConsultasNuevas++;
-
         var pestana = new PestanaDeConsultaModeloDeVista(
             contexto.Servidor,
             contexto.BaseDeDatosOPredeterminada,
-            $"SQLQuery{_contadorDeConsultasNuevas}.sql",
+            nombreDelArchivo ?? GenerarNombreDeConsultaNueva(),
             _servicioDeEjecucion,
-            _servicioDelExplorador);
+            _servicioDelExplorador,
+            _servicioDeErrores);
 
         pestana.CargarTexto(textoInicial);
         pestana.BasesDeDatosModificadas += ActualizarBasesDeDatosDelExplorador;
@@ -224,6 +256,8 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         await pestana.CargarBasesDeDatosAsync();
         return pestana;
     }
+
+    private string GenerarNombreDeConsultaNueva() => $"{PrefijoDeConsultaNueva}{++_contadorDeConsultasNuevas}.sql";
 
     private void AgregarDocumento(DocumentoModeloDeVista documento)
     {
@@ -259,14 +293,16 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             return;
         }
 
-        // Manejador de evento asíncrono: los errores se muestran en lugar de perderse
+        // Manejador de evento asíncrono: los errores se registran y se avisan en lugar de perderse
         try
         {
             await Explorador.ActualizarBasesDeDatosAsync(pestana.Servidor);
         }
         catch (Exception error)
         {
-            await _servicioDeDialogos.MostrarErrorAsync(error.Message);
+            await _servicioDeErrores.RegistrarYMostrarAsync(
+                error,
+                new ContextoDeError("Actualizar el explorador", pestana.Servidor.Perfil.NombreVisible));
         }
     }
 
@@ -310,7 +346,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         }
         catch (Exception error)
         {
-            await _servicioDeDialogos.MostrarErrorAsync($"No se pudo guardar el archivo.\n{error.Message}");
+            await _servicioDeErrores.RegistrarYMostrarAsync(error, new ContextoDeError("Guardar archivo"));
             return false;
         }
     }

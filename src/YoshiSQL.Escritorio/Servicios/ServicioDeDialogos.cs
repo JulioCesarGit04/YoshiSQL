@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Escritorio.ModelosDeVista.Conexiones;
 using YoshiSQL.Escritorio.Vistas.Comunes;
 using YoshiSQL.Escritorio.Vistas.Conexiones;
@@ -15,16 +16,23 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     private static readonly FilePickerFileType TodosLosArchivos = new("Todos los archivos") { Patterns = ["*"] };
 
     private readonly ServicioDeConexiones _servicioDeConexiones;
+    private readonly IServicioDeErrores _servicioDeErrores;
+    private readonly IServicioDelSistemaOperativo _sistemaOperativo;
 
-    public ServicioDeDialogos(ServicioDeConexiones servicioDeConexiones)
+    public ServicioDeDialogos(
+        ServicioDeConexiones servicioDeConexiones,
+        IServicioDeErrores servicioDeErrores,
+        IServicioDelSistemaOperativo sistemaOperativo)
     {
         _servicioDeConexiones = servicioDeConexiones;
+        _servicioDeErrores = servicioDeErrores;
+        _sistemaOperativo = sistemaOperativo;
     }
 
-    public async Task<ServidorConectado?> MostrarDialogoDeConexionAsync()
+    public async Task<ServidorConectado?> MostrarDialogoDeConexionAsync(PerfilDeConexion? perfilSugerido = null)
     {
-        var modelo = new DialogoDeConexionModeloDeVista(_servicioDeConexiones);
-        await modelo.CargarPerfilesGuardadosAsync();
+        var modelo = new DialogoDeConexionModeloDeVista(_servicioDeConexiones, _servicioDeErrores);
+        await modelo.CargarPerfilesGuardadosAsync(perfilSugerido?.Id);
 
         var dialogo = new DialogoDeConexion(modelo);
         return await dialogo.ShowDialog<ServidorConectado?>(ObtenerVentanaPrincipal());
@@ -55,6 +63,29 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
         return archivo?.TryGetLocalPath();
     }
 
+    public async Task<bool> ConfirmarAsync(string titulo, string mensaje, string textoParaAceptar, string textoParaRechazar)
+    {
+        var dialogo = new DialogoDeMensaje(
+            titulo,
+            mensaje,
+            [
+                new OpcionDeDialogo(textoParaAceptar, true, EsPrincipal: true),
+                new OpcionDeDialogo(textoParaRechazar, false, EsCancelar: true)
+            ]);
+
+        return await dialogo.ShowDialog<object?>(ObtenerVentanaPrincipal()) is true;
+    }
+
+    public async Task MostrarInformacionAsync(string titulo, string mensaje)
+    {
+        var dialogo = new DialogoDeMensaje(
+            titulo,
+            mensaje,
+            [new OpcionDeDialogo("Aceptar", true, EsPrincipal: true, EsCancelar: true)]);
+
+        await dialogo.ShowDialog<object?>(ObtenerVentanaPrincipal());
+    }
+
     public async Task<RespuestaAlCerrar> PreguntarSiGuardarCambiosAsync(string nombreDelArchivo)
     {
         var dialogo = new DialogoDeMensaje(
@@ -70,14 +101,10 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
         return respuesta is RespuestaAlCerrar respuestaElegida ? respuestaElegida : RespuestaAlCerrar.Cancelar;
     }
 
-    public async Task MostrarErrorAsync(string mensaje)
+    public Task MostrarAcercaDeAsync()
     {
-        var dialogo = new DialogoDeMensaje(
-            "Error",
-            mensaje,
-            [new OpcionDeDialogo("Aceptar", true, EsPrincipal: true, EsCancelar: true)]);
-
-        await dialogo.ShowDialog<object?>(ObtenerVentanaPrincipal());
+        var dialogo = new DialogoAcercaDe(_sistemaOperativo);
+        return dialogo.ShowDialog(ObtenerVentanaPrincipal());
     }
 
     private static Window ObtenerVentanaPrincipal() =>

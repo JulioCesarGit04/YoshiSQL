@@ -1,4 +1,5 @@
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Dominio.Conexiones;
 
 namespace YoshiSQL.Escritorio.Servicios;
 
@@ -7,7 +8,12 @@ namespace YoshiSQL.Escritorio.Servicios;
 /// </summary>
 public interface IServicioDeDialogos
 {
-    Task<ServidorConectado?> MostrarDialogoDeConexionAsync();
+    /// <param name="perfilSugerido">Conexión guardada que aparece seleccionada al abrir la ventana.</param>
+    Task<ServidorConectado?> MostrarDialogoDeConexionAsync(PerfilDeConexion? perfilSugerido = null);
+
+    Task<bool> ConfirmarAsync(string titulo, string mensaje, string textoParaAceptar, string textoParaRechazar);
+
+    Task MostrarInformacionAsync(string titulo, string mensaje);
 
     Task<string?> SeleccionarArchivoParaAbrirAsync();
 
@@ -15,5 +21,5 @@ public interface IServicioDeDialogos
 
     Task<RespuestaAlCerrar> PreguntarSiGuardarCambiosAsync(string nombreDelArchivo);
 
-    Task MostrarErrorAsync(string mensaje);
+    Task MostrarAcercaDeAsync();
 }

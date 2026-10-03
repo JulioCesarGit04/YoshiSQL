@@ -51,6 +51,11 @@
                 <MenuItem Header="Ejecutar" InputGesture="F5" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
                 <MenuItem Header="Cancelar ejecución" InputGesture="Alt+Pause" Command="{Binding ConsultaSeleccionada.CancelarCommand}" />
             </MenuItem>
+            <MenuItem Header="A_yuda">
+                <MenuItem Header="Abrir carpeta de registros" Command="{Binding AbrirCarpetaDeRegistrosCommand}" />
+                <Separator />
+                <MenuItem Header="Acerca de YoshiSQL" Command="{Binding MostrarAcercaDeCommand}" />
+            </MenuItem>
         </Menu>
 
         <!-- Barra de herramientas -->

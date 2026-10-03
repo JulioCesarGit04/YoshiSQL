@@ -3,7 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Diagramas;
+using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Dominio.Diagramas;
+using YoshiSQL.Dominio.Sesion;
+using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista.Diagramas;
 
@@ -20,17 +23,20 @@ public sealed partial class PestanaDeDiagramaModeloDeVista : DocumentoModeloDeVi
     private const double EspacioExtraDelLienzo = 300;
 
     private readonly ServicioDeDiagramas _servicioDeDiagramas;
+    private readonly IServicioDeErrores _servicioDeErrores;
     private Diagrama? _diagrama;
     private int _ultimoOrdenDeDibujo;
 
     public PestanaDeDiagramaModeloDeVista(
         ServidorConectado servidor,
         string baseDeDatos,
-        ServicioDeDiagramas servicioDeDiagramas)
+        ServicioDeDiagramas servicioDeDiagramas,
+        IServicioDeErrores servicioDeErrores)
         : base(servidor)
     {
         BaseDeDatos = baseDeDatos;
         _servicioDeDiagramas = servicioDeDiagramas;
+        _servicioDeErrores = servicioDeErrores;
     }
 
     public string BaseDeDatos { get; }
@@ -63,6 +69,9 @@ public sealed partial class PestanaDeDiagramaModeloDeVista : DocumentoModeloDeVi
     [ObservableProperty]
     public partial double AltoDelLienzo { get; private set; }
 
+    public override PestanaGuardada CrearPestanaGuardada() =>
+        new(TipoDePestana.Diagrama, Servidor.Perfil.Id, BaseDeDatos, Titulo, RutaDelArchivo: null, Texto: null, TieneCambiosSinGuardar: false);
+
     public static TamanoDeNodo MedirNodo(NodoDeTabla nodo) =>
         new(TablaDelDiagramaModeloDeVista.Ancho, TablaDelDiagramaModeloDeVista.CalcularAlto(nodo.Columnas.Count));
 
@@ -85,10 +94,10 @@ public sealed partial class PestanaDeDiagramaModeloDeVista : DocumentoModeloDeVi
                 await GuardarDisposicionAsync();
             }
         }
-        // Límite de la interfaz: el error se muestra dentro de la pestaña
+        // El error se registra y se muestra dentro de la pestaña
         catch (Exception error)
         {
-            MensajeDeError = error.Message;
+            MensajeDeError = _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Abrir diagrama"));
             TextoDeEstado = "No se pudo cargar el diagrama.";
         }
         finally
@@ -187,9 +196,12 @@ public sealed partial class PestanaDeDiagramaModeloDeVista : DocumentoModeloDeVi
         }
         catch (Exception error)
         {
-            TextoDeEstado = $"No se pudo guardar la posición de las tablas: {error.Message}";
+            TextoDeEstado = _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Guardar la posición de las tablas"));
         }
     }
+
+    private ContextoDeError CrearContextoDeError(string accion) =>
+        new(accion, Servidor.Perfil.NombreVisible, BaseDeDatos);
 
     private void RecalcularTamanoDelLienzo()
     {

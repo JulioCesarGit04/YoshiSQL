@@ -9,5 +9,6 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Authors>Julio</Authors>
     <Product>YoshiSQL</Product>
+    <Version>0.5.0</Version>
   </PropertyGroup>
 </Project>
