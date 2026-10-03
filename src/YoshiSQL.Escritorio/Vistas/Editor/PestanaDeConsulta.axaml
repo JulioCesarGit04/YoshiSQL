@@ -11,6 +11,7 @@
                              Grid.Row="0"
                              Document="{Binding Documento}"
                              Seleccion="{Binding Seleccion, Mode=OneWayToSource}"
+                             ProveedorDeSugerencias="{Binding}"
                              FontFamily="{StaticResource FuenteMonoespaciada}"
                              FontSize="14"
                              Padding="4,6,0,0"

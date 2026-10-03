@@ -24,3 +24,19 @@ public class DetectorDeCambiosDeEsquemaPruebas
         Assert.False(DetectorDeCambiosDeEsquema.ModificaBasesDeDatos(script));
     }
 }
+
+public class DetectorDeCambiosDeTablasPruebas
+{
+    [Theory]
+    [InlineData("CREATE TABLE dbo.T (Id int)", true)]
+    [InlineData("drop view dbo.V", true)]
+    [InlineData("EXEC sp_rename 'dbo.T', 'T2'", true)]
+    [InlineData("SELECT * INTO dbo.Copia FROM dbo.T", true)]
+    [InlineData("SELECT @total = COUNT(*) FROM dbo.T", false)]
+    [InlineData("INSERT INTO dbo.T VALUES (1)", false)]
+    [InlineData("SELECT * FROM dbo.Tabla", false)]
+    public void ModificaTablasOVistas_DetectaCambiosDeEstructura(string script, bool esperado)
+    {
+        Assert.Equal(esperado, DetectorDeCambiosDeEsquema.ModificaTablasOVistas(script));
+    }
+}

@@ -3,12 +3,15 @@ using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.Autocompletado;
 using YoshiSQL.Aplicacion.Consultas;
 using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
+using YoshiSQL.Dominio.Autocompletado;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Sesion;
+using YoshiSQL.Escritorio.Controles;
 using YoshiSQL.Escritorio.ModelosDeVista.Resultados;
 using YoshiSQL.Escritorio.Servicios;
 
@@ -17,11 +20,12 @@ namespace YoshiSQL.Escritorio.ModelosDeVista.Editor;
 /// <summary>
 /// Una pestaña de consulta: su documento, su conexión propia y sus resultados.
 /// </summary>
-public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVista
+public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVista, IProveedorDeSugerencias
 {
     private readonly ServicioDeEjecucion _servicioDeEjecucion;
     private readonly ServicioDelExplorador _servicioDelExplorador;
     private readonly ServicioDeFormatoSql _servicioDeFormato;
+    private readonly ServicioDeAutocompletado _servicioDeAutocompletado;
     private readonly IServicioDeErrores _servicioDeErrores;
     private ISesionDeConsulta? _sesion;
     private CancellationTokenSource? _cancelacionDeLaEjecucion;
@@ -37,6 +41,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         _servicioDeEjecucion = servicios.Ejecucion;
         _servicioDelExplorador = servicios.Explorador;
         _servicioDeFormato = servicios.Formato;
+        _servicioDeAutocompletado = servicios.Autocompletado;
         _servicioDeErrores = servicios.Errores;
         BaseDeDatosActual = baseDeDatos;
         NombreDelArchivo = nombreDelArchivo;
@@ -192,6 +197,11 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
             var resultado = await _servicioDeEjecucion.EjecutarAsync(Servidor, _sesion, fragmento, tokenDeCancelacion);
             MostrarResultado(resultado);
 
+            if (DetectorDeCambiosDeEsquema.ModificaTablasOVistas(fragmento.Texto))
+            {
+                _servicioDeAutocompletado.InvalidarCatalogo(Servidor, BaseDeDatosActual);
+            }
+
             if (DetectorDeCambiosDeEsquema.ModificaBasesDeDatos(fragmento.Texto))
             {
                 await CargarBasesDeDatosAsync();
@@ -237,6 +247,21 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         {
             Resultados.MostrarError(_servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Formatear SQL")));
             TextoDeEstado = "No se pudo formatear el código.";
+        }
+    }
+
+    public async Task<IReadOnlyList<Sugerencia>> ObtenerSugerenciasAsync(string textoCompleto, int posicionDelCursor)
+    {
+        try
+        {
+            return await _servicioDeAutocompletado.ObtenerSugerenciasAsync(
+                Servidor, BaseDeDatosActual, textoCompleto, posicionDelCursor, CancellationToken.None);
+        }
+        // Un fallo del autocompletado nunca debe interrumpir la escritura: se registra y no se sugiere nada
+        catch (Exception error)
+        {
+            _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Autocompletar"));
+            return [];
         }
     }
 

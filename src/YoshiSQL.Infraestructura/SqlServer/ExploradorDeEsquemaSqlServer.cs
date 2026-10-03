@@ -78,23 +78,46 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             lector => LeerColumna(lector, posicionInicial: 0),
             tokenDeCancelacion);
 
-    public async Task<IReadOnlyDictionary<Tabla, IReadOnlyList<Columna>>> ObtenerColumnasDeTodasLasTablasAsync(
+    public Task<IReadOnlyDictionary<Tabla, IReadOnlyList<Columna>>> ObtenerColumnasDeTodasLasTablasAsync(
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        ObtenerColumnasAgrupadasAsync(
+            datosDeAcceso, baseDeDatos, "ListarColumnasDeTodasLasTablas",
+            (esquema, nombre) => new Tabla(esquema, nombre),
+            tokenDeCancelacion);
+
+    public Task<IReadOnlyDictionary<Vista, IReadOnlyList<Columna>>> ObtenerColumnasDeTodasLasVistasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        ObtenerColumnasAgrupadasAsync(
+            datosDeAcceso, baseDeDatos, "ListarColumnasDeTodasLasVistas",
+            (esquema, nombre) => new Vista(esquema, nombre),
+            tokenDeCancelacion);
+
+    /// <summary>
+    /// Lee una consulta cuyas dos primeras columnas son esquema y objeto, seguidas de los datos de cada columna.
+    /// </summary>
+    private static async Task<IReadOnlyDictionary<TObjeto, IReadOnlyList<Columna>>> ObtenerColumnasAgrupadasAsync<TObjeto>(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        string nombreDeLaConsulta,
+        Func<string, string, TObjeto> crearObjeto,
         CancellationToken tokenDeCancelacion)
+        where TObjeto : ObjetoDeEsquema
     {
-        // Las dos primeras columnas de la consulta son el esquema y la tabla
         const int PosicionDeLaPrimeraColumnaDeDatos = 2;
 
         var filas = await LeerFilasAsync(
-            datosDeAcceso, baseDeDatos, "ListarColumnasDeTodasLasTablas", parametros: [],
+            datosDeAcceso, baseDeDatos, nombreDeLaConsulta, parametros: [],
             lector => (
-                Tabla: new Tabla(lector.GetString(0), lector.GetString(1)),
+                Objeto: crearObjeto(lector.GetString(0), lector.GetString(1)),
                 Columna: LeerColumna(lector, PosicionDeLaPrimeraColumnaDeDatos)),
             tokenDeCancelacion);
 
         return filas
-            .GroupBy(fila => fila.Tabla)
+            .GroupBy(fila => fila.Objeto)
             .ToDictionary(
                 grupo => grupo.Key,
                 grupo => (IReadOnlyList<Columna>)grupo.Select(fila => fila.Columna).ToList());

@@ -49,6 +49,14 @@ public interface IExploradorDeEsquema
         CancellationToken tokenDeCancelacion);
 
     /// <summary>
+    /// Columnas de todas las vistas de la base en una sola consulta (para el autocompletado).
+    /// </summary>
+    Task<IReadOnlyDictionary<Vista, IReadOnlyList<Columna>>> ObtenerColumnasDeTodasLasVistasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>
     /// Código con el que se creó una vista, procedimiento o función.
     /// </summary>
     /// <returns>El código, o nulo si el objeto está cifrado o no hay permiso para verlo.</returns>

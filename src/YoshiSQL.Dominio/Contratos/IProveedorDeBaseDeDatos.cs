@@ -20,6 +20,8 @@ public interface IProveedorDeBaseDeDatos
 
     IFormateadorDeSql Formateador { get; }
 
+    IAnalizadorDeContextoSql AnalizadorDeContexto { get; }
+
     /// <summary>
     /// Verifica que el servidor responda; lanza ErrorDeConexion si no es posible.
     /// </summary>

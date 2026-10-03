@@ -1,3 +1,4 @@
+using YoshiSQL.Aplicacion.Autocompletado;
 using YoshiSQL.Aplicacion.Consultas;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Escritorio.Servicios;
@@ -12,4 +13,5 @@ public sealed record ServiciosDeConsulta(
     ServicioDelExplorador Explorador,
     ServicioDeFormatoSql Formato,
     IServicioDeErrores Errores,
-    IServicioDeExportacionDeResultados Exportacion);
+    IServicioDeExportacionDeResultados Exportacion,
+    ServicioDeAutocompletado Autocompletado);
