@@ -1,0 +1,153 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Diagramas"
+             x:Class="YoshiSQL.Escritorio.Vistas.Diagramas.PestanaDeDiagrama"
+             x:DataType="vm:PestanaDeDiagramaModeloDeVista">
+
+    <DockPanel>
+        <!-- Barra del diagrama -->
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource PincelDePanel}"
+                BorderBrush="{StaticResource PincelDeBorde}"
+                BorderThickness="0,0,0,1"
+                Padding="8,4">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="Herramienta" Content="Actualizar" Command="{Binding CargarCommand}"
+                            ToolTip.Tip="Volver a leer las tablas y relaciones del servidor" />
+                    <Button Classes="Herramienta" Content="Reorganizar" Command="{Binding ReorganizarCommand}"
+                            ToolTip.Tip="Acomodar todas las tablas automáticamente" />
+                    <Rectangle Width="1" Margin="8,4" Fill="{StaticResource PincelDeBorde}" />
+                    <Button Classes="Herramienta" Content="Alejar" Command="{Binding AlejarCommand}" />
+                    <Button Classes="Herramienta" Content="{Binding ZoomVisible}" MinWidth="56"
+                            Command="{Binding RestablecerZoomCommand}" ToolTip.Tip="Volver al 100%" />
+                    <Button Classes="Herramienta" Content="Acercar" Command="{Binding AcercarCommand}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="11.5"
+                           Foreground="{StaticResource PincelDeTextoSecundario}"
+                           Text="Arrastra las tablas por su encabezado  ·  Ctrl + rueda para zoom" />
+            </Grid>
+        </Border>
+
+        <Panel Background="{StaticResource PincelDeFondo}">
+            <ScrollViewer x:Name="Desplazador"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto">
+                <LayoutTransformControl x:Name="Transformador" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Panel x:Name="Lienzo"
+                           Width="{Binding AnchoDelLienzo}"
+                           Height="{Binding AltoDelLienzo}"
+                           Background="Transparent">
+
+                        <!-- Tablas -->
+                        <ItemsControl ItemsSource="{Binding Tablas}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.Styles>
+                                <Style Selector="ItemsControl > ContentPresenter" x:DataType="vm:TablaDelDiagramaModeloDeVista">
+                                    <Setter Property="Canvas.Left" Value="{Binding X}" />
+                                    <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                                    <Setter Property="ZIndex" Value="{Binding OrdenDeDibujo}" />
+                                </Style>
+                            </ItemsControl.Styles>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:TablaDelDiagramaModeloDeVista">
+                                    <Border Width="{x:Static vm:TablaDelDiagramaModeloDeVista.Ancho}"
+                                            Background="{StaticResource PincelDePanelElevado}"
+                                            BorderBrush="#3C4148"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            BoxShadow="0 6 18 0 #55000000">
+                                        <StackPanel>
+                                            <Border Height="{x:Static vm:TablaDelDiagramaModeloDeVista.AlturaDelEncabezado}"
+                                                    Background="#30353C"
+                                                    CornerRadius="5,5,0,0"
+                                                    Padding="10,0"
+                                                    Cursor="SizeAll"
+                                                    PointerPressed="AlPresionarEncabezado"
+                                                    PointerMoved="AlMoverPuntero"
+                                                    PointerReleased="AlSoltarPuntero">
+                                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <Path Classes="Icono" Stroke="#61AFEF"
+                                                          Data="M2,3 H14 V13 H2 Z M2,6.5 H14 M2,9.75 H14 M6.5,6.5 V13" />
+                                                    <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis" MaxWidth="200" />
+                                                </StackPanel>
+                                            </Border>
+
+                                            <ItemsControl ItemsSource="{Binding Columnas}"
+                                                          Margin="0,0,0,6">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ColumnaDelDiagramaModeloDeVista">
+                                                        <Grid Height="{x:Static vm:TablaDelDiagramaModeloDeVista.AlturaDeFila}"
+                                                              ColumnDefinitions="20,*,Auto" Margin="10,0">
+                                                            <Path Classes="Icono" Width="14" Height="14" Stroke="#E5C07B"
+                                                                  IsVisible="{Binding EsLlavePrimaria}"
+                                                                  Data="M1.5,7 A2.5,2.5 0 1 0 6.5,7 A2.5,2.5 0 1 0 1.5,7 Z M6.5,7 H12.5 M10.5,7 V9 M12.5,7 V8.5" />
+                                                            <Path Classes="Icono" Width="14" Height="14" Stroke="#56B6C2"
+                                                                  IsVisible="{Binding EsLlaveForanea}"
+                                                                  Data="M1.5,7 H11 M8,4 L11,7 L8,10" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding Nombre}" FontSize="12.5"
+                                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Grid.Column="2" Text="{Binding TipoVisible}" FontSize="11.5"
+                                                                       Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Relaciones: se dibujan encima de las tablas para que ningún tramo quede oculto y confunda -->
+                        <ItemsControl ItemsSource="{Binding Relaciones}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RelacionDelDiagramaModeloDeVista">
+                                    <Canvas>
+                                        <!-- Línea ancha e invisible: facilita pasar el mouse para ver el detalle -->
+                                        <Polyline Points="{Binding Puntos}" Stroke="Transparent" StrokeThickness="6"
+                                                  ToolTip.Tip="{Binding Descripcion}" />
+                                        <Polyline Points="{Binding Puntos}" Stroke="#C08B93A0" StrokeThickness="1.4"
+                                                  StrokeJoin="Round" IsHitTestVisible="False" />
+                                        <Ellipse Width="8" Height="8" Stroke="#7D8590" StrokeThickness="1.4"
+                                                 Fill="{StaticResource PincelDeFondo}" IsHitTestVisible="False"
+                                                 Canvas.Left="{Binding MarcadorDeOrigenIzquierda}"
+                                                 Canvas.Top="{Binding MarcadorDeOrigenArriba}" />
+                                        <Ellipse Width="8" Height="8" Fill="{StaticResource PincelDeAdvertencia}"
+                                                 IsHitTestVisible="False"
+                                                 Canvas.Left="{Binding MarcadorDeDestinoIzquierda}"
+                                                 Canvas.Top="{Binding MarcadorDeDestinoArriba}" />
+                                    </Canvas>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Panel>
+                </LayoutTransformControl>
+            </ScrollViewer>
+
+            <!-- Estados: cargando, error o base sin tablas -->
+            <TextBlock IsVisible="{Binding EstaCargando}" Text="Cargando diagrama..."
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <TextBlock IsVisible="{Binding NoTieneTablas}" Text="Esta base de datos todavía no tiene tablas."
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+            <SelectableTextBlock IsVisible="{Binding MensajeDeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                 Text="{Binding MensajeDeError}" TextWrapping="Wrap" MaxWidth="520"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 Foreground="{StaticResource PincelDeError}" />
+        </Panel>
+    </DockPanel>
+</UserControl>

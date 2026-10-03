@@ -1,0 +1,344 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.Consultas;
+using YoshiSQL.Aplicacion.Diagramas;
+using YoshiSQL.Aplicacion.Explorador;
+using YoshiSQL.Aplicacion.Scripts;
+using YoshiSQL.Escritorio.ModelosDeVista.Diagramas;
+using YoshiSQL.Escritorio.ModelosDeVista.Editor;
+using YoshiSQL.Escritorio.ModelosDeVista.Explorador;
+using YoshiSQL.Escritorio.Servicios;
+
+namespace YoshiSQL.Escritorio.ModelosDeVista;
+
+public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador
+{
+    private readonly ServicioDeEjecucion _servicioDeEjecucion;
+    private readonly ServicioDelExplorador _servicioDelExplorador;
+    private readonly ServicioDeArchivosSql _servicioDeArchivosSql;
+    private readonly ServicioDeDiagramas _servicioDeDiagramas;
+    private readonly IServicioDeDialogos _servicioDeDialogos;
+    private int _contadorDeConsultasNuevas;
+
+    public VentanaPrincipalModeloDeVista(
+        ServicioDeEjecucion servicioDeEjecucion,
+        ServicioDelExplorador servicioDelExplorador,
+        ServicioDeArchivosSql servicioDeArchivosSql,
+        ServicioDeGeneracionDeScripts servicioDeGeneracionDeScripts,
+        ServicioDeDiagramas servicioDeDiagramas,
+        IServicioDeDialogos servicioDeDialogos)
+    {
+        _servicioDeDiagramas = servicioDeDiagramas;
+        _servicioDeEjecucion = servicioDeEjecucion;
+        _servicioDelExplorador = servicioDelExplorador;
+        _servicioDeArchivosSql = servicioDeArchivosSql;
+        _servicioDeDialogos = servicioDeDialogos;
+
+        var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this);
+        Explorador = new ExploradorModeloDeVista(fabricaDeNodos);
+    }
+
+    public ExploradorModeloDeVista Explorador { get; }
+
+    public ObservableCollection<DocumentoModeloDeVista> Documentos { get; } = [];
+
+    public bool HayDocumentosAbiertos => Documentos.Count > 0;
+
+    public bool NoHayDocumentosAbiertos => Documentos.Count == 0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ConsultaSeleccionada), nameof(HayConsultaSeleccionada))]
+    public partial DocumentoModeloDeVista? DocumentoSeleccionado { get; set; }
+
+    /// <summary>
+    /// La pestaña seleccionada si es una consulta; los botones Ejecutar, Guardar y la lista
+    /// de bases de datos solo aplican a consultas.
+    /// </summary>
+    public PestanaDeConsultaModeloDeVista? ConsultaSeleccionada => DocumentoSeleccionado as PestanaDeConsultaModeloDeVista;
+
+    public bool HayConsultaSeleccionada => ConsultaSeleccionada is not null;
+
+    [RelayCommand]
+    private async Task ConectarAsync()
+    {
+        var servidor = await _servicioDeDialogos.MostrarDialogoDeConexionAsync();
+
+        if (servidor is null)
+        {
+            return;
+        }
+
+        Explorador.AgregarServidor(servidor);
+
+        if (NoHayDocumentosAbiertos)
+        {
+            await AbrirNuevaConsultaAsync(new ContextoDelNodo(servidor), string.Empty, ejecutarAlAbrir: false);
+        }
+    }
+
+    [RelayCommand]
+    private async Task NuevaConsultaAsync()
+    {
+        var contexto = await ObtenerOSolicitarContextoAsync();
+
+        if (contexto is not null)
+        {
+            await AbrirNuevaConsultaAsync(contexto, string.Empty, ejecutarAlAbrir: false);
+        }
+    }
+
+    [RelayCommand]
+    private async Task AbrirArchivoAsync()
+    {
+        var rutaDelArchivo = await _servicioDeDialogos.SeleccionarArchivoParaAbrirAsync();
+
+        if (rutaDelArchivo is null)
+        {
+            return;
+        }
+
+        var contexto = await ObtenerOSolicitarContextoAsync();
+
+        if (contexto is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var contenido = await _servicioDeArchivosSql.AbrirAsync(rutaDelArchivo, CancellationToken.None);
+            var pestana = await AgregarPestanaAsync(contexto, contenido);
+            pestana.MarcarComoGuardado(rutaDelArchivo);
+        }
+        catch (Exception error)
+        {
+            await _servicioDeDialogos.MostrarErrorAsync($"No se pudo abrir el archivo.\n{error.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task GuardarAsync()
+    {
+        if (ConsultaSeleccionada is { } pestana)
+        {
+            await GuardarPestanaAsync(pestana, pedirUbicacion: pestana.RutaDelArchivo is null);
+        }
+    }
+
+    [RelayCommand]
+    private async Task GuardarComoAsync()
+    {
+        if (ConsultaSeleccionada is { } pestana)
+        {
+            await GuardarPestanaAsync(pestana, pedirUbicacion: true);
+        }
+    }
+
+    [RelayCommand]
+    private async Task CerrarPestanaAsync(DocumentoModeloDeVista? documento)
+    {
+        documento ??= DocumentoSeleccionado;
+
+        if (documento is not null && await ConfirmarCierreAsync(documento))
+        {
+            await QuitarDocumentoAsync(documento);
+        }
+    }
+
+    /// <summary>
+    /// Pregunta por los cambios sin guardar de cada pestaña antes de cerrar la aplicación.
+    /// </summary>
+    /// <returns>true si la aplicación puede cerrarse.</returns>
+    public async Task<bool> PrepararCierreAsync()
+    {
+        foreach (var documento in Documentos.ToList())
+        {
+            DocumentoSeleccionado = documento;
+
+            if (!await ConfirmarCierreAsync(documento))
+            {
+                return false;
+            }
+        }
+
+        foreach (var documento in Documentos)
+        {
+            await documento.DisposeAsync();
+        }
+
+        return true;
+    }
+
+    public async Task AbrirNuevaConsultaAsync(ContextoDelNodo contexto, string textoInicial, bool ejecutarAlAbrir)
+    {
+        var pestana = await AgregarPestanaAsync(contexto, textoInicial);
+
+        if (ejecutarAlAbrir)
+        {
+            await pestana.EjecutarCommand.ExecuteAsync(null);
+        }
+    }
+
+    /// <summary>
+    /// Abre el diagrama de la base de datos; si ya está abierto, solo lo selecciona.
+    /// </summary>
+    public async Task AbrirDiagramaAsync(ContextoDelNodo contexto)
+    {
+        var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
+        var diagramaAbierto = Documentos
+            .OfType<PestanaDeDiagramaModeloDeVista>()
+            .FirstOrDefault(diagrama => diagrama.Servidor == contexto.Servidor && diagrama.BaseDeDatos == baseDeDatos);
+
+        if (diagramaAbierto is not null)
+        {
+            DocumentoSeleccionado = diagramaAbierto;
+            return;
+        }
+
+        var diagrama = new PestanaDeDiagramaModeloDeVista(contexto.Servidor, baseDeDatos, _servicioDeDiagramas);
+        AgregarDocumento(diagrama);
+        await diagrama.CargarCommand.ExecuteAsync(null);
+    }
+
+    public void DesconectarServidor(ContextoDelNodo contexto) => Explorador.QuitarServidor(contexto.Servidor);
+
+    public Task MostrarErrorAsync(string mensaje) => _servicioDeDialogos.MostrarErrorAsync(mensaje);
+
+    private async Task<PestanaDeConsultaModeloDeVista> AgregarPestanaAsync(ContextoDelNodo contexto, string textoInicial)
+    {
+        _contadorDeConsultasNuevas++;
+
+        var pestana = new PestanaDeConsultaModeloDeVista(
+            contexto.Servidor,
+            contexto.BaseDeDatosOPredeterminada,
+            $"SQLQuery{_contadorDeConsultasNuevas}.sql",
+            _servicioDeEjecucion,
+            _servicioDelExplorador);
+
+        pestana.CargarTexto(textoInicial);
+        pestana.BasesDeDatosModificadas += ActualizarBasesDeDatosDelExplorador;
+        AgregarDocumento(pestana);
+
+        await pestana.CargarBasesDeDatosAsync();
+        return pestana;
+    }
+
+    private void AgregarDocumento(DocumentoModeloDeVista documento)
+    {
+        Documentos.Add(documento);
+        DocumentoSeleccionado = documento;
+        NotificarCambioDeDocumentos();
+    }
+
+    private async Task QuitarDocumentoAsync(DocumentoModeloDeVista documento)
+    {
+        var indice = Documentos.IndexOf(documento);
+
+        if (documento is PestanaDeConsultaModeloDeVista pestana)
+        {
+            pestana.BasesDeDatosModificadas -= ActualizarBasesDeDatosDelExplorador;
+        }
+
+        Documentos.Remove(documento);
+
+        if (DocumentoSeleccionado is null || DocumentoSeleccionado == documento)
+        {
+            DocumentoSeleccionado = Documentos.Count == 0 ? null : Documentos[Math.Min(indice, Documentos.Count - 1)];
+        }
+
+        NotificarCambioDeDocumentos();
+        await documento.DisposeAsync();
+    }
+
+    private async void ActualizarBasesDeDatosDelExplorador(object? remitente, EventArgs argumentos)
+    {
+        if (remitente is not PestanaDeConsultaModeloDeVista pestana)
+        {
+            return;
+        }
+
+        // Manejador de evento asíncrono: los errores se muestran en lugar de perderse
+        try
+        {
+            await Explorador.ActualizarBasesDeDatosAsync(pestana.Servidor);
+        }
+        catch (Exception error)
+        {
+            await _servicioDeDialogos.MostrarErrorAsync(error.Message);
+        }
+    }
+
+    /// <summary>
+    /// Solo las consultas con cambios sin guardar piden confirmación; los diagramas se guardan solos.
+    /// </summary>
+    private async Task<bool> ConfirmarCierreAsync(DocumentoModeloDeVista documento)
+    {
+        if (documento is not PestanaDeConsultaModeloDeVista { TieneCambiosSinGuardar: true } pestana)
+        {
+            return true;
+        }
+
+        var respuesta = await _servicioDeDialogos.PreguntarSiGuardarCambiosAsync(pestana.NombreDelArchivo);
+
+        return respuesta switch
+        {
+            RespuestaAlCerrar.Guardar => await GuardarPestanaAsync(pestana, pedirUbicacion: pestana.RutaDelArchivo is null),
+            RespuestaAlCerrar.NoGuardar => true,
+            _ => false
+        };
+    }
+
+    /// <returns>true si el archivo quedó guardado.</returns>
+    private async Task<bool> GuardarPestanaAsync(PestanaDeConsultaModeloDeVista pestana, bool pedirUbicacion)
+    {
+        var rutaDelArchivo = pedirUbicacion
+            ? await _servicioDeDialogos.SeleccionarArchivoParaGuardarAsync(pestana.NombreDelArchivo)
+            : pestana.RutaDelArchivo;
+
+        if (rutaDelArchivo is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var rutaFinal = await _servicioDeArchivosSql.GuardarAsync(rutaDelArchivo, pestana.Documento.Text, CancellationToken.None);
+            pestana.MarcarComoGuardado(rutaFinal);
+            return true;
+        }
+        catch (Exception error)
+        {
+            await _servicioDeDialogos.MostrarErrorAsync($"No se pudo guardar el archivo.\n{error.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Si no hay ningún servidor conectado, abre la ventana de conexión primero.
+    /// </summary>
+    private async Task<ContextoDelNodo?> ObtenerOSolicitarContextoAsync()
+    {
+        if (Explorador.ContextoActual is { } contexto)
+        {
+            return contexto;
+        }
+
+        var servidor = await _servicioDeDialogos.MostrarDialogoDeConexionAsync();
+
+        if (servidor is null)
+        {
+            return null;
+        }
+
+        Explorador.AgregarServidor(servidor);
+        return new ContextoDelNodo(servidor);
+    }
+
+    private void NotificarCambioDeDocumentos()
+    {
+        OnPropertyChanged(nameof(HayDocumentosAbiertos));
+        OnPropertyChanged(nameof(NoHayDocumentosAbiertos));
+    }
+}

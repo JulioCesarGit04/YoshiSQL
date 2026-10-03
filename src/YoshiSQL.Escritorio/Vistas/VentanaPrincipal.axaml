@@ -1,0 +1,152 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista"
+        xmlns:editor="using:YoshiSQL.Escritorio.ModelosDeVista.Editor"
+        xmlns:vistasExplorador="using:YoshiSQL.Escritorio.Vistas.Explorador"
+        xmlns:vistasEditor="using:YoshiSQL.Escritorio.Vistas.Editor"
+        xmlns:diagramas="using:YoshiSQL.Escritorio.ModelosDeVista.Diagramas"
+        xmlns:vistasDiagramas="using:YoshiSQL.Escritorio.Vistas.Diagramas"
+        x:Class="YoshiSQL.Escritorio.Vistas.VentanaPrincipal"
+        x:DataType="vm:VentanaPrincipalModeloDeVista"
+        Title="YoshiSQL"
+        Width="1360" Height="820"
+        MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+
+    <!-- Vista de cada tipo de documento que se abre en una pestaña -->
+    <Window.DataTemplates>
+        <DataTemplate DataType="editor:PestanaDeConsultaModeloDeVista">
+            <vistasEditor:PestanaDeConsulta />
+        </DataTemplate>
+        <DataTemplate DataType="diagramas:PestanaDeDiagramaModeloDeVista">
+            <vistasDiagramas:PestanaDeDiagrama />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="F5" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
+        <KeyBinding Gesture="Alt+Pause" Command="{Binding ConsultaSeleccionada.CancelarCommand}" />
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding NuevaConsultaCommand}" />
+        <KeyBinding Gesture="Ctrl+O" Command="{Binding AbrirArchivoCommand}" />
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding GuardarCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding GuardarComoCommand}" />
+        <KeyBinding Gesture="Ctrl+W" Command="{Binding CerrarPestanaCommand}" />
+    </Window.KeyBindings>
+
+    <DockPanel>
+        <!-- Menú -->
+        <Menu DockPanel.Dock="Top" Background="{StaticResource PincelDePanel}" Padding="4,0">
+            <MenuItem Header="_Archivo">
+                <MenuItem Header="Conectar al servidor..." Command="{Binding ConectarCommand}" />
+                <Separator />
+                <MenuItem Header="Nueva consulta" InputGesture="Ctrl+N" Command="{Binding NuevaConsultaCommand}" />
+                <MenuItem Header="Abrir..." InputGesture="Ctrl+O" Command="{Binding AbrirArchivoCommand}" />
+                <MenuItem Header="Guardar" InputGesture="Ctrl+S" Command="{Binding GuardarCommand}" />
+                <MenuItem Header="Guardar como..." InputGesture="Ctrl+Shift+S" Command="{Binding GuardarComoCommand}" />
+                <Separator />
+                <MenuItem Header="Cerrar pestaña" InputGesture="Ctrl+W" Command="{Binding CerrarPestanaCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Consulta">
+                <MenuItem Header="Ejecutar" InputGesture="F5" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
+                <MenuItem Header="Cancelar ejecución" InputGesture="Alt+Pause" Command="{Binding ConsultaSeleccionada.CancelarCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- Barra de herramientas -->
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource PincelDePanel}"
+                BorderBrush="{StaticResource PincelDeBorde}"
+                BorderThickness="0,0,0,1"
+                Padding="8,4">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Classes="Herramienta" Content="Conectar" Command="{Binding ConectarCommand}" />
+                <Button Classes="Herramienta" Content="Nueva consulta" Command="{Binding NuevaConsultaCommand}" />
+                <Button Classes="Herramienta" Content="Abrir" Command="{Binding AbrirArchivoCommand}" />
+                <Button Classes="Herramienta" Content="Guardar" Command="{Binding GuardarCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" />
+
+                <Rectangle Width="1" Margin="8,4" Fill="{StaticResource PincelDeBorde}" />
+
+                <ComboBox MinWidth="180"
+                          VerticalAlignment="Center"
+                          IsEnabled="{Binding HayConsultaSeleccionada}"
+                          ItemsSource="{Binding ConsultaSeleccionada.BasesDeDatosDisponibles}"
+                          SelectedItem="{Binding ConsultaSeleccionada.BaseDeDatosSeleccionada}"
+                          ToolTip.Tip="Base de datos de la pestaña actual" />
+
+                <Button Classes="Herramienta Ejecutar" Content="Ejecutar (F5)"
+                        Command="{Binding ConsultaSeleccionada.EjecutarCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <Button Classes="Herramienta" Content="Cancelar"
+                        Command="{Binding ConsultaSeleccionada.CancelarCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Barra de estado -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{StaticResource PincelDePanel}"
+                BorderBrush="{StaticResource PincelDeBorde}"
+                BorderThickness="0,1,0,0"
+                Padding="12,4">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                <Ellipse Grid.Column="0" Width="8" Height="8" Margin="0,0,8,0"
+                         Fill="{StaticResource PincelDeAcento}" />
+                <TextBlock Grid.Column="1" Text="{Binding DocumentoSeleccionado.TextoDeEstado, FallbackValue='Sin conexión'}" />
+                <TextBlock Grid.Column="2" Margin="24,0,0,0" Foreground="{StaticResource PincelDeTextoSecundario}"
+                           Text="{Binding DocumentoSeleccionado.DescripcionDeLaConexion, FallbackValue=''}" />
+                <TextBlock Grid.Column="3" Margin="24,0,0,0" Foreground="{StaticResource PincelDeTextoSecundario}"
+                           Text="{Binding ConsultaSeleccionada.BaseDeDatosActual, FallbackValue=''}" />
+                <TextBlock Grid.Column="4" Margin="24,0,0,0" Foreground="{StaticResource PincelDeTextoSecundario}"
+                           Text="{Binding ConsultaSeleccionada.DuracionVisible, FallbackValue=''}" />
+                <TextBlock Grid.Column="5" Margin="24,0,0,0" Foreground="{StaticResource PincelDeTextoSecundario}"
+                           Text="{Binding ConsultaSeleccionada.TotalDeFilas, StringFormat='{}{0} filas', FallbackValue=''}" />
+            </Grid>
+        </Border>
+
+        <!-- Explorador a la izquierda, documentos a la derecha -->
+        <Grid ColumnDefinitions="300,1,*">
+            <vistasExplorador:PanelDelExplorador Grid.Column="0" DataContext="{Binding Explorador}" />
+
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+            <Panel Grid.Column="2">
+                <StackPanel IsVisible="{Binding NoHayDocumentosAbiertos}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                    <TextBlock Text="YoshiSQL" FontSize="34" FontWeight="Light"
+                               Foreground="{StaticResource PincelDeAcento}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Conéctate a un servidor para empezar"
+                               Foreground="{StaticResource PincelDeTextoSecundario}" HorizontalAlignment="Center" />
+                    <Button Classes="Primario" Content="Conectar al servidor" HorizontalAlignment="Center"
+                            Margin="0,8,0,0" Command="{Binding ConectarCommand}" />
+                    <TextBlock Text="Ctrl+N nueva consulta  ·  F5 ejecutar  ·  Ctrl+S guardar"
+                               FontSize="11.5" Margin="0,12,0,0"
+                               Foreground="{StaticResource PincelDeTextoSecundario}" HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <TabControl Classes="Documentos"
+                            IsVisible="{Binding HayDocumentosAbiertos}"
+                            ItemsSource="{Binding Documentos}"
+                            SelectedItem="{Binding DocumentoSeleccionado}"
+                            Padding="0">
+                    <TabControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:DocumentoModeloDeVista">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center"
+                                           ToolTip.Tip="{Binding InformacionAdicional}" />
+                                <Button Classes="Herramienta" Padding="4"
+                                        ToolTip.Tip="Cerrar (Ctrl+W)"
+                                        Command="{Binding $parent[TabControl].((vm:VentanaPrincipalModeloDeVista)DataContext).CerrarPestanaCommand}"
+                                        CommandParameter="{Binding}">
+                                    <Path Data="M3,3 L9,9 M9,3 L3,9" Stroke="{StaticResource PincelDeTextoSecundario}"
+                                          StrokeThickness="1.3" StrokeLineCap="Round" Width="12" Height="12" />
+                                </Button>
+                            </StackPanel>
+                        </DataTemplate>
+                    </TabControl.ItemTemplate>
+                </TabControl>
+            </Panel>
+        </Grid>
+    </DockPanel>
+</Window>

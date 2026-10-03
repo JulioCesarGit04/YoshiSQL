@@ -1,0 +1,97 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Conexiones"
+        xmlns:conexiones="using:YoshiSQL.Dominio.Conexiones"
+        x:Class="YoshiSQL.Escritorio.Vistas.Conexiones.DialogoDeConexion"
+        x:DataType="vm:DialogoDeConexionModeloDeVista"
+        Title="Conectar al servidor"
+        Width="500" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel>
+        <!-- Encabezado -->
+        <Border Background="{StaticResource PincelDePanel}" Padding="24,18"
+                BorderBrush="{StaticResource PincelDeBorde}" BorderThickness="0,0,0,1">
+            <StackPanel Spacing="2">
+                <TextBlock Text="YoshiSQL" FontSize="22" FontWeight="Light" Foreground="{StaticResource PincelDeAcento}" />
+                <TextBlock Text="Conectar a SQL Server" Foreground="{StaticResource PincelDeTextoSecundario}" />
+            </StackPanel>
+        </Border>
+
+        <Grid Margin="24,18,24,8"
+              ColumnDefinitions="140,*"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+              RowSpacing="10">
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Conexión guardada" VerticalAlignment="Center"
+                       IsVisible="{Binding TienePerfilesGuardados}" />
+            <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6"
+                  IsVisible="{Binding TienePerfilesGuardados}">
+                <ComboBox HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding PerfilesGuardados}"
+                          SelectedItem="{Binding PerfilSeleccionado}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="conexiones:PerfilDeConexion">
+                            <TextBlock>
+                                <Run Text="{Binding NombreVisible}" />
+                                <Run Text="{Binding Usuario}" Foreground="{StaticResource PincelDeTextoSecundario}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="1" Content="Olvidar" Command="{Binding OlvidarPerfilCommand}"
+                        ToolTip.Tip="Eliminar esta conexión guardada y su contraseña" />
+            </Grid>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Servidor" VerticalAlignment="Center" />
+            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,90" ColumnSpacing="6">
+                <TextBox Text="{Binding Servidor}" PlaceholderText="localhost" />
+                <TextBox Grid.Column="1" Text="{Binding Puerto}" PlaceholderText="1433" ToolTip.Tip="Puerto" />
+            </Grid>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Autenticación" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding OpcionesDeAutenticacion}"
+                      SelectedItem="{Binding AutenticacionSeleccionada}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:OpcionDeAutenticacion">
+                        <TextBlock Text="{Binding Descripcion}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Usuario" VerticalAlignment="Center" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Usuario}"
+                     IsEnabled="{Binding UsaAutenticacionDeSqlServer}" />
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Contraseña" VerticalAlignment="Center" />
+            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Contrasena}" PasswordChar="•"
+                     IsEnabled="{Binding UsaAutenticacionDeSqlServer}" />
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="Base de datos" VerticalAlignment="Center" />
+            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding BaseDeDatos}" PlaceholderText="master" />
+
+            <StackPanel Grid.Row="6" Grid.Column="1" Spacing="2">
+                <CheckBox Content="Recordar contraseña" IsChecked="{Binding RecordarContrasena}" />
+                <CheckBox Content="Confiar en el certificado del servidor" IsChecked="{Binding ConfiarEnCertificadoDelServidor}"
+                          ToolTip.Tip="Necesario para instalaciones locales que usan un certificado autofirmado" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Margin="24,0,24,8" TextWrapping="Wrap"
+                   Foreground="{StaticResource PincelDeError}"
+                   Text="{Binding MensajeDeError}"
+                   IsVisible="{Binding MensajeDeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        <ProgressBar Margin="24,0" IsIndeterminate="True" IsVisible="{Binding EstaConectando}" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="24,12,24,20">
+            <Button Classes="Primario" Content="Conectar" IsDefault="True" MinWidth="100"
+                    Command="{Binding ConectarCommand}" />
+            <Button Content="Cancelar" IsCancel="True" MinWidth="100"
+                    Command="{Binding CancelarCommand}" />
+        </StackPanel>
+    </StackPanel>
+</Window>

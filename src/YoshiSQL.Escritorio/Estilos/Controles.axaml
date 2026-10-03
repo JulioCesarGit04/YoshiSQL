@@ -1,0 +1,80 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{StaticResource PincelDeFondo}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <!-- Encabezado de un panel, ej. "Explorador de objetos" -->
+    <Style Selector="TextBlock.TituloDePanel">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource PincelDeTextoSecundario}" />
+        <Setter Property="LetterSpacing" Value="0.6" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Botones planos de la barra de herramientas -->
+    <Style Selector="Button.Herramienta">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="Button.Herramienta:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PincelDePanelElevado}" />
+    </Style>
+    <Style Selector="Button.Herramienta:disabled /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="Button.Ejecutar">
+        <Setter Property="Foreground" Value="{StaticResource PincelDeAcento}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.Primario">
+        <Setter Property="Background" Value="{StaticResource PincelDeAcento}" />
+        <Setter Property="Foreground" Value="#10130F" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Path.Icono">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="StrokeThickness" Value="1.25" />
+        <Setter Property="StrokeLineCap" Value="Round" />
+        <Setter Property="StrokeJoin" Value="Round" />
+        <Setter Property="Stretch" Value="None" />
+    </Style>
+
+    <Style Selector="GridSplitter">
+        <Setter Property="Background" Value="{StaticResource PincelDeBorde}" />
+    </Style>
+
+    <Style Selector="TabControl.Documentos > TabItem">
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="12,0,6,0" />
+    </Style>
+
+    <Style Selector="TabControl.Resultados > TabItem">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="10,0" />
+    </Style>
+
+    <Style Selector="DataGrid">
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="GridLinesVisibility" Value="All" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource PincelDeBorde}" />
+        <Setter Property="VerticalGridLinesBrush" Value="{StaticResource PincelDeBorde}" />
+    </Style>
+
+    <Style Selector="TreeViewItem">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+</Styles>

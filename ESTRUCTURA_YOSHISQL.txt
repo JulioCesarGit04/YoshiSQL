@@ -1,0 +1,403 @@
+================================================================================
+                                   YoshiSQL
+              Entorno gráfico de escritorio para SQL Server en Linux
+                         C# + .NET 10 + Avalonia UI (MVVM)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. ARQUITECTURA EN CAPAS
+--------------------------------------------------------------------------------
+
+    ┌──────────────────────────────────────────────────────────┐
+    │  YoshiSQL.Escritorio      (Interfaz gráfica - Avalonia)  │
+    └────────────────────────────┬─────────────────────────────┘
+                                 │ usa
+    ┌────────────────────────────▼─────────────────────────────┐
+    │  YoshiSQL.Aplicacion      (Casos de uso / servicios)     │
+    └────────────────────────────┬─────────────────────────────┘
+                                 │ usa
+    ┌────────────────────────────▼─────────────────────────────┐
+    │  YoshiSQL.Dominio         (Entidades y contratos)        │
+    └────────────────────────────▲─────────────────────────────┘
+                                 │ implementa
+    ┌────────────────────────────┴─────────────────────────────┐
+    │  YoshiSQL.Infraestructura (SQL Server, disco, seguridad) │
+    └──────────────────────────────────────────────────────────┘
+
+    Regla de oro: las dependencias siempre apuntan hacia el Dominio.
+    - Dominio:          no depende de NADA (ni de SQL Server, ni de Avalonia).
+    - Aplicacion:       solo conoce al Dominio (trabaja con interfaces).
+    - Infraestructura:  implementa las interfaces del Dominio.
+    - Escritorio:       muestra datos y llama a la Aplicacion; nunca escribe SQL.
+
+    Así, si mañana se agrega PostgreSQL, solo se crea una carpeta nueva en
+    Infraestructura (ej. Infraestructura/PostgreSql/) sin tocar lo demás.
+
+
+--------------------------------------------------------------------------------
+2. ESTRUCTURA DE CARPETAS Y ARCHIVOS
+--------------------------------------------------------------------------------
+
+YoshiSQL/
+│
+├── YoshiSQL.sln                          Solución que agrupa todos los proyectos
+├── Directory.Build.props                 Configuración común (nullable, advertencias como errores)
+├── .editorconfig                         Reglas de estilo y nombres de código
+├── .gitignore
+├── README.md
+│
+├── docs/
+│   ├── Arquitectura.md                   Explicación de las capas y sus reglas
+│   ├── Convenciones.md                   Reglas de nombres y estilo (sección 3 de este archivo)
+│   └── HojaDeRuta.md                     Fases del proyecto y funciones pendientes
+│
+├── src/
+│   │
+│   ├── YoshiSQL.Dominio/                 ── CAPA 1: el corazón, sin dependencias externas
+│   │   ├── YoshiSQL.Dominio.csproj
+│   │   │
+│   │   ├── Esquema/                      Objetos que existen dentro del servidor
+│   │   │   ├── Servidor.cs
+│   │   │   ├── BaseDeDatos.cs
+│   │   │   ├── Tabla.cs
+│   │   │   ├── Vista.cs
+│   │   │   ├── ProcedimientoAlmacenado.cs
+│   │   │   ├── Funcion.cs
+│   │   │   ├── Columna.cs
+│   │   │   ├── TipoDeDato.cs
+│   │   │   ├── Indice.cs
+│   │   │   ├── LlavePrimaria.cs
+│   │   │   ├── LlaveForanea.cs
+│   │   │   └── TipoDeObjeto.cs           enum: Tabla, Vista, Procedimiento, Funcion...
+│   │   │
+│   │   ├── Conexiones/
+│   │   │   ├── PerfilDeConexion.cs       Servidor, puerto, usuario, base por defecto
+│   │   │   └── TipoDeAutenticacion.cs    enum: SqlServer, Windows
+│   │   │
+│   │   ├── Consultas/
+│   │   │   ├── LoteSql.cs                Un bloque de código separado por GO
+│   │   │   ├── ResultadoDeEjecucion.cs   Resultado completo de ejecutar un script
+│   │   │   ├── ConjuntoDeResultados.cs   Una tabla de resultados (columnas + filas)
+│   │   │   ├── MensajeDeEjecucion.cs     "(5 filas afectadas)", errores, avisos
+│   │   │   ├── TipoDeMensaje.cs          enum: Informacion, Advertencia, Error
+│   │   │   └── EstadoDeEjecucion.cs      enum: Ejecutando, Completada, Cancelada, Fallida
+│   │   │
+│   │   ├── Diagramas/
+│   │   │   ├── Diagrama.cs
+│   │   │   ├── NodoDeTabla.cs            Tabla dibujada con su posición X, Y
+│   │   │   └── RelacionEntreTablas.cs    Línea que representa una llave foránea
+│   │   │
+│   │   ├── Contratos/                    Interfaces: QUÉ se hace, no CÓMO
+│   │   │   ├── IProveedorDeBaseDeDatos.cs     Agrupa todo lo de un motor (SQL Server)
+│   │   │   ├── IExploradorDeEsquema.cs        Listar bases, tablas, columnas...
+│   │   │   ├── IEjecutorDeConsultas.cs        Ejecutar y cancelar SQL
+│   │   │   ├── IDivisorDeLotes.cs             Separar el script por GO
+│   │   │   ├── IGeneradorDeScripts.cs         Generar CREATE TABLE, SELECT TOP 1000...
+│   │   │   ├── IRepositorioDeConexiones.cs    Guardar/leer perfiles de conexión
+│   │   │   ├── IAlmacenDeCredenciales.cs      Guardar contraseñas de forma segura
+│   │   │   ├── IRepositorioDeScripts.cs       Abrir/guardar archivos .sql
+│   │   │   └── IRepositorioDeDiagramas.cs     Guardar/leer diagramas
+│   │   │
+│   │   └── Errores/
+│   │       ├── ErrorDeYoshiSql.cs        Excepción base del proyecto
+│   │       ├── ErrorDeConexion.cs
+│   │       └── ErrorDeEjecucion.cs
+│   │
+│   ├── YoshiSQL.Aplicacion/              ── CAPA 2: casos de uso (lo que el usuario puede hacer)
+│   │   ├── YoshiSQL.Aplicacion.csproj
+│   │   │
+│   │   ├── Conexiones/
+│   │   │   ├── ServicioDeConexiones.cs   Conectar, desconectar, probar conexión
+│   │   │   └── SesionActiva.cs           Conexión abierta en este momento
+│   │   │
+│   │   ├── Explorador/
+│   │   │   └── ServicioDelExplorador.cs  Carga perezosa del árbol de objetos
+│   │   │
+│   │   ├── Consultas/
+│   │   │   ├── ServicioDeEjecucion.cs    Ejecutar todo o solo la selección
+│   │   │   └── HistorialDeConsultas.cs   Últimas consultas ejecutadas
+│   │   │
+│   │   ├── Scripts/
+│   │   │   └── ServicioDeArchivosSql.cs  Nuevo, abrir, guardar, guardar como
+│   │   │
+│   │   ├── DisenoDeTablas/
+│   │   │   ├── ServicioDeDisenoDeTablas.cs
+│   │   │   └── DefinicionDeTablaNueva.cs Datos que llena el usuario en el diseñador
+│   │   │
+│   │   ├── Diagramas/
+│   │   │   └── ServicioDeDiagramas.cs    Construir diagrama a partir de las llaves foráneas
+│   │   │
+│   │   └── RegistroDeServicios.cs        Registra los servicios en el contenedor de dependencias
+│   │
+│   ├── YoshiSQL.Infraestructura/         ── CAPA 3: detalles técnicos (implementaciones)
+│   │   ├── YoshiSQL.Infraestructura.csproj
+│   │   │
+│   │   ├── SqlServer/
+│   │   │   ├── ProveedorSqlServer.cs
+│   │   │   ├── ExploradorDeEsquemaSqlServer.cs
+│   │   │   ├── EjecutorDeConsultasSqlServer.cs      Usa Microsoft.Data.SqlClient
+│   │   │   ├── DivisorDeLotesTSql.cs                Usa ScriptDom (parser oficial T-SQL)
+│   │   │   ├── GeneradorDeScriptsSqlServer.cs
+│   │   │   ├── ConstructorDeCadenaDeConexion.cs
+│   │   │   ├── TraductorDeErroresSqlServer.cs       Convierte SqlException en ErrorDeEjecucion
+│   │   │   │
+│   │   │   └── ConsultasDeCatalogo/                 SQL embebido (no escrito dentro del C#)
+│   │   │       ├── ListarBasesDeDatos.sql
+│   │   │       ├── ListarTablas.sql
+│   │   │       ├── ListarVistas.sql
+│   │   │       ├── ListarProcedimientos.sql
+│   │   │       ├── ListarFunciones.sql
+│   │   │       ├── ListarColumnas.sql
+│   │   │       ├── ListarIndices.sql
+│   │   │       └── ListarLlavesForaneas.sql
+│   │   │
+│   │   ├── Persistencia/
+│   │   │   ├── RutasDeLaAplicacion.cs               ~/.config/yoshisql/
+│   │   │   ├── RepositorioDeConexionesJson.cs       conexiones.json (sin contraseñas)
+│   │   │   ├── RepositorioDeScriptsEnDisco.cs
+│   │   │   └── RepositorioDeDiagramasJson.cs
+│   │   │
+│   │   ├── Seguridad/
+│   │   │   └── AlmacenDeCredencialesCifrado.cs      Contraseñas cifradas, nunca en texto plano
+│   │   │
+│   │   └── RegistroDeInfraestructura.cs
+│   │
+│   └── YoshiSQL.Escritorio/              ── CAPA 4: interfaz gráfica (Avalonia + MVVM)
+│       ├── YoshiSQL.Escritorio.csproj
+│       ├── Program.cs                    Punto de entrada
+│       ├── App.axaml
+│       ├── App.axaml.cs
+│       ├── ContenedorDeDependencias.cs   Une todas las capas al iniciar
+│       │
+│       ├── Vistas/                       Lo que se ve (.axaml = diseño visual)
+│       │   ├── VentanaPrincipal.axaml
+│       │   ├── VentanaPrincipal.axaml.cs
+│       │   ├── BarraDeHerramientas.axaml
+│       │   ├── BarraDeEstado.axaml       Servidor, base actual, tiempo, filas
+│       │   ├── Explorador/
+│       │   │   └── PanelDelExplorador.axaml          Árbol desplegable estilo SSMS
+│       │   ├── Editor/
+│       │   │   └── PestanaDeConsulta.axaml           Editor + resultados en una pestaña
+│       │   ├── Resultados/
+│       │   │   ├── PanelDeResultados.axaml
+│       │   │   ├── GrillaDeResultados.axaml
+│       │   │   └── PanelDeMensajes.axaml
+│       │   ├── Conexiones/
+│       │   │   └── DialogoDeConexion.axaml
+│       │   ├── DisenoDeTablas/
+│       │   │   └── DisenadorDeTablas.axaml
+│       │   └── Diagramas/
+│       │       └── LienzoDelDiagrama.axaml
+│       │
+│       ├── ModelosDeVista/               La lógica de cada vista (sin código visual)
+│       │   ├── ModeloDeVistaBase.cs
+│       │   ├── VentanaPrincipalModeloDeVista.cs
+│       │   ├── Explorador/
+│       │   │   ├── ExploradorModeloDeVista.cs
+│       │   │   └── NodoDelArbolModeloDeVista.cs
+│       │   ├── Editor/
+│       │   │   └── PestanaDeConsultaModeloDeVista.cs
+│       │   ├── Resultados/
+│       │   │   └── ResultadosModeloDeVista.cs
+│       │   ├── Conexiones/
+│       │   │   └── DialogoDeConexionModeloDeVista.cs
+│       │   ├── DisenoDeTablas/
+│       │   │   └── DisenadorDeTablasModeloDeVista.cs
+│       │   └── Diagramas/
+│       │       └── DiagramaModeloDeVista.cs
+│       │
+│       ├── Controles/                    Componentes visuales reutilizables
+│       │   ├── EditorSql.cs              Envoltura de AvaloniaEdit
+│       │   └── ResaltadoTSql.xshd        Colores de palabras clave T-SQL
+│       │
+│       ├── Convertidores/
+│       │   ├── BooleanoAVisibilidad.cs
+│       │   └── TipoDeObjetoAIcono.cs
+│       │
+│       ├── Estilos/
+│       │   ├── TemaOscuro.axaml
+│       │   ├── TemaClaro.axaml
+│       │   ├── Colores.axaml
+│       │   └── Tipografia.axaml
+│       │
+│       └── Recursos/
+│           ├── Iconos/                   Iconos SVG minimalistas (sin emojis)
+│           └── Fuentes/                  Fuente monoespaciada para el editor
+│
+└── pruebas/
+    ├── YoshiSQL.Dominio.Pruebas/
+    ├── YoshiSQL.Aplicacion.Pruebas/
+    │   └── Consultas/
+    │       └── ServicioDeEjecucionPruebas.cs
+    └── YoshiSQL.Infraestructura.Pruebas/
+        └── SqlServer/
+            └── DivisorDeLotesTSqlPruebas.cs
+
+
+--------------------------------------------------------------------------------
+3. CONVENCIONES DE CÓDIGO LIMPIO
+--------------------------------------------------------------------------------
+
+3.1 Idioma y caracteres
+    - Todo el código en español: clases, métodos, variables, comentarios.
+    - SIN tildes ni ñ en nombres de código, para evitar problemas de codificación:
+          Pestaña  -> Pestana        Diseño   -> Diseno
+          Función  -> Funcion        Año      -> Anio
+      (En textos visibles para el usuario sí se usan tildes y ñ.)
+    - Se conservan los términos estándar de .NET que no conviene traducir:
+          sufijo Async, prefijo I en interfaces, palabras clave de C#.
+
+3.2 Formato de nombres
+    Elemento                  Formato            Ejemplo
+    ------------------------  -----------------  ------------------------------
+    Clase / Record            PascalCase         ServicioDeEjecucion
+    Interfaz                  I + PascalCase     IEjecutorDeConsultas
+    Método                    PascalCase(verbo)  ObtenerTablasAsync
+    Propiedad                 PascalCase         NombreDelServidor
+    Variable local            camelCase          filasAfectadas
+    Parámetro                 camelCase          perfilDeConexion
+    Campo privado             _camelCase         _ejecutorDeConsultas
+    Constante                 PascalCase         TiempoMaximoDeEsperaEnSegundos
+    Enum y sus valores        PascalCase         EstadoDeEjecucion.Cancelada
+    Archivo                   = nombre de clase  ServicioDeEjecucion.cs
+
+3.3 Reglas de nombres
+    - Métodos: siempre empiezan con un VERBO en infinitivo.
+          Bien:  ObtenerBasesDeDatosAsync()     Mal:  BasesDeDatos()
+          Bien:  EjecutarSeleccionAsync()       Mal:  Ejec()
+          Bien:  CancelarEjecucion()            Mal:  Stop()
+    - Booleanos: preguntas que se responden con sí o no (Es, Esta, Tiene, Puede).
+          EstaConectado, TieneCambiosSinGuardar, PuedeEjecutar, EsLlavePrimaria
+    - Colecciones: en plural.
+          tablas, columnasSeleccionadas, mensajesDeError
+    - Sin abreviaturas ni nombres genéricos.
+          Mal:  cnx, tbl, res, dato, temp, aux, obj, x
+          Bien: conexion, tabla, resultado, columnaActual
+    - Métodos asíncronos terminan en Async y reciben CancellationToken.
+          Task<ResultadoDeEjecucion> EjecutarScriptAsync(
+              string textoSql, CancellationToken tokenDeCancelacion);
+
+3.4 Reglas de diseño
+    - Una clase por archivo; el archivo se llama igual que la clase.
+    - Cada clase tiene UNA responsabilidad (ej. el divisor solo divide por GO).
+    - Métodos cortos: si un método no cabe en pantalla, se divide.
+    - Máximo 3 o 4 parámetros; si son más, se agrupan en un objeto.
+    - Nada de "números mágicos": se usan constantes con nombre.
+    - Las dependencias se reciben por el constructor (inyección de dependencias),
+      nunca se crean con "new" dentro de los servicios.
+    - Las vistas (.axaml) no contienen lógica; esa vive en el ModeloDeVista.
+    - El SQL de catálogo vive en archivos .sql, no en cadenas dentro del C#.
+    - Los comentarios explican el POR QUÉ, no el QUÉ (el nombre ya dice el qué).
+    - Nunca se guardan contraseñas en texto plano.
+
+3.5 Ejemplo de estilo esperado
+
+    public sealed class ServicioDeEjecucion
+    {
+        private readonly IDivisorDeLotes _divisorDeLotes;
+        private readonly IEjecutorDeConsultas _ejecutorDeConsultas;
+
+        public ServicioDeEjecucion(
+            IDivisorDeLotes divisorDeLotes,
+            IEjecutorDeConsultas ejecutorDeConsultas)
+        {
+            _divisorDeLotes = divisorDeLotes;
+            _ejecutorDeConsultas = ejecutorDeConsultas;
+        }
+
+        public async Task<ResultadoDeEjecucion> EjecutarAsync(
+            string textoSeleccionado,
+            CancellationToken tokenDeCancelacion)
+        {
+            var lotes = _divisorDeLotes.DividirPorGo(textoSeleccionado);
+            return await _ejecutorDeConsultas.EjecutarLotesAsync(lotes, tokenDeCancelacion);
+        }
+    }
+
+
+--------------------------------------------------------------------------------
+4. FLUJO DE EJEMPLO: EL USUARIO SUBRAYA CÓDIGO Y PRESIONA F5
+--------------------------------------------------------------------------------
+
+    1. PestanaDeConsulta.axaml           Detecta F5 y el texto subrayado
+    2. PestanaDeConsultaModeloDeVista    Si hay selección la usa; si no, todo el texto
+    3. ServicioDeEjecucion               Pide dividir el texto por GO
+    4. DivisorDeLotesTSql                Devuelve la lista de LoteSql
+    5. EjecutorDeConsultasSqlServer      Ejecuta cada lote en segundo plano
+    6. ResultadoDeEjecucion              Vuelve con resultados, mensajes y tiempo
+    7. ResultadosModeloDeVista           Llena la grilla y la pestaña de mensajes
+    8. BarraDeEstado                     Muestra "Completada | 120 filas | 00:00:01"
+
+
+--------------------------------------------------------------------------------
+5. LIBRERÍAS (todas open source, licencia MIT)
+--------------------------------------------------------------------------------
+
+    Avalonia                              Interfaz gráfica de escritorio
+    AvaloniaEdit                          Editor de código con resaltado
+    CommunityToolkit.Mvvm                 Patrón MVVM sin código repetitivo
+    Microsoft.Data.SqlClient              Driver nativo de SQL Server (sin ODBC)
+    Microsoft.SqlServer.TransactSql.ScriptDom   Parser oficial de T-SQL
+    Microsoft.Extensions.DependencyInjection    Inyección de dependencias
+    xUnit                                 Pruebas automáticas
+
+
+--------------------------------------------------------------------------------
+6. FASES DEL PROYECTO
+--------------------------------------------------------------------------------
+
+    Fase 1 (MVP)  Conexión, explorador desplegable, editor, ejecutar todo o
+                  la selección, grilla de resultados.
+    Fase 2        Varias pestañas, abrir/guardar .sql, separador GO,
+                  pestaña de mensajes, cancelar consulta.
+    Fase 3        "Generar script como CREATE", diseñador de tablas,
+                  crear bases de datos desde la interfaz.
+    Fase 4        Diagramas de relaciones entre tablas.
+    Fase 5        Historial, exportar a CSV, tema claro/oscuro, autocompletado.
+
+================================================================================
+
+
+--------------------------------------------------------------------------------
+7. ESTADO ACTUAL Y CAMBIOS RESPECTO AL PLAN (2026-10-03)
+--------------------------------------------------------------------------------
+
+    Fase 1 implementada: conexión, explorador desplegable, editor con resaltado,
+    ejecutar todo o la selección (F5), separador GO (incluido "GO 5"),
+    resultados, mensajes, varias pestañas, abrir/guardar .sql, cancelar consulta,
+    scripts desde el menú contextual (SELECT TOP 1000, CREATE TABLE, DROP...).
+
+    Archivos agregados durante la implementación:
+    Dominio/Esquema/ObjetoDeEsquema.cs        Base común de Tabla, Vista, Procedimiento y Funcion
+    Dominio/Conexiones/DatosDeAcceso.cs       Perfil + contraseña en memoria (oculta en ToString)
+    Dominio/Consultas/ColumnaDeResultado.cs
+    Dominio/Contratos/ISesionDeConsulta.cs    Conexión propia de cada pestaña (USE y #temporales persisten)
+    Aplicacion/Conexiones/ServidorConectado.cs   (reemplaza a SesionActiva.cs)
+    Aplicacion/Consultas/FragmentoDeCodigo.cs, ConsultaEjecutada.cs
+    Aplicacion/Scripts/ServicioDeGeneracionDeScripts.cs
+    Infraestructura/SqlServer/SesionDeConsultaSqlServer.cs
+    Infraestructura/SqlServer/LectorDeConsultasDeCatalogo.cs
+    Infraestructura/SqlServer/DelimitadorDeIdentificadores.cs
+    Infraestructura/SqlServer/ConsultasDeCatalogo/ObtenerServidor.sql
+    Infraestructura/Persistencia/EscritorDeArchivosSeguro.cs   Escritura atómica con permisos 600
+    Escritorio/Servicios/                      IServicioDeDialogos, ServicioDeDialogos, RespuestaAlCerrar
+    Escritorio/ModelosDeVista/Explorador/      FabricaDeNodos, ContextoDelNodo, AccionDelNodo,
+                                               IAccionesDelExplorador, TipoDeNodo
+    Escritorio/ModelosDeVista/Editor/RangoDeTexto.cs
+    Escritorio/Vistas/Comunes/                 DialogoDeMensaje (Guardar / No guardar / Aceptar)
+    Escritorio/Controles/CatalogoDeIconos.cs   Íconos dibujados con geometría (reemplaza Recursos/Iconos)
+    Escritorio/Estilos/Controles.axaml         (TemaOscuro/TemaClaro/Tipografia quedan para la fase 5)
+
+    Fase 4 (diagramas) implementada:
+    Dominio/Diagramas/                         PosicionEnElDiagrama, DisposicionDeDiagrama
+    Aplicacion/Diagramas/                      ServicioDeDiagramas, OrganizadorDeDiagrama, TamanoDeNodo
+    Infraestructura/Persistencia/RepositorioDeDiagramasJson.cs   ~/.config/yoshisql/diagramas/
+    Infraestructura/SqlServer/ConsultasDeCatalogo/ListarColumnasDeTodasLasTablas.sql
+    Escritorio/ModelosDeVista/DocumentoModeloDeVista.cs   Base de toda pestaña (consulta, diagrama...)
+    Escritorio/ModelosDeVista/Diagramas/       Pestaña, tabla, columna y relación del diagrama
+    Escritorio/Vistas/Diagramas/PestanaDeDiagrama.axaml
+
+    Pendiente para fases siguientes:
+    - DisenoDeTablas (diseñador visual de tablas).
+    - Tema claro, autocompletado, exportar a CSV, ventana de historial.

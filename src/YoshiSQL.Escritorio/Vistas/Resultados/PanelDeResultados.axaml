@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Resultados"
+             xmlns:consultas="using:YoshiSQL.Dominio.Consultas"
+             xmlns:conv="using:YoshiSQL.Escritorio.Convertidores"
+             xmlns:resultados="using:YoshiSQL.Escritorio.Vistas.Resultados"
+             x:Class="YoshiSQL.Escritorio.Vistas.Resultados.PanelDeResultados"
+             x:DataType="vm:ResultadosModeloDeVista"
+             Background="{StaticResource PincelDePanel}">
+
+    <TabControl Classes="Resultados" SelectedIndex="{Binding IndiceDePestanaSeleccionada}" Padding="0">
+        <TabItem Header="Resultados">
+            <Panel>
+                <TextBlock IsVisible="{Binding NoTieneConjuntos}"
+                           Margin="12" Foreground="{StaticResource PincelDeTextoSecundario}"
+                           Text="La consulta no devolvió resultados." />
+
+                <resultados:GrillaDeResultados IsVisible="{Binding TieneUnSoloConjunto}"
+                                               Conjunto="{Binding ConjuntoUnico}" />
+
+                <ScrollViewer IsVisible="{Binding TieneVariosConjuntos}">
+                    <ItemsControl ItemsSource="{Binding Conjuntos}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="consultas:ConjuntoDeResultados">
+                                <Border Height="220" Margin="0,0,0,6"
+                                        BorderBrush="{StaticResource PincelDeBorde}" BorderThickness="0,0,0,1">
+                                    <resultados:GrillaDeResultados Conjunto="{Binding}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Panel>
+        </TabItem>
+
+        <TabItem Header="Mensajes">
+            <ListBox x:Name="ListaDeMensajes"
+                     ItemsSource="{Binding Mensajes}"
+                     Background="Transparent"
+                     DoubleTapped="AlHacerDobleClicEnMensaje">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="consultas:MensajeDeEjecucion">
+                        <SelectableTextBlock Text="{Binding Texto}"
+                                             TextWrapping="Wrap"
+                                             FontFamily="{StaticResource FuenteMonoespaciada}"
+                                             FontSize="12.5"
+                                             Foreground="{Binding Tipo, Converter={x:Static conv:TipoDeMensajeAColor.Instancia}}" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </TabItem>
+    </TabControl>
+</UserControl>

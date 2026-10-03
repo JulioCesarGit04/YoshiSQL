@@ -1,0 +1,32 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="YoshiSQL.Escritorio.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Estilos/Colores.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Dark"
+                                       Accent="#6CC24A"
+                                       AltHigh="#17191C"
+                                       RegionColor="#1B1D20"
+                                       ChromeMediumLow="#232529"
+                                       ChromeMedium="#2A2D31"
+                                       ChromeLow="#2E3136"
+                                       BaseHigh="#E4E6EA"
+                                       ErrorText="#F07178" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+        <StyleInclude Source="/Estilos/Controles.axaml" />
+    </Application.Styles>
+</Application>

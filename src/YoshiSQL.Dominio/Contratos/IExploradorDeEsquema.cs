@@ -1,0 +1,61 @@
+using YoshiSQL.Dominio.Conexiones;
+using YoshiSQL.Dominio.Esquema;
+
+namespace YoshiSQL.Dominio.Contratos;
+
+/// <summary>
+/// Lee los objetos del servidor para mostrarlos en el árbol del explorador.
+/// </summary>
+public interface IExploradorDeEsquema
+{
+    Task<Servidor> ObtenerServidorAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<BaseDeDatos>> ObtenerBasesDeDatosAsync(
+        DatosDeAcceso datosDeAcceso,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<Tabla>> ObtenerTablasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<Vista>> ObtenerVistasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<ProcedimientoAlmacenado>> ObtenerProcedimientosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<Funcion>> ObtenerFuncionesAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<Columna>> ObtenerColumnasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>
+    /// Columnas de todas las tablas de la base en una sola consulta (para el diagrama).
+    /// </summary>
+    Task<IReadOnlyDictionary<Tabla, IReadOnlyList<Columna>>> ObtenerColumnasDeTodasLasTablasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<Indice>> ObtenerIndicesAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<LlaveForanea>> ObtenerLlavesForaneasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+}

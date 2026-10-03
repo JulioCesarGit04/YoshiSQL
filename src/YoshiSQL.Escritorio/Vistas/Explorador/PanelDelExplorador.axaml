@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Explorador"
+             xmlns:conv="using:YoshiSQL.Escritorio.Convertidores"
+             x:Class="YoshiSQL.Escritorio.Vistas.Explorador.PanelDelExplorador"
+             x:DataType="vm:ExploradorModeloDeVista"
+             Background="{StaticResource PincelDePanel}">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="12,6,6,2">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="TituloDePanel" Text="EXPLORADOR DE OBJETOS" />
+                <Button Grid.Column="1" Classes="Herramienta" Padding="6"
+                        ToolTip.Tip="Actualizar el elemento seleccionado"
+                        IsEnabled="{Binding TieneServidores}"
+                        Command="{Binding ActualizarCommand}">
+                    <Path Classes="Icono" Stroke="{StaticResource PincelDeTextoSecundario}"
+                          Data="M13,8 A5,5 0 1 1 11.5,4.5 M11.5,1.5 V4.5 H8.5" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Top"
+                   IsVisible="{Binding !TieneServidores}"
+                   Margin="12,8" TextWrapping="Wrap"
+                   Foreground="{StaticResource PincelDeTextoSecundario}"
+                   Text="No hay servidores conectados." />
+
+        <TreeView ItemsSource="{Binding Servidores}"
+                  SelectedItem="{Binding NodoSeleccionado}"
+                  DoubleTapped="AlHacerDobleClicEnNodo"
+                  Background="Transparent">
+            <TreeView.Styles>
+                <Style Selector="TreeViewItem" x:DataType="vm:NodoDelArbolModeloDeVista">
+                    <Setter Property="IsExpanded" Value="{Binding EstaExpandido, Mode=TwoWay}" />
+                </Style>
+            </TreeView.Styles>
+
+            <TreeView.ItemTemplate>
+                <TreeDataTemplate x:DataType="vm:NodoDelArbolModeloDeVista" ItemsSource="{Binding Hijos}">
+                    <StackPanel Orientation="Horizontal" Spacing="7" Background="Transparent">
+                        <StackPanel.ContextMenu>
+                            <ContextMenu ItemsSource="{Binding Acciones}" Opening="AlAbrirMenuContextual">
+                                <ContextMenu.Styles>
+                                    <Style Selector="MenuItem" x:DataType="vm:AccionDelNodo">
+                                        <Setter Property="Header" Value="{Binding Texto}" />
+                                        <Setter Property="Command" Value="{Binding Comando}" />
+                                    </Style>
+                                </ContextMenu.Styles>
+                            </ContextMenu>
+                        </StackPanel.ContextMenu>
+
+                        <Path Classes="Icono"
+                              Data="{Binding Tipo, Converter={x:Static conv:TipoDeNodoAIcono.Instancia}}"
+                              Stroke="{Binding Tipo, Converter={x:Static conv:TipoDeNodoAColor.Instancia}}"
+                              VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Texto}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+    </DockPanel>
+</UserControl>

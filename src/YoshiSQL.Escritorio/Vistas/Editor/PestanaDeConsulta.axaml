@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Editor"
+             xmlns:controles="using:YoshiSQL.Escritorio.Controles"
+             xmlns:resultados="using:YoshiSQL.Escritorio.Vistas.Resultados"
+             x:Class="YoshiSQL.Escritorio.Vistas.Editor.PestanaDeConsulta"
+             x:DataType="vm:PestanaDeConsultaModeloDeVista">
+
+    <Grid RowDefinitions="*,1,280">
+        <controles:EditorSql x:Name="Editor"
+                             Grid.Row="0"
+                             Document="{Binding Documento}"
+                             Seleccion="{Binding Seleccion, Mode=OneWayToSource}"
+                             FontFamily="{StaticResource FuenteMonoespaciada}"
+                             FontSize="14"
+                             Padding="4,6,0,0"
+                             Background="{StaticResource PincelDeFondo}"
+                             Foreground="{StaticResource PincelDeTexto}"
+                             LineNumbersForeground="#5C6370" />
+
+        <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
+
+        <resultados:PanelDeResultados Grid.Row="2" DataContext="{Binding Resultados}" />
+
+        <ProgressBar Grid.Row="0" VerticalAlignment="Top" Height="2" MinHeight="2"
+                     IsIndeterminate="True" IsVisible="{Binding EstaEjecutando}" />
+    </Grid>
+</UserControl>
