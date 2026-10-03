@@ -16,5 +16,20 @@ public interface ISesionDeConsulta : IAsyncDisposable
         IReadOnlyList<LoteSql> lotes,
         CancellationToken tokenDeCancelacion);
 
+    /// <summary>
+    /// Ejecuta los lotes y además devuelve el plan real de cada instrucción.
+    /// </summary>
+    Task<ResultadoDeEjecucion> EjecutarConPlanRealAsync(
+        IReadOnlyList<LoteSql> lotes,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>
+    /// Pide el plan que usaría el servidor sin ejecutar nada.
+    /// </summary>
+    /// <returns>Un documento XML por instrucción.</returns>
+    Task<IReadOnlyList<string>> ObtenerPlanesEstimadosAsync(
+        IReadOnlyList<LoteSql> lotes,
+        CancellationToken tokenDeCancelacion);
+
     Task CambiarBaseDeDatosAsync(string baseDeDatos, CancellationToken tokenDeCancelacion);
 }

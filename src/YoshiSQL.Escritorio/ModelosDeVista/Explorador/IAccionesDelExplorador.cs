@@ -16,5 +16,11 @@ public interface IAccionesDelExplorador
 
     Task AbrirEdicionDeFilasAsync(ContextoDelNodo contexto, Tabla tabla);
 
+    Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto);
+
+    Task MostrarRespaldoAsync(ContextoDelNodo contexto);
+
+    Task MostrarRestauracionAsync(ContextoDelNodo contexto);
+
     void DesconectarServidor(ContextoDelNodo contexto);
 }

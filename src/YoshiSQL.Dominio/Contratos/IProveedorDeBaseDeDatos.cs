@@ -22,6 +22,12 @@ public interface IProveedorDeBaseDeDatos
 
     IAnalizadorDeContextoSql AnalizadorDeContexto { get; }
 
+    IMonitorDeActividad Monitor { get; }
+
+    IAdministradorDeRespaldos Respaldos { get; }
+
+    IAnalizadorDePlanes AnalizadorDePlanes { get; }
+
     /// <summary>
     /// Tipos de dato que se ofrecen en el diseñador de tablas, ej. "int" o "nvarchar(50)".
     /// </summary>

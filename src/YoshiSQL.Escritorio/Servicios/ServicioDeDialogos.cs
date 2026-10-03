@@ -2,9 +2,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using YoshiSQL.Aplicacion.Administracion;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Dominio.Conexiones;
+using YoshiSQL.Escritorio.ModelosDeVista.Administracion;
 using YoshiSQL.Escritorio.ModelosDeVista.Conexiones;
+using YoshiSQL.Escritorio.Vistas.Administracion;
 using YoshiSQL.Escritorio.Vistas.Comunes;
 using YoshiSQL.Escritorio.Vistas.Conexiones;
 
@@ -18,12 +21,15 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     private readonly ServicioDeConexiones _servicioDeConexiones;
     private readonly IServicioDeErrores _servicioDeErrores;
     private readonly IServicioDelSistemaOperativo _sistemaOperativo;
+    private readonly ServicioDeRespaldos _servicioDeRespaldos;
 
     public ServicioDeDialogos(
         ServicioDeConexiones servicioDeConexiones,
         IServicioDeErrores servicioDeErrores,
-        IServicioDelSistemaOperativo sistemaOperativo)
+        IServicioDelSistemaOperativo sistemaOperativo,
+        ServicioDeRespaldos servicioDeRespaldos)
     {
+        _servicioDeRespaldos = servicioDeRespaldos;
         _servicioDeConexiones = servicioDeConexiones;
         _servicioDeErrores = servicioDeErrores;
         _sistemaOperativo = sistemaOperativo;
@@ -75,7 +81,7 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
                 new OpcionDeDialogo(textoParaRechazar, false, EsCancelar: true)
             ]);
 
-        return await dialogo.ShowDialog<object?>(ObtenerVentanaPrincipal()) is true;
+        return await dialogo.ShowDialog<object?>(ObtenerVentanaActiva()) is true;
     }
 
     public async Task MostrarInformacionAsync(string titulo, string mensaje)
@@ -86,6 +92,32 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
             [new OpcionDeDialogo("Aceptar", true, EsPrincipal: true, EsCancelar: true)]);
 
         await dialogo.ShowDialog<object?>(ObtenerVentanaPrincipal());
+    }
+
+    public async Task MostrarRespaldoAsync(ServidorConectado servidor, string baseDeDatos)
+    {
+        var modelo = new DialogoDeRespaldoModeloDeVista(servidor, baseDeDatos, _servicioDeRespaldos, _servicioDeErrores);
+        var dialogo = new DialogoDeRespaldo { DataContext = modelo };
+        dialogo.Opened += async (_, _) => await modelo.InicializarAsync();
+        await dialogo.ShowDialog(ObtenerVentanaPrincipal());
+    }
+
+    public async Task<bool> MostrarRestauracionAsync(ServidorConectado servidor)
+    {
+        var modelo = new DialogoDeRestauracionModeloDeVista(servidor, _servicioDeRespaldos, this, _servicioDeErrores);
+        var dialogo = new DialogoDeRestauracion { DataContext = modelo };
+        dialogo.Opened += async (_, _) => await modelo.InicializarAsync();
+        await dialogo.ShowDialog(ObtenerVentanaPrincipal());
+        return modelo.TerminoCorrectamente;
+    }
+
+    /// <summary>
+    /// Ventana sobre la cual se abre un diálogo: la que esté activa (puede ser otro diálogo) o la principal.
+    /// </summary>
+    private static Window ObtenerVentanaActiva()
+    {
+        var escritorio = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        return escritorio?.Windows.LastOrDefault(ventana => ventana.IsActive) ?? ObtenerVentanaPrincipal();
     }
 
     public async Task<RespuestaAlCerrar> PreguntarSiGuardarCambiosAsync(string nombreDelArchivo)

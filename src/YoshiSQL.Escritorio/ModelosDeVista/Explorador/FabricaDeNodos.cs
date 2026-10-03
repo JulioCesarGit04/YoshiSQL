@@ -40,10 +40,12 @@ public sealed class FabricaDeNodos
             DescribirServidor(servidor),
             TipoDeNodo.Servidor,
             contexto,
-            _ => Task.FromResult<IReadOnlyList<NodoDelArbolModeloDeVista>>([CrearCarpetaDeBasesDeDatos(contexto)]));
+            _ => Task.FromResult<IReadOnlyList<NodoDelArbolModeloDeVista>>(
+                [CrearCarpetaDeBasesDeDatos(contexto), CrearCarpetaDeSeguridadDelServidor(contexto)]));
 
         nodo.EstablecerAcciones(
             AccionDeNuevaConsulta(contexto),
+            new AccionDelNodo("Monitor de actividad", ComandoSeguro("Abrir monitor de actividad", contexto, () => _acciones.AbrirMonitorDeActividadAsync(contexto))),
             new AccionDelNodo("Desconectar", ComandoSeguro("Desconectar", contexto, () =>
             {
                 _acciones.DesconectarServidor(contexto);
@@ -65,6 +67,7 @@ public sealed class FabricaDeNodos
         carpeta.EstablecerAcciones(
             AccionQueAbreScript("Nueva base de datos...", contexto,
                 () => _generadorDeScripts.GenerarCreacionDeBaseDeDatos("NuevaBaseDeDatos")),
+            AccionDeRestaurar(contexto),
             AccionDeActualizar(carpeta));
 
         return carpeta;
@@ -113,6 +116,8 @@ public sealed class FabricaDeNodos
             AccionDeNuevaConsulta(contexto),
             AccionDeVerDiagrama(contexto),
             AccionDeNuevaTabla(contexto),
+            new AccionDelNodo("Respaldar...", ComandoSeguro("Respaldar base de datos", contexto, () => _acciones.MostrarRespaldoAsync(contexto))),
+            AccionDeRestaurar(contexto),
             AccionQueAbreScript("Generar script DROP DATABASE", contexto with { BaseDeDatos = null },
                 () => _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(baseDeDatos.Nombre)),
             AccionDeActualizar(nodo));
@@ -142,8 +147,67 @@ public sealed class FabricaDeNodos
             AccionDeNuevaTabla(contexto),
             AccionDeActualizar(carpetaDeTablas));
 
-        return [CrearCarpetaDeDiagramas(contexto), carpetaDeTablas, carpetaDeVistas, carpetaDeProcedimientos, carpetaDeFunciones];
+        return
+        [
+            CrearCarpetaDeDiagramas(contexto),
+            carpetaDeTablas,
+            carpetaDeVistas,
+            carpetaDeProcedimientos,
+            carpetaDeFunciones,
+            CrearCarpetaDeSeguridadDeLaBaseDeDatos(contexto)
+        ];
     }
+
+    private NodoDelArbolModeloDeVista CrearCarpetaDeSeguridadDelServidor(ContextoDelNodo contexto)
+    {
+        var carpetaDeIniciosDeSesion = CrearCarpeta("Inicios de sesión", contexto, async token =>
+            (await _servicioDelExplorador.ObtenerIniciosDeSesionAsync(contexto.Servidor, token))
+                .Select(inicioDeSesion =>
+                {
+                    var texto = inicioDeSesion.EstaDeshabilitado ? $"{inicioDeSesion.Nombre} (deshabilitado)" : inicioDeSesion.Nombre;
+                    var nodo = new NodoDelArbolModeloDeVista(texto, TipoDeNodo.InicioDeSesion, contexto);
+                    nodo.EstablecerAcciones(AccionQueAbreScript("Generar script DROP LOGIN", contexto,
+                        () => _generadorDeScripts.GenerarEliminacionDeInicioDeSesion(inicioDeSesion.Nombre)));
+                    return nodo;
+                }));
+
+        carpetaDeIniciosDeSesion.EstablecerAcciones(
+            AccionQueAbreScript("Nuevo inicio de sesión...", contexto, _generadorDeScripts.GenerarCreacionDeInicioDeSesion),
+            AccionDeActualizar(carpetaDeIniciosDeSesion));
+
+        return CrearCarpetaConHijosFijos("Seguridad", contexto, [carpetaDeIniciosDeSesion]);
+    }
+
+    private NodoDelArbolModeloDeVista CrearCarpetaDeSeguridadDeLaBaseDeDatos(ContextoDelNodo contexto)
+    {
+        var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
+
+        var carpetaDeUsuarios = CrearCarpeta("Usuarios", contexto, async token =>
+            (await _servicioDelExplorador.ObtenerUsuariosAsync(contexto.Servidor, baseDeDatos, token))
+                .Select(usuario =>
+                {
+                    var nodo = new NodoDelArbolModeloDeVista(usuario.Nombre, TipoDeNodo.Usuario, contexto);
+                    nodo.EstablecerAcciones(AccionQueAbreScript("Generar script DROP USER", contexto,
+                        () => _generadorDeScripts.GenerarEliminacionDeUsuario(baseDeDatos, usuario.Nombre)));
+                    return nodo;
+                }));
+
+        carpetaDeUsuarios.EstablecerAcciones(
+            AccionQueAbreScript("Nuevo usuario...", contexto, () => _generadorDeScripts.GenerarCreacionDeUsuario(baseDeDatos)),
+            AccionDeActualizar(carpetaDeUsuarios));
+
+        var carpetaDeRoles = CrearCarpeta("Roles", contexto, async token =>
+            (await _servicioDelExplorador.ObtenerRolesAsync(contexto.Servidor, baseDeDatos, token))
+                .Select(rol => new NodoDelArbolModeloDeVista(rol.EsFijo ? $"{rol.Nombre} (predefinido)" : rol.Nombre, TipoDeNodo.Rol, contexto)));
+
+        return CrearCarpetaConHijosFijos("Seguridad", contexto, [carpetaDeUsuarios, carpetaDeRoles]);
+    }
+
+    private static NodoDelArbolModeloDeVista CrearCarpetaConHijosFijos(
+        string texto,
+        ContextoDelNodo contexto,
+        IReadOnlyList<NodoDelArbolModeloDeVista> hijos) =>
+        new(texto, TipoDeNodo.Carpeta, contexto, _ => Task.FromResult(hijos));
 
     private NodoDelArbolModeloDeVista CrearCarpetaDeDiagramas(ContextoDelNodo contexto)
     {
@@ -284,6 +348,9 @@ public sealed class FabricaDeNodos
                 contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, CancellationToken.None);
             await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
         }));
+
+    private AccionDelNodo AccionDeRestaurar(ContextoDelNodo contexto) =>
+        new("Restaurar base de datos...", ComandoSeguro("Restaurar base de datos", contexto, () => _acciones.MostrarRestauracionAsync(contexto)));
 
     private AccionDelNodo AccionDeNuevaTabla(ContextoDelNodo contexto) =>
         new("Nueva tabla...", ComandoSeguro("Nueva tabla", contexto, () => _acciones.AbrirDisenadorDeTablaAsync(contexto, tabla: null)));

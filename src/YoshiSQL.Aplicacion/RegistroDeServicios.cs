@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using YoshiSQL.Aplicacion.Administracion;
 using YoshiSQL.Aplicacion.Autocompletado;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Consultas;
@@ -27,6 +28,8 @@ public static class RegistroDeServicios
         servicios.AddSingleton<ServicioDeAutocompletado>();
         servicios.AddSingleton<ServicioDeDisenoDeTablas>();
         servicios.AddSingleton<ServicioDeEdicionDeFilas>();
+        servicios.AddSingleton<ServicioDeMonitor>();
+        servicios.AddSingleton<ServicioDeRespaldos>();
         servicios.AddSingleton<ServicioDeArchivosSql>();
         servicios.AddSingleton<ServicioDeGeneracionDeScripts>();
         servicios.AddSingleton<ServicioDeDiagramas>();

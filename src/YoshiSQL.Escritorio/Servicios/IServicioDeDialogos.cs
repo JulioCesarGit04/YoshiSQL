@@ -22,4 +22,9 @@ public interface IServicioDeDialogos
     Task<RespuestaAlCerrar> PreguntarSiGuardarCambiosAsync(string nombreDelArchivo);
 
     Task MostrarAcercaDeAsync();
+
+    Task MostrarRespaldoAsync(ServidorConectado servidor, string baseDeDatos);
+
+    /// <returns>Verdadero si se restauró una base de datos.</returns>
+    Task<bool> MostrarRestauracionAsync(ServidorConectado servidor);
 }

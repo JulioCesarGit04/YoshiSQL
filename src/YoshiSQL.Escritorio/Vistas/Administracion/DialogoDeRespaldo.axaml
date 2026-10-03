@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Administracion"
+        x:Class="YoshiSQL.Escritorio.Vistas.Administracion.DialogoDeRespaldo"
+        x:DataType="vm:DialogoDeRespaldoModeloDeVista"
+        Title="Respaldar base de datos"
+        Width="640" SizeToContent="Height"
+        CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="24,20" Spacing="12">
+        <TextBlock FontSize="18" FontWeight="SemiBold">
+            <Run Text="Respaldar " /><Run Text="{Binding BaseDeDatos}" Foreground="{StaticResource PincelDeAcento}" />
+        </TextBlock>
+
+        <StackPanel Spacing="4">
+            <TextBlock Text="Archivo de respaldo (ruta en el servidor)" />
+            <TextBox Text="{Binding RutaDelArchivo}" FontFamily="{StaticResource FuenteMonoespaciada}" />
+            <TextBlock FontSize="11.5" TextWrapping="Wrap" Foreground="{StaticResource PincelDeTextoSecundario}"
+                       Text="SQL Server escribe el archivo con su propio usuario: la carpeta debe existir en el servidor y tener permisos para el servicio de SQL Server." />
+        </StackPanel>
+
+        <StackPanel Spacing="2">
+            <CheckBox Content="Solo copia (no afecta los respaldos programados)" IsChecked="{Binding SoloCopia}" />
+            <CheckBox Content="Comprimir el respaldo" IsChecked="{Binding Comprimir}" />
+            <CheckBox Content="Verificar que el archivo se pueda restaurar" IsChecked="{Binding Verificar}" />
+        </StackPanel>
+
+        <Expander Header="Ver el script que se ejecutará" HorizontalAlignment="Stretch">
+            <SelectableTextBlock Text="{Binding ScriptGenerado}" FontFamily="{StaticResource FuenteMonoespaciada}" FontSize="12" TextWrapping="Wrap" />
+        </Expander>
+
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding EstaTrabajando}" />
+
+        <ItemsControl ItemsSource="{Binding Mensajes}" MaxHeight="160">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <SelectableTextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Classes="Primario" Content="Respaldar" MinWidth="110" Command="{Binding RespaldarCommand}" />
+            <Button Content="Cerrar" MinWidth="110" IsCancel="True" Click="AlCerrar" />
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -37,6 +37,9 @@ public static class RegistroDeInfraestructura
         servicios.AddSingleton<IGeneradorDeScripts, GeneradorDeScriptsSqlServer>();
         servicios.AddSingleton<IFormateadorDeSql, FormateadorDeSqlTSql>();
         servicios.AddSingleton<IAnalizadorDeContextoSql, AnalizadorDeContextoTSql>();
+        servicios.AddSingleton<IMonitorDeActividad, MonitorDeActividadSqlServer>();
+        servicios.AddSingleton<IAdministradorDeRespaldos, AdministradorDeRespaldosSqlServer>();
+        servicios.AddSingleton<IAnalizadorDePlanes, AnalizadorDePlanesSqlServer>();
         servicios.AddSingleton<IProveedorDeBaseDeDatos, ProveedorSqlServer>();
     }
 }

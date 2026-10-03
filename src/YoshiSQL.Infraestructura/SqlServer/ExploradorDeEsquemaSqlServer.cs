@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Seguridad;
 
 namespace YoshiSQL.Infraestructura.SqlServer;
 
@@ -172,6 +173,32 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             .ToList();
     }
 
+    public Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
+        DatosDeAcceso datosDeAcceso,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, PerfilDeConexion.BaseDeDatosDelSistema, "ListarIniciosDeSesion", parametros: [],
+            lector => new InicioDeSesion(lector.GetString(0), lector.GetString(1), lector.GetBoolean(2)),
+            tokenDeCancelacion);
+
+    public Task<IReadOnlyList<UsuarioDeBaseDeDatos>> ObtenerUsuariosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarUsuarios", parametros: [],
+            lector => new UsuarioDeBaseDeDatos(lector.GetString(0), lector.GetString(1), lector.IsDBNull(2) ? null : lector.GetString(2)),
+            tokenDeCancelacion);
+
+    public Task<IReadOnlyList<RolDeBaseDeDatos>> ObtenerRolesAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarRoles", parametros: [],
+            lector => new RolDeBaseDeDatos(lector.GetString(0), lector.GetBoolean(1)),
+            tokenDeCancelacion);
+
     public async Task<IReadOnlyList<LlaveForanea>> ObtenerLlavesForaneasAsync(
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
@@ -231,7 +258,7 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
         new SqlParameter("@nombre", objeto.Nombre)
     ];
 
-    private static async Task<IReadOnlyList<T>> LeerFilasAsync<T>(
+    internal static async Task<IReadOnlyList<T>> LeerFilasAsync<T>(
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
         string nombreDeLaConsulta,

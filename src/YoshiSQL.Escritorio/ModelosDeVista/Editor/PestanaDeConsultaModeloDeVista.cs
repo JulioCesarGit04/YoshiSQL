@@ -48,7 +48,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
 
         // La lista nace con la base actual para que la lista desplegable siempre la encuentre seleccionada
         BasesDeDatosDisponibles.Add(baseDeDatos);
-        Resultados = new ResultadosModeloDeVista(servicios.Exportacion);
+        Resultados = new ResultadosModeloDeVista(servicios.Exportacion, servicios.SistemaOperativo);
 
         Documento.TextChanged += (_, _) => MarcarCambiosSinGuardar();
     }
@@ -88,8 +88,14 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     [ObservableProperty]
     public partial RangoDeTexto Seleccion { get; set; }
 
+    /// <summary>
+    /// Si está activo, cada ejecución devuelve también el plan real (como "Incluir plan real" en SSMS).
+    /// </summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(EjecutarCommand), nameof(CancelarCommand))]
+    public partial bool IncluirPlanReal { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(EjecutarCommand), nameof(CancelarCommand), nameof(MostrarPlanEstimadoCommand))]
     public partial bool EstaEjecutando { get; private set; }
 
     [ObservableProperty]
@@ -194,8 +200,13 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         try
         {
             _sesion ??= await _servicioDeEjecucion.AbrirSesionAsync(Servidor, BaseDeDatosActual, tokenDeCancelacion);
-            var resultado = await _servicioDeEjecucion.EjecutarAsync(Servidor, _sesion, fragmento, tokenDeCancelacion);
+            var resultado = await _servicioDeEjecucion.EjecutarAsync(Servidor, _sesion, fragmento, IncluirPlanReal, tokenDeCancelacion);
             MostrarResultado(resultado);
+
+            if (_servicioDeEjecucion.InterpretarPlanReal(resultado) is { } planReal)
+            {
+                Resultados.MostrarPlan(planReal, seleccionarPestana: false);
+            }
 
             if (DetectorDeCambiosDeEsquema.ModificaTablasOVistas(fragmento.Texto))
             {
@@ -228,6 +239,39 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     }
 
     private bool PuedeEjecutar() => !EstaEjecutando;
+
+    [RelayCommand(CanExecute = nameof(PuedeEjecutar))]
+    private async Task MostrarPlanEstimadoAsync()
+    {
+        var fragmento = ObtenerFragmentoAEjecutar();
+        EstaEjecutando = true;
+        TextoDeEstado = "Calculando el plan estimado...";
+        Resultados.Limpiar();
+
+        try
+        {
+            _sesion ??= await _servicioDeEjecucion.AbrirSesionAsync(Servidor, BaseDeDatosActual, CancellationToken.None);
+            var plan = await _servicioDeEjecucion.ObtenerPlanEstimadoAsync(_sesion, fragmento, CancellationToken.None);
+            Resultados.MostrarPlan(plan, seleccionarPestana: true);
+            TextoDeEstado = "Plan estimado listo.";
+        }
+        catch (Exception error)
+        {
+            Resultados.MostrarError(_servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Mostrar plan estimado")));
+            TextoDeEstado = "No se pudo obtener el plan.";
+        }
+        finally
+        {
+            EstaEjecutando = false;
+        }
+    }
+
+    [RelayCommand]
+    private void ConmutarPlanReal()
+    {
+        IncluirPlanReal = !IncluirPlanReal;
+        TextoDeEstado = IncluirPlanReal ? "Se incluirá el plan real en la próxima ejecución." : "Plan real desactivado.";
+    }
 
     /// <summary>
     /// Formatea el texto subrayado o, si no hay selección, todo el editor. Se puede deshacer con Ctrl+Z.

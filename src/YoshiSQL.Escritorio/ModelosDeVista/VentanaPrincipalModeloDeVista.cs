@@ -9,7 +9,9 @@ using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Aplicacion.Scripts;
 using YoshiSQL.Aplicacion.Sesion;
 using YoshiSQL.Dominio.Consultas;
+using YoshiSQL.Escritorio.ModelosDeVista.Administracion;
 using YoshiSQL.Escritorio.ModelosDeVista.Diagramas;
+using YoshiSQL.Aplicacion.Administracion;
 using YoshiSQL.Escritorio.ModelosDeVista.DisenoDeTablas;
 using YoshiSQL.Escritorio.ModelosDeVista.EdicionDeFilas;
 using YoshiSQL.Dominio.Esquema;
@@ -35,6 +37,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private readonly ServicioDeSesion _servicioDeSesion;
     private readonly HistorialDeConsultas _historialDeConsultas;
     private readonly ServiciosDeDiseno _serviciosDeDiseno;
+    private readonly ServicioDeMonitor _servicioDeMonitor;
     private int _contadorDeConsultasNuevas;
 
     public VentanaPrincipalModeloDeVista(
@@ -48,8 +51,10 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         IServicioDelSistemaOperativo sistemaOperativo,
         ServicioDeSesion servicioDeSesion,
         HistorialDeConsultas historialDeConsultas,
-        ServiciosDeDiseno serviciosDeDiseno)
+        ServiciosDeDiseno serviciosDeDiseno,
+        ServicioDeMonitor servicioDeMonitor)
     {
+        _servicioDeMonitor = servicioDeMonitor;
         _serviciosDeDiseno = serviciosDeDiseno;
         _historialDeConsultas = historialDeConsultas;
         _servicioDeSesion = servicioDeSesion;
@@ -277,6 +282,34 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
 
         AgregarDocumento(edicion);
         await edicion.CargarCommand.ExecuteAsync(null);
+    }
+
+    public async Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto)
+    {
+        var monitorAbierto = Documentos
+            .OfType<PestanaDeMonitorModeloDeVista>()
+            .FirstOrDefault(monitor => monitor.Servidor == contexto.Servidor);
+
+        if (monitorAbierto is not null)
+        {
+            DocumentoSeleccionado = monitorAbierto;
+            return;
+        }
+
+        var monitor = new PestanaDeMonitorModeloDeVista(contexto.Servidor, _servicioDeMonitor, _servicioDeDialogos, _servicioDeErrores);
+        AgregarDocumento(monitor);
+        await monitor.IniciarAsync();
+    }
+
+    public Task MostrarRespaldoAsync(ContextoDelNodo contexto) =>
+        _servicioDeDialogos.MostrarRespaldoAsync(contexto.Servidor, contexto.BaseDeDatosOPredeterminada);
+
+    public async Task MostrarRestauracionAsync(ContextoDelNodo contexto)
+    {
+        if (await _servicioDeDialogos.MostrarRestauracionAsync(contexto.Servidor))
+        {
+            await Explorador.ActualizarBasesDeDatosAsync(contexto.Servidor);
+        }
     }
 
     public Task AbrirScriptEnConsultaAsync(ServidorConectado servidor, string baseDeDatos, string script) =>

@@ -14,4 +14,5 @@ public sealed record ServiciosDeConsulta(
     ServicioDeFormatoSql Formato,
     IServicioDeErrores Errores,
     IServicioDeExportacionDeResultados Exportacion,
-    ServicioDeAutocompletado Autocompletado);
+    ServicioDeAutocompletado Autocompletado,
+    IServicioDelSistemaOperativo SistemaOperativo);

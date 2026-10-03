@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Administracion"
+        x:Class="YoshiSQL.Escritorio.Vistas.Administracion.DialogoDeRestauracion"
+        x:DataType="vm:DialogoDeRestauracionModeloDeVista"
+        Title="Restaurar base de datos"
+        Width="680" SizeToContent="Height"
+        CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="24,20" Spacing="12">
+        <TextBlock Text="Restaurar base de datos" FontSize="18" FontWeight="SemiBold" />
+
+        <StackPanel Spacing="4">
+            <TextBlock Text="Archivo de respaldo (.bak) en el servidor" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBox Text="{Binding RutaDelArchivo}" FontFamily="{StaticResource FuenteMonoespaciada}" />
+                <Button Grid.Column="1" Content="Leer respaldo" Command="{Binding LeerRespaldoCommand}" />
+            </Grid>
+            <TextBlock Text="{Binding DescripcionDelRespaldo}" TextWrapping="Wrap" FontSize="12"
+                       Foreground="{StaticResource PincelDeTextoSecundario}" />
+        </StackPanel>
+
+        <StackPanel Spacing="4" IsEnabled="{Binding RespaldoLeido}">
+            <TextBlock Text="Restaurar como (nombre de la base de datos)" />
+            <TextBox Text="{Binding BaseDeDatosDestino}" />
+            <CheckBox Content="Reemplazar la base de datos si ya existe" IsChecked="{Binding Reemplazar}" Margin="0,6,0,0" />
+            <CheckBox Content="Desconectar a otros usuarios antes de restaurar" IsChecked="{Binding CerrarConexionesExistentes}" />
+        </StackPanel>
+
+        <Expander Header="Ver el script que se ejecutará" HorizontalAlignment="Stretch" IsEnabled="{Binding RespaldoLeido}">
+            <SelectableTextBlock Text="{Binding ScriptGenerado}" FontFamily="{StaticResource FuenteMonoespaciada}" FontSize="12" TextWrapping="Wrap" />
+        </Expander>
+
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding EstaTrabajando}" />
+
+        <ItemsControl ItemsSource="{Binding Mensajes}" MaxHeight="160">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <SelectableTextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Classes="Primario" Content="Restaurar" MinWidth="110" Command="{Binding RestaurarCommand}" />
+            <Button Content="Cerrar" MinWidth="110" IsCancel="True" Click="AlCerrar" />
+        </StackPanel>
+    </StackPanel>
+</Window>

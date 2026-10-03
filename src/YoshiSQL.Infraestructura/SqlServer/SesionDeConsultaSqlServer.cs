@@ -19,6 +19,9 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     // Igual que SSMS: las consultas no tienen tiempo límite, el usuario las cancela
     private const int SinTiempoLimite = 0;
 
+    // Nombre fijo que usa SQL Server para la columna que contiene el plan real
+    private const string NombreDeColumnaDelPlan = "Microsoft SQL Server 2005 XML Showplan";
+
     private readonly SqlConnection _conexion;
     private readonly List<MensajeDeEjecucion> _mensajesDeLaEjecucion = [];
     private int _lineaInicialDelLoteActual = 1;
@@ -54,29 +57,128 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
         }
     }
 
-    public async Task<ResultadoDeEjecucion> EjecutarLotesAsync(
+    public Task<ResultadoDeEjecucion> EjecutarLotesAsync(
         IReadOnlyList<LoteSql> lotes,
-        CancellationToken tokenDeCancelacion)
+        CancellationToken tokenDeCancelacion) =>
+        EjecutarDeFormaExclusivaAsync(() => EjecutarYMedirAsync(lotes, tokenDeCancelacion));
+
+    public Task<ResultadoDeEjecucion> EjecutarConPlanRealAsync(
+        IReadOnlyList<LoteSql> lotes,
+        CancellationToken tokenDeCancelacion) =>
+        EjecutarDeFormaExclusivaAsync(async () =>
+        {
+            await EjecutarInstruccionDeConfiguracionAsync("SET STATISTICS XML ON;", tokenDeCancelacion);
+
+            try
+            {
+                return SepararPlanesReales(await EjecutarYMedirAsync(lotes, tokenDeCancelacion));
+            }
+            finally
+            {
+                await EjecutarInstruccionDeConfiguracionAsync("SET STATISTICS XML OFF;", CancellationToken.None);
+            }
+        });
+
+    public Task<IReadOnlyList<string>> ObtenerPlanesEstimadosAsync(
+        IReadOnlyList<LoteSql> lotes,
+        CancellationToken tokenDeCancelacion) =>
+        EjecutarDeFormaExclusivaAsync(async () =>
+        {
+            // Con SHOWPLAN_XML activo el servidor no ejecuta nada: solo devuelve el plan de cada instrucción
+            await EjecutarInstruccionDeConfiguracionAsync("SET SHOWPLAN_XML ON;", tokenDeCancelacion);
+
+            try
+            {
+                return await LeerPlanesEstimadosAsync(lotes, tokenDeCancelacion);
+            }
+            catch (SqlException excepcion)
+            {
+                throw new ErrorDeEjecucion($"No se pudo obtener el plan: {excepcion.Message}", causa: excepcion);
+            }
+            finally
+            {
+                await EjecutarInstruccionDeConfiguracionAsync("SET SHOWPLAN_XML OFF;", CancellationToken.None);
+            }
+        });
+
+    /// <summary>
+    /// Una pestaña ejecuta una cosa a la vez: una conexión de SQL Server no admite dos consultas simultáneas.
+    /// </summary>
+    private async Task<T> EjecutarDeFormaExclusivaAsync<T>(Func<Task<T>> ejecutar)
     {
         if (Interlocked.Exchange(ref _ejecucionEnCurso, 1) == 1)
         {
             throw new ErrorDeEjecucion("Ya hay una consulta en ejecución en esta pestaña.");
         }
 
-        _mensajesDeLaEjecucion.Clear();
-        var conjuntosDeResultados = new List<ConjuntoDeResultados>();
-        var cronometro = Stopwatch.StartNew();
-
         try
         {
-            await ReabrirSiSePerdioLaConexionAsync(tokenDeCancelacion);
-            var estado = await EjecutarCadaLoteAsync(lotes, conjuntosDeResultados, tokenDeCancelacion);
-            return CrearResultado(estado, conjuntosDeResultados, cronometro.Elapsed);
+            return await ejecutar();
         }
         finally
         {
             Volatile.Write(ref _ejecucionEnCurso, 0);
         }
+    }
+
+    private async Task<ResultadoDeEjecucion> EjecutarYMedirAsync(IReadOnlyList<LoteSql> lotes, CancellationToken tokenDeCancelacion)
+    {
+        _mensajesDeLaEjecucion.Clear();
+        var conjuntosDeResultados = new List<ConjuntoDeResultados>();
+        var cronometro = Stopwatch.StartNew();
+
+        await ReabrirSiSePerdioLaConexionAsync(tokenDeCancelacion);
+        var estado = await EjecutarCadaLoteAsync(lotes, conjuntosDeResultados, tokenDeCancelacion);
+        return CrearResultado(estado, conjuntosDeResultados, cronometro.Elapsed);
+    }
+
+    private async Task<IReadOnlyList<string>> LeerPlanesEstimadosAsync(IReadOnlyList<LoteSql> lotes, CancellationToken tokenDeCancelacion)
+    {
+        var planes = new List<string>();
+
+        foreach (var lote in lotes)
+        {
+            await using var comando = new SqlCommand(lote.Texto, _conexion) { CommandTimeout = SinTiempoLimite };
+            await using var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
+
+            do
+            {
+                while (await lector.ReadAsync(tokenDeCancelacion))
+                {
+                    planes.Add(lector.GetString(0));
+                }
+            }
+            while (await lector.NextResultAsync(tokenDeCancelacion));
+        }
+
+        return planes;
+    }
+
+    /// <summary>
+    /// Con STATISTICS XML el servidor agrega un conjunto de resultados con el plan después de cada
+    /// instrucción; se separan para que la grilla muestre solo los datos.
+    /// </summary>
+    private static ResultadoDeEjecucion SepararPlanesReales(ResultadoDeEjecucion resultado)
+    {
+        var esConjuntoDePlan = (ConjuntoDeResultados conjunto) =>
+            conjunto.Columnas is [{ Nombre: NombreDeColumnaDelPlan }];
+
+        return resultado with
+        {
+            ConjuntosDeResultados = resultado.ConjuntosDeResultados.Where(conjunto => !esConjuntoDePlan(conjunto)).ToList(),
+            PlanesRealesXml = resultado.ConjuntosDeResultados
+                .Where(esConjuntoDePlan)
+                .SelectMany(conjunto => conjunto.Filas.Select(fila => fila[0] as string))
+                .OfType<string>()
+                .ToList()
+        };
+    }
+
+    private async Task EjecutarInstruccionDeConfiguracionAsync(string instruccion, CancellationToken tokenDeCancelacion)
+    {
+        await ReabrirSiSePerdioLaConexionAsync(tokenDeCancelacion);
+        await using var comando = new SqlCommand(instruccion, _conexion);
+        await comando.ExecuteNonQueryAsync(tokenDeCancelacion);
     }
 
     public async Task CambiarBaseDeDatosAsync(string baseDeDatos, CancellationToken tokenDeCancelacion)

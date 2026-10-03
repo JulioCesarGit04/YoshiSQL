@@ -30,6 +30,21 @@
         <Setter Property="Background" Value="Transparent" />
     </Style>
 
+    <Style Selector="ToggleButton.Herramienta">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="ToggleButton.Herramienta:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PincelDeAcento}" />
+        <Setter Property="Foreground" Value="#10130F" />
+    </Style>
+    <Style Selector="ToggleButton.Herramienta:disabled /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
     <Style Selector="Button.Ejecutar">
         <Setter Property="Foreground" Value="{StaticResource PincelDeAcento}" />
         <Setter Property="FontWeight" Value="SemiBold" />

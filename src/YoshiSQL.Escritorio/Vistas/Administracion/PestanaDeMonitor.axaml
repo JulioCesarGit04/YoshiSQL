@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Administracion"
+             xmlns:actividad="using:YoshiSQL.Dominio.Actividad"
+             x:Class="YoshiSQL.Escritorio.Vistas.Administracion.PestanaDeMonitor"
+             x:DataType="vm:PestanaDeMonitorModeloDeVista">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource PincelDePanel}"
+                BorderBrush="{StaticResource PincelDeBorde}"
+                BorderThickness="0,0,0,1"
+                Padding="8,4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button Classes="Herramienta" Content="Actualizar" Command="{Binding ActualizarCommand}" />
+                <CheckBox Content="Actualizar cada 5 segundos" IsChecked="{Binding ActualizacionAutomatica}" Margin="8,0" />
+                <Button Classes="Herramienta" Content="Terminar proceso" Command="{Binding TerminarProcesoCommand}"
+                        ToolTip.Tip="Terminar la sesión seleccionada (KILL)" />
+            </StackPanel>
+        </Border>
+
+        <DataGrid ItemsSource="{Binding Procesos}"
+                  SelectedItem="{Binding ProcesoSeleccionado}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserSortColumns="True"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Sesión" Binding="{Binding IdDeSesion}" />
+                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" />
+                <DataGridTemplateColumn Header="Bloqueado por" SortMemberPath="BloqueadoPorSesion">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="actividad:ProcesoActivo">
+                            <TextBlock Text="{Binding BloqueadoPorSesion}" Margin="12,0" VerticalAlignment="Center"
+                                       FontWeight="SemiBold" Foreground="{StaticResource PincelDeError}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Inicio de sesión" Binding="{Binding InicioDeSesion}" />
+                <DataGridTextColumn Header="Base de datos" Binding="{Binding BaseDeDatos}" />
+                <DataGridTextColumn Header="Comando" Binding="{Binding Comando}" />
+                <DataGridTextColumn Header="Espera" Binding="{Binding TipoDeEspera}" />
+                <DataGridTextColumn Header="Tiempo (ms)" Binding="{Binding TiempoTranscurridoEnMilisegundos}" />
+                <DataGridTextColumn Header="CPU (ms)" Binding="{Binding TiempoDeCpuEnMilisegundos}" />
+                <DataGridTextColumn Header="Lecturas" Binding="{Binding Lecturas}" />
+                <DataGridTextColumn Header="Equipo" Binding="{Binding Equipo}" />
+                <DataGridTextColumn Header="Programa" Binding="{Binding Programa}" MaxWidth="260" />
+                <DataGridTextColumn Header="Instrucción" Binding="{Binding TextoSql}" MaxWidth="420" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

@@ -13,4 +13,9 @@ public sealed record ResultadoDeEjecucion(
     public int TotalDeFilas => ConjuntosDeResultados.Sum(conjunto => conjunto.CantidadDeFilas);
 
     public bool TieneErrores => Mensajes.Any(mensaje => mensaje.Tipo == TipoDeMensaje.Error);
+
+    /// <summary>
+    /// XML de los planes reales, cuando se ejecutó con "Incluir plan real".
+    /// </summary>
+    public IReadOnlyList<string> PlanesRealesXml { get; init; } = [];
 }

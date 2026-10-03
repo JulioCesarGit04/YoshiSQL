@@ -29,6 +29,14 @@ public interface IGeneradorDeScripts
 
     string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos);
 
+    string GenerarCreacionDeInicioDeSesion();
+
+    string GenerarEliminacionDeInicioDeSesion(string nombre);
+
+    string GenerarCreacionDeUsuario(string baseDeDatos);
+
+    string GenerarEliminacionDeUsuario(string baseDeDatos, string nombre);
+
     /// <summary>
     /// Script para crear la tabla (si original es nulo) o para llevarla de su estado original al nuevo.
     /// Todo dentro de una transacción.

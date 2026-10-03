@@ -11,8 +11,14 @@ public sealed class ProveedorSqlServer : IProveedorDeBaseDeDatos
         IDivisorDeLotes divisorDeLotes,
         IGeneradorDeScripts generadorDeScripts,
         IFormateadorDeSql formateador,
-        IAnalizadorDeContextoSql analizadorDeContexto)
+        IAnalizadorDeContextoSql analizadorDeContexto,
+        IMonitorDeActividad monitor,
+        IAdministradorDeRespaldos respaldos,
+        IAnalizadorDePlanes analizadorDePlanes)
     {
+        AnalizadorDePlanes = analizadorDePlanes;
+        Respaldos = respaldos;
+        Monitor = monitor;
         Formateador = formateador;
         AnalizadorDeContexto = analizadorDeContexto;
         Explorador = explorador;
@@ -34,6 +40,12 @@ public sealed class ProveedorSqlServer : IProveedorDeBaseDeDatos
     public IFormateadorDeSql Formateador { get; }
 
     public IAnalizadorDeContextoSql AnalizadorDeContexto { get; }
+
+    public IMonitorDeActividad Monitor { get; }
+
+    public IAdministradorDeRespaldos Respaldos { get; }
+
+    public IAnalizadorDePlanes AnalizadorDePlanes { get; }
 
     public IReadOnlyList<string> TiposDeDatoSugeridos { get; } =
     [

@@ -110,6 +110,51 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             """;
     }
 
+    public string GenerarCreacionDeInicioDeSesion() =>
+        """
+        USE [master];
+        GO
+
+        -- Cambia el nombre y usa una contraseña segura (mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos)
+        CREATE LOGIN [NuevoInicioDeSesion]
+            WITH PASSWORD = N'Cambia$EstaClave1',
+                 CHECK_POLICY = ON,
+                 DEFAULT_DATABASE = [master];
+        GO
+        """;
+
+    public string GenerarEliminacionDeInicioDeSesion(string nombre) =>
+        $"""
+        USE [master];
+        GO
+
+        DROP LOGIN {Delimitar(nombre)};
+        GO
+        """;
+
+    public string GenerarCreacionDeUsuario(string baseDeDatos) =>
+        $"""
+        USE {Delimitar(baseDeDatos)};
+        GO
+
+        -- El usuario se asocia a un inicio de sesión que ya exista en el servidor
+        CREATE USER [NuevoUsuario] FOR LOGIN [NuevoInicioDeSesion];
+
+        -- Permisos de lectura y escritura sobre todas las tablas
+        ALTER ROLE [db_datareader] ADD MEMBER [NuevoUsuario];
+        ALTER ROLE [db_datawriter] ADD MEMBER [NuevoUsuario];
+        GO
+        """;
+
+    public string GenerarEliminacionDeUsuario(string baseDeDatos, string nombre) =>
+        $"""
+        USE {Delimitar(baseDeDatos)};
+        GO
+
+        DROP USER {Delimitar(nombre)};
+        GO
+        """;
+
     public string GenerarCreacionDesdeDefinicion(string baseDeDatos, string definicion) =>
         EnvolverEnBaseDeDatos(baseDeDatos, definicion);
 

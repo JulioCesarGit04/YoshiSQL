@@ -1,5 +1,6 @@
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Seguridad;
 
 namespace YoshiSQL.Dominio.Contratos;
 
@@ -70,6 +71,20 @@ public interface IExploradorDeEsquema
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
         Tabla tabla,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
+        DatosDeAcceso datosDeAcceso,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<UsuarioDeBaseDeDatos>> ObtenerUsuariosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    Task<IReadOnlyList<RolDeBaseDeDatos>> ObtenerRolesAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
         CancellationToken tokenDeCancelacion);
 
     Task<IReadOnlyList<LlaveForanea>> ObtenerLlavesForaneasAsync(

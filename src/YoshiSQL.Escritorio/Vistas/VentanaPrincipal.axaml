@@ -11,6 +11,8 @@
         xmlns:vistasDiseno="using:YoshiSQL.Escritorio.Vistas.DisenoDeTablas"
         xmlns:edicion="using:YoshiSQL.Escritorio.ModelosDeVista.EdicionDeFilas"
         xmlns:vistasEdicion="using:YoshiSQL.Escritorio.Vistas.EdicionDeFilas"
+        xmlns:administracion="using:YoshiSQL.Escritorio.ModelosDeVista.Administracion"
+        xmlns:vistasAdministracion="using:YoshiSQL.Escritorio.Vistas.Administracion"
         x:Class="YoshiSQL.Escritorio.Vistas.VentanaPrincipal"
         x:DataType="vm:VentanaPrincipalModeloDeVista"
         Title="YoshiSQL"
@@ -32,6 +34,9 @@
         <DataTemplate DataType="edicion:PestanaDeEdicionDeFilasModeloDeVista">
             <vistasEdicion:PestanaDeEdicionDeFilas />
         </DataTemplate>
+        <DataTemplate DataType="administracion:PestanaDeMonitorModeloDeVista">
+            <vistasAdministracion:PestanaDeMonitor />
+        </DataTemplate>
     </Window.DataTemplates>
 
     <Window.KeyBindings>
@@ -45,6 +50,8 @@
         <KeyBinding Gesture="Ctrl+W" Command="{Binding CerrarPestanaCommand}" />
         <KeyBinding Gesture="Ctrl+H" Command="{Binding ConsultaSeleccionada.ReemplazarCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}" />
+        <KeyBinding Gesture="Ctrl+L" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}" />
+        <KeyBinding Gesture="Ctrl+M" Command="{Binding ConsultaSeleccionada.ConmutarPlanRealCommand}" />
     </Window.KeyBindings>
 
     <DockPanel>
@@ -72,6 +79,9 @@
             <MenuItem Header="_Consulta">
                 <MenuItem Header="Ejecutar" InputGesture="F5" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
                 <MenuItem Header="Cancelar ejecución" InputGesture="Alt+Pause" Command="{Binding ConsultaSeleccionada.CancelarCommand}" />
+                <Separator />
+                <MenuItem Header="Mostrar plan estimado" InputGesture="Ctrl+L" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}" />
+                <MenuItem Header="Incluir plan real" InputGesture="Ctrl+M" Command="{Binding ConsultaSeleccionada.ConmutarPlanRealCommand}" />
             </MenuItem>
             <MenuItem Header="A_yuda">
                 <MenuItem Header="Abrir carpeta de registros" Command="{Binding AbrirCarpetaDeRegistrosCommand}" />
@@ -108,6 +118,17 @@
                 <Button Classes="Herramienta" Content="Cancelar"
                         Command="{Binding ConsultaSeleccionada.CancelarCommand}"
                         IsEnabled="{Binding HayConsultaSeleccionada}" />
+
+                <Rectangle Width="1" Margin="8,4" Fill="{StaticResource PincelDeBorde}" />
+
+                <Button Classes="Herramienta" Content="Plan estimado"
+                        Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}"
+                        ToolTip.Tip="Ver cómo ejecutaría el servidor la consulta, sin ejecutarla (Ctrl+L)" />
+                <ToggleButton Classes="Herramienta" Content="Plan real"
+                              IsChecked="{Binding ConsultaSeleccionada.IncluirPlanReal, FallbackValue=False}"
+                              IsEnabled="{Binding HayConsultaSeleccionada}"
+                              ToolTip.Tip="Incluir el plan real al ejecutar (Ctrl+M)" />
             </StackPanel>
         </Border>
 

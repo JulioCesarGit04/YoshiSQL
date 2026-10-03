@@ -33,6 +33,15 @@ public sealed class ServicioDeGeneracionDeScripts
     public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(nombreDeLaBaseDeDatos);
 
+    public string GenerarCreacionDeInicioDeSesion() => _generadorDeScripts.GenerarCreacionDeInicioDeSesion();
+
+    public string GenerarEliminacionDeInicioDeSesion(string nombre) => _generadorDeScripts.GenerarEliminacionDeInicioDeSesion(nombre);
+
+    public string GenerarCreacionDeUsuario(string baseDeDatos) => _generadorDeScripts.GenerarCreacionDeUsuario(baseDeDatos);
+
+    public string GenerarEliminacionDeUsuario(string baseDeDatos, string nombre) =>
+        _generadorDeScripts.GenerarEliminacionDeUsuario(baseDeDatos, nombre);
+
     /// <summary>
     /// Script ALTER con el código actual de una vista, procedimiento o función (opción "Modificar").
     /// </summary>

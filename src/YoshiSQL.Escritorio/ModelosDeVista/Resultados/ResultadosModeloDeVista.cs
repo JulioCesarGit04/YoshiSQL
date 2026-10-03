@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using YoshiSQL.Dominio.Consultas;
+using YoshiSQL.Dominio.Planes;
+using YoshiSQL.Escritorio.ModelosDeVista.Planes;
 using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista.Resultados;
@@ -12,12 +14,34 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
 {
     public const int IndiceDePestanaDeResultados = 0;
     public const int IndiceDePestanaDeMensajes = 1;
+    public const int IndiceDePestanaDelPlan = 2;
 
     private readonly IServicioDeExportacionDeResultados _servicioDeExportacion;
+    private readonly IServicioDelSistemaOperativo _sistemaOperativo;
 
-    public ResultadosModeloDeVista(IServicioDeExportacionDeResultados servicioDeExportacion)
+    public ResultadosModeloDeVista(IServicioDeExportacionDeResultados servicioDeExportacion, IServicioDelSistemaOperativo sistemaOperativo)
     {
         _servicioDeExportacion = servicioDeExportacion;
+        _sistemaOperativo = sistemaOperativo;
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TienePlan))]
+    public partial PlanDeEjecucionModeloDeVista? Plan { get; private set; }
+
+    public bool TienePlan => Plan is not null;
+
+    /// <summary>
+    /// Muestra el plan; si se pide, cambia a su pestaña (así ocurre con el plan estimado).
+    /// </summary>
+    public void MostrarPlan(PlanDeEjecucion plan, bool seleccionarPestana)
+    {
+        Plan = new PlanDeEjecucionModeloDeVista(plan, _sistemaOperativo);
+
+        if (seleccionarPestana)
+        {
+            IndiceDePestanaSeleccionada = IndiceDePestanaDelPlan;
+        }
     }
 
     public ObservableCollection<ConjuntoDeResultadosModeloDeVista> Conjuntos { get; } = [];
@@ -71,6 +95,7 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     {
         Conjuntos.Clear();
         Mensajes.Clear();
+        Plan = null;
         NotificarCambioDeConjuntos();
     }
 

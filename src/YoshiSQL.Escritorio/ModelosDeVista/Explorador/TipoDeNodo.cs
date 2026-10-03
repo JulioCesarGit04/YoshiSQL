@@ -16,6 +16,9 @@ public enum TipoDeNodo
     Columna,
     LlavePrimaria,
     Indice,
+    InicioDeSesion,
+    Usuario,
+    Rol,
     Cargando,
     Error
 }

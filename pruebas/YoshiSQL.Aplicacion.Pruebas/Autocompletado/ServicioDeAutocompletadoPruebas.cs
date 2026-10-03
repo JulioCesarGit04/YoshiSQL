@@ -157,6 +157,9 @@ public class ServicioDeAutocompletadoPruebas
         public Task<string?> ObtenerDefinicionAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, ObjetoDeEsquema objeto, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
         public Task<IReadOnlyList<Indice>> ObtenerIndicesAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, Tabla tabla, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
         public Task<IReadOnlyList<LlaveForanea>> ObtenerLlavesForaneasAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
+        public Task<IReadOnlyList<YoshiSQL.Dominio.Seguridad.InicioDeSesion>> ObtenerIniciosDeSesionAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
+        public Task<IReadOnlyList<YoshiSQL.Dominio.Seguridad.UsuarioDeBaseDeDatos>> ObtenerUsuariosAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
+        public Task<IReadOnlyList<YoshiSQL.Dominio.Seguridad.RolDeBaseDeDatos>> ObtenerRolesAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
     }
 
     private sealed class ProveedorFalso(IAnalizadorDeContextoSql analizador, IExploradorDeEsquema explorador) : IProveedorDeBaseDeDatos
@@ -169,6 +172,9 @@ public class ServicioDeAutocompletadoPruebas
         public IGeneradorDeScripts GeneradorDeScripts => throw new NotSupportedException();
         public IFormateadorDeSql Formateador => throw new NotSupportedException();
         public IReadOnlyList<string> TiposDeDatoSugeridos => [];
+        public IMonitorDeActividad Monitor => throw new NotSupportedException();
+        public IAdministradorDeRespaldos Respaldos => throw new NotSupportedException();
+        public IAnalizadorDePlanes AnalizadorDePlanes => throw new NotSupportedException();
         public Task ProbarConexionAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
     }
 }
