@@ -50,14 +50,16 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
         return archivos.Count > 0 ? archivos[0].TryGetLocalPath() : null;
     }
 
-    public async Task<string?> SeleccionarArchivoParaGuardarAsync(string nombreSugerido)
+    public async Task<string?> SeleccionarArchivoParaGuardarAsync(string nombreSugerido, TipoDeArchivo tipoDeArchivo)
     {
+        var tipoParaElSelector = new FilePickerFileType(tipoDeArchivo.Descripcion) { Patterns = [$"*.{tipoDeArchivo.Extension}"] };
+
         var archivo = await ObtenerVentanaPrincipal().StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Guardar script",
-            SuggestedFileName = nombreSugerido,
-            DefaultExtension = "sql",
-            FileTypeChoices = [ArchivosSql, TodosLosArchivos]
+            Title = $"Guardar como {tipoDeArchivo.Descripcion}",
+            SuggestedFileName = Path.ChangeExtension(nombreSugerido, tipoDeArchivo.Extension),
+            DefaultExtension = tipoDeArchivo.Extension,
+            FileTypeChoices = [tipoParaElSelector, TodosLosArchivos]
         });
 
         return archivo?.TryGetLocalPath();

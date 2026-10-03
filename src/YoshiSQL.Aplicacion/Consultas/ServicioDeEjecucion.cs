@@ -24,6 +24,7 @@ public sealed class ServicioDeEjecucion
         _ejecutorDeConsultas.AbrirSesionAsync(servidor.DatosDeAcceso, baseDeDatos, tokenDeCancelacion);
 
     public async Task<ResultadoDeEjecucion> EjecutarAsync(
+        ServidorConectado servidor,
         ISesionDeConsulta sesion,
         FragmentoDeCodigo fragmento,
         CancellationToken tokenDeCancelacion)
@@ -38,8 +39,9 @@ public sealed class ServicioDeEjecucion
         var baseDeDatosAlIniciar = sesion.BaseDeDatosActual;
         var resultado = await sesion.EjecutarLotesAsync(lotes, tokenDeCancelacion);
 
-        _historial.Registrar(new ConsultaEjecutada(
+        await _historial.RegistrarAsync(new ConsultaEjecutada(
             fragmento.Texto,
+            servidor.Perfil.NombreVisible,
             baseDeDatosAlIniciar,
             DateTimeOffset.Now,
             resultado.Estado,

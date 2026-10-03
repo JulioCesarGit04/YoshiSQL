@@ -24,6 +24,8 @@ public sealed partial class VentanaPrincipalModeloDeVista
     /// </summary>
     public async Task IniciarAsync()
     {
+        await CargarHistorialAsync();
+
         try
         {
             var sesionAnterior = await _servicioDeSesion.IniciarAsync(CancellationToken.None);
@@ -35,6 +37,18 @@ public sealed partial class VentanaPrincipalModeloDeVista
         }
 
         _ = MantenerAutoguardadoAsync(_detencionDelAutoguardado.Token);
+    }
+
+    private async Task CargarHistorialAsync()
+    {
+        try
+        {
+            await _historialDeConsultas.CargarAsync(CancellationToken.None);
+        }
+        catch (Exception error)
+        {
+            _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Cargar el historial de consultas"));
+        }
     }
 
     private async Task RestaurarSesionAsync(SesionAnterior sesionAnterior)

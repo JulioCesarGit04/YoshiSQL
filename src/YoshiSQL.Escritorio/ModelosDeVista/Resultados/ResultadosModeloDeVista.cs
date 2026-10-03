@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using YoshiSQL.Dominio.Consultas;
+using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista.Resultados;
 
@@ -12,14 +13,21 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     public const int IndiceDePestanaDeResultados = 0;
     public const int IndiceDePestanaDeMensajes = 1;
 
-    public ObservableCollection<ConjuntoDeResultados> Conjuntos { get; } = [];
+    private readonly IServicioDeExportacionDeResultados _servicioDeExportacion;
+
+    public ResultadosModeloDeVista(IServicioDeExportacionDeResultados servicioDeExportacion)
+    {
+        _servicioDeExportacion = servicioDeExportacion;
+    }
+
+    public ObservableCollection<ConjuntoDeResultadosModeloDeVista> Conjuntos { get; } = [];
 
     public ObservableCollection<MensajeDeEjecucion> Mensajes { get; } = [];
 
     [ObservableProperty]
     public partial int IndiceDePestanaSeleccionada { get; set; }
 
-    public ConjuntoDeResultados? ConjuntoUnico => Conjuntos.Count == 1 ? Conjuntos[0] : null;
+    public ConjuntoDeResultadosModeloDeVista? ConjuntoUnico => Conjuntos.Count == 1 ? Conjuntos[0] : null;
 
     public bool TieneUnSoloConjunto => Conjuntos.Count == 1;
 
@@ -35,7 +43,7 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
 
         foreach (var conjunto in resultado.ConjuntosDeResultados)
         {
-            Conjuntos.Add(conjunto);
+            Conjuntos.Add(new ConjuntoDeResultadosModeloDeVista(conjunto, _servicioDeExportacion));
         }
 
         foreach (var mensaje in resultado.Mensajes)

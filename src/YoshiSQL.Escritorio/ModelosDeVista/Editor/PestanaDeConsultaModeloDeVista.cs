@@ -31,25 +31,26 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         ServidorConectado servidor,
         string baseDeDatos,
         string nombreDelArchivo,
-        ServicioDeEjecucion servicioDeEjecucion,
-        ServicioDelExplorador servicioDelExplorador,
-        ServicioDeFormatoSql servicioDeFormato,
-        IServicioDeErrores servicioDeErrores)
+        ServiciosDeConsulta servicios)
         : base(servidor)
     {
-        _servicioDeFormato = servicioDeFormato;
-        _servicioDeErrores = servicioDeErrores;
+        _servicioDeEjecucion = servicios.Ejecucion;
+        _servicioDelExplorador = servicios.Explorador;
+        _servicioDeFormato = servicios.Formato;
+        _servicioDeErrores = servicios.Errores;
         BaseDeDatosActual = baseDeDatos;
         NombreDelArchivo = nombreDelArchivo;
-        _servicioDeEjecucion = servicioDeEjecucion;
-        _servicioDelExplorador = servicioDelExplorador;
+
+        // La lista nace con la base actual para que la lista desplegable siempre la encuentre seleccionada
+        BasesDeDatosDisponibles.Add(baseDeDatos);
+        Resultados = new ResultadosModeloDeVista(servicios.Exportacion);
 
         Documento.TextChanged += (_, _) => MarcarCambiosSinGuardar();
     }
 
     public TextDocument Documento { get; } = new();
 
-    public ResultadosModeloDeVista Resultados { get; } = new();
+    public ResultadosModeloDeVista Resultados { get; }
 
     public ObservableCollection<string> BasesDeDatosDisponibles { get; } = [];
 
@@ -188,7 +189,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         try
         {
             _sesion ??= await _servicioDeEjecucion.AbrirSesionAsync(Servidor, BaseDeDatosActual, tokenDeCancelacion);
-            var resultado = await _servicioDeEjecucion.EjecutarAsync(_sesion, fragmento, tokenDeCancelacion);
+            var resultado = await _servicioDeEjecucion.EjecutarAsync(Servidor, _sesion, fragmento, tokenDeCancelacion);
             MostrarResultado(resultado);
 
             if (DetectorDeCambiosDeEsquema.ModificaBasesDeDatos(fragmento.Texto))
@@ -314,17 +315,33 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         }
     }
 
+    /// <summary>
+    /// Actualiza la lista sin vaciarla: si la base seleccionada desapareciera aunque sea un instante,
+    /// la lista desplegable perdería la selección.
+    /// </summary>
     private void ReemplazarBasesDeDatosDisponibles(IReadOnlyList<string> nombres)
     {
-        BasesDeDatosDisponibles.Clear();
+        IReadOnlyList<string> nombresFinales = nombres.Contains(BaseDeDatosActual) ? nombres : [.. nombres, BaseDeDatosActual];
 
-        foreach (var nombre in nombres)
+        foreach (var nombreSobrante in BasesDeDatosDisponibles.Except(nombresFinales).ToList())
         {
-            BasesDeDatosDisponibles.Add(nombre);
+            BasesDeDatosDisponibles.Remove(nombreSobrante);
         }
 
-        AgregarBaseDeDatosSiNoExiste(BaseDeDatosActual);
-        OnPropertyChanged(nameof(BaseDeDatosSeleccionada));
+        for (var posicion = 0; posicion < nombresFinales.Count; posicion++)
+        {
+            var nombre = nombresFinales[posicion];
+            var posicionActual = BasesDeDatosDisponibles.IndexOf(nombre);
+
+            if (posicionActual < 0)
+            {
+                BasesDeDatosDisponibles.Insert(posicion, nombre);
+            }
+            else if (posicionActual != posicion)
+            {
+                BasesDeDatosDisponibles.Move(posicionActual, posicion);
+            }
+        }
     }
 
     private void AgregarBaseDeDatosSiNoExiste(string baseDeDatos)

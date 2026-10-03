@@ -1,8 +1,10 @@
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Escritorio.Convertidores;
+using YoshiSQL.Escritorio.ModelosDeVista.Resultados;
 
 namespace YoshiSQL.Escritorio.Vistas.Resultados;
 
@@ -12,8 +14,10 @@ namespace YoshiSQL.Escritorio.Vistas.Resultados;
 /// </summary>
 public sealed class GrillaDeResultados : UserControl
 {
-    public static readonly StyledProperty<ConjuntoDeResultados?> ConjuntoProperty =
-        AvaloniaProperty.Register<GrillaDeResultados, ConjuntoDeResultados?>(nameof(Conjunto));
+    public static readonly StyledProperty<ConjuntoDeResultadosModeloDeVista?> ConjuntoProperty =
+        AvaloniaProperty.Register<GrillaDeResultados, ConjuntoDeResultadosModeloDeVista?>(nameof(Conjunto));
+
+    private const double AnchoMaximoDeColumna = 480;
 
     private readonly DataGrid _grilla = new()
     {
@@ -33,7 +37,7 @@ public sealed class GrillaDeResultados : UserControl
         Content = _grilla;
     }
 
-    public ConjuntoDeResultados? Conjunto
+    public ConjuntoDeResultadosModeloDeVista? Conjunto
     {
         get => GetValue(ConjuntoProperty);
         set => SetValue(ConjuntoProperty, value);
@@ -49,23 +53,41 @@ public sealed class GrillaDeResultados : UserControl
         }
     }
 
-    private void MostrarConjunto(ConjuntoDeResultados? conjunto)
+    private void MostrarConjunto(ConjuntoDeResultadosModeloDeVista? modelo)
     {
         _grilla.ItemsSource = null;
         _grilla.Columns.Clear();
+        _grilla.ContextMenu = null;
 
-        if (conjunto is null)
+        if (modelo is null)
         {
             return;
         }
 
-        for (var posicion = 0; posicion < conjunto.Columnas.Count; posicion++)
+        var columnas = modelo.Conjunto.Columnas;
+
+        for (var posicion = 0; posicion < columnas.Count; posicion++)
         {
-            _grilla.Columns.Add(CrearColumna(conjunto.Columnas[posicion], posicion));
+            _grilla.Columns.Add(CrearColumna(columnas[posicion], posicion));
         }
 
-        _grilla.ItemsSource = conjunto.Filas;
+        _grilla.ItemsSource = modelo.Conjunto.Filas;
+        _grilla.ContextMenu = CrearMenuContextual(modelo);
     }
+
+    private static ContextMenu CrearMenuContextual(ConjuntoDeResultadosModeloDeVista modelo) => new()
+    {
+        ItemsSource = new object[]
+        {
+            CrearOpcion("Copiar todo con encabezados", modelo.CopiarTodoCommand),
+            new Separator(),
+            CrearOpcion("Exportar a CSV...", modelo.ExportarACsvCommand),
+            CrearOpcion("Exportar a Excel...", modelo.ExportarAExcelCommand),
+            CrearOpcion("Exportar a JSON...", modelo.ExportarAJsonCommand)
+        }
+    };
+
+    private static MenuItem CrearOpcion(string texto, ICommand comando) => new() { Header = texto, Command = comando };
 
     private static DataGridTextColumn CrearColumna(ColumnaDeResultado columna, int posicion) => new()
     {
@@ -73,6 +95,6 @@ public sealed class GrillaDeResultados : UserControl
         // Cada fila es un arreglo de valores; la columna lee la posición que le corresponde
         Binding = new Binding($"[{posicion}]") { Converter = ValorDeCeldaATexto.Instancia, Mode = BindingMode.OneTime },
         IsReadOnly = true,
-        MaxWidth = 480
+        MaxWidth = AnchoMaximoDeColumna
     };
 }

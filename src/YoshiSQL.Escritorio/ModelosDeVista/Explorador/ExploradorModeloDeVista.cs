@@ -82,6 +82,11 @@ public sealed partial class ExploradorModeloDeVista : ModeloDeVistaBase
         OnPropertyChanged(nameof(TieneServidores));
     }
 
+    public ContextoDelNodo? BuscarContextoDelServidor(string nombreVisibleDelServidor) =>
+        Servidores
+            .Select(nodo => nodo.Contexto)
+            .FirstOrDefault(contexto => string.Equals(contexto?.Servidor.Perfil.NombreVisible, nombreVisibleDelServidor, StringComparison.OrdinalIgnoreCase));
+
     private NodoDelArbolModeloDeVista? BuscarNodoDeServidor(ServidorConectado servidor) =>
         Servidores.FirstOrDefault(nodoDeServidor => nodoDeServidor.Contexto?.Servidor == servidor);
 }

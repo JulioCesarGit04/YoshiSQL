@@ -8,55 +8,60 @@ using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Aplicacion.Scripts;
 using YoshiSQL.Aplicacion.Sesion;
+using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Escritorio.ModelosDeVista.Diagramas;
 using YoshiSQL.Escritorio.ModelosDeVista.Editor;
 using YoshiSQL.Escritorio.ModelosDeVista.Explorador;
+using YoshiSQL.Escritorio.ModelosDeVista.Historial;
 using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista;
 
-public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador
+public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador, IAccionesDelHistorial
 {
     private const string PrefijoDeConsultaNueva = "SQLQuery";
 
-    private readonly ServicioDeEjecucion _servicioDeEjecucion;
+    private readonly ServiciosDeConsulta _serviciosDeConsulta;
     private readonly ServicioDelExplorador _servicioDelExplorador;
     private readonly ServicioDeArchivosSql _servicioDeArchivosSql;
-    private readonly ServicioDeFormatoSql _servicioDeFormato;
     private readonly ServicioDeDiagramas _servicioDeDiagramas;
     private readonly IServicioDeDialogos _servicioDeDialogos;
     private readonly IServicioDeErrores _servicioDeErrores;
     private readonly IServicioDelSistemaOperativo _sistemaOperativo;
     private readonly ServicioDeSesion _servicioDeSesion;
+    private readonly HistorialDeConsultas _historialDeConsultas;
     private int _contadorDeConsultasNuevas;
 
     public VentanaPrincipalModeloDeVista(
-        ServicioDeEjecucion servicioDeEjecucion,
+        ServiciosDeConsulta serviciosDeConsulta,
         ServicioDelExplorador servicioDelExplorador,
         ServicioDeArchivosSql servicioDeArchivosSql,
         ServicioDeGeneracionDeScripts servicioDeGeneracionDeScripts,
         ServicioDeDiagramas servicioDeDiagramas,
-        ServicioDeFormatoSql servicioDeFormato,
         IServicioDeDialogos servicioDeDialogos,
         IServicioDeErrores servicioDeErrores,
         IServicioDelSistemaOperativo sistemaOperativo,
-        ServicioDeSesion servicioDeSesion)
+        ServicioDeSesion servicioDeSesion,
+        HistorialDeConsultas historialDeConsultas)
     {
+        _historialDeConsultas = historialDeConsultas;
         _servicioDeSesion = servicioDeSesion;
         _servicioDeErrores = servicioDeErrores;
         _sistemaOperativo = sistemaOperativo;
         _servicioDeDiagramas = servicioDeDiagramas;
-        _servicioDeFormato = servicioDeFormato;
-        _servicioDeEjecucion = servicioDeEjecucion;
+        _serviciosDeConsulta = serviciosDeConsulta;
         _servicioDelExplorador = servicioDelExplorador;
         _servicioDeArchivosSql = servicioDeArchivosSql;
         _servicioDeDialogos = servicioDeDialogos;
 
         var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this, servicioDeErrores);
         Explorador = new ExploradorModeloDeVista(fabricaDeNodos);
+        Historial = new HistorialModeloDeVista(historialDeConsultas, this, servicioDeDialogos, sistemaOperativo, servicioDeErrores);
     }
 
     public ExploradorModeloDeVista Explorador { get; }
+
+    public HistorialModeloDeVista Historial { get; }
 
     public ObservableCollection<DocumentoModeloDeVista> Documentos { get; } = [];
 
@@ -236,6 +241,19 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         await diagrama.CargarCommand.ExecuteAsync(null);
     }
 
+    /// <summary>
+    /// Usa el servidor donde se ejecutó la consulta si sigue conectado; si no, el servidor actual.
+    /// </summary>
+    public async Task AbrirConsultaDelHistorialAsync(ConsultaEjecutada consulta)
+    {
+        var contexto = Explorador.BuscarContextoDelServidor(consulta.Servidor) ?? await ObtenerOSolicitarContextoAsync();
+
+        if (contexto is not null)
+        {
+            await AbrirNuevaConsultaAsync(contexto with { BaseDeDatos = consulta.BaseDeDatos }, consulta.Texto, ejecutarAlAbrir: false);
+        }
+    }
+
     public void DesconectarServidor(ContextoDelNodo contexto) => Explorador.QuitarServidor(contexto.Servidor);
 
     /// <param name="nombreDelArchivo">Nombre a usar; si es nulo se genera uno nuevo (SQLQuery1.sql, SQLQuery2.sql...).</param>
@@ -248,10 +266,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             contexto.Servidor,
             contexto.BaseDeDatosOPredeterminada,
             nombreDelArchivo ?? GenerarNombreDeConsultaNueva(),
-            _servicioDeEjecucion,
-            _servicioDelExplorador,
-            _servicioDeFormato,
-            _servicioDeErrores);
+            _serviciosDeConsulta);
 
         pestana.CargarTexto(textoInicial);
         pestana.BasesDeDatosModificadas += ActualizarBasesDeDatosDelExplorador;
@@ -334,7 +349,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private async Task<bool> GuardarPestanaAsync(PestanaDeConsultaModeloDeVista pestana, bool pedirUbicacion)
     {
         var rutaDelArchivo = pedirUbicacion
-            ? await _servicioDeDialogos.SeleccionarArchivoParaGuardarAsync(pestana.NombreDelArchivo)
+            ? await _servicioDeDialogos.SeleccionarArchivoParaGuardarAsync(pestana.NombreDelArchivo, TipoDeArchivo.ScriptSql)
             : pestana.RutaDelArchivo;
 
         if (rutaDelArchivo is null)

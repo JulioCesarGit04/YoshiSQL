@@ -20,6 +20,7 @@ public static class RegistroDeServicios
         servicios.AddSingleton<HistorialDeConsultas>();
         servicios.AddSingleton<ServicioDeEjecucion>();
         servicios.AddSingleton<ServicioDeFormatoSql>();
+        servicios.AddSingleton<ServicioDeExportacion>();
         servicios.AddSingleton<ServicioDeArchivosSql>();
         servicios.AddSingleton<ServicioDeGeneracionDeScripts>();
         servicios.AddSingleton<ServicioDeDiagramas>();

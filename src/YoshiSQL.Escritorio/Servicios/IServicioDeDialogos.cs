@@ -17,7 +17,7 @@ public interface IServicioDeDialogos
 
     Task<string?> SeleccionarArchivoParaAbrirAsync();
 
-    Task<string?> SeleccionarArchivoParaGuardarAsync(string nombreSugerido);
+    Task<string?> SeleccionarArchivoParaGuardarAsync(string nombreSugerido, TipoDeArchivo tipoDeArchivo);
 
     Task<RespuestaAlCerrar> PreguntarSiGuardarCambiosAsync(string nombreDelArchivo);
 

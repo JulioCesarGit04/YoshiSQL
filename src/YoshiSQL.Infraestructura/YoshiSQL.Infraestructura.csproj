@@ -15,4 +15,8 @@
     <EmbeddedResource Include="SqlServer\ConsultasDeCatalogo\*.sql" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="YoshiSQL.Infraestructura.Pruebas" />
+  </ItemGroup>
+
 </Project>

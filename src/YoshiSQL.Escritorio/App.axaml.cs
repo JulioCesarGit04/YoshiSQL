@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using YoshiSQL.Aplicacion.Errores;
+using YoshiSQL.Escritorio.Controles;
 using YoshiSQL.Escritorio.ModelosDeVista;
 using YoshiSQL.Escritorio.Servicios;
 using YoshiSQL.Escritorio.Vistas;
@@ -12,7 +13,11 @@ namespace YoshiSQL.Escritorio;
 
 public partial class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        TraduccionDeAvaloniaEdit.Aplicar();
+        AvaloniaXamlLoader.Load(this);
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

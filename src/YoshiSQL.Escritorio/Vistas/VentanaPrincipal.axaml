@@ -3,6 +3,7 @@
         xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista"
         xmlns:editor="using:YoshiSQL.Escritorio.ModelosDeVista.Editor"
         xmlns:vistasExplorador="using:YoshiSQL.Escritorio.Vistas.Explorador"
+        xmlns:vistasHistorial="using:YoshiSQL.Escritorio.Vistas.Historial"
         xmlns:vistasEditor="using:YoshiSQL.Escritorio.Vistas.Editor"
         xmlns:diagramas="using:YoshiSQL.Escritorio.ModelosDeVista.Diagramas"
         xmlns:vistasDiagramas="using:YoshiSQL.Escritorio.Vistas.Diagramas"
@@ -123,7 +124,14 @@
 
         <!-- Explorador a la izquierda, documentos a la derecha -->
         <Grid ColumnDefinitions="300,1,*">
-            <vistasExplorador:PanelDelExplorador Grid.Column="0" DataContext="{Binding Explorador}" />
+            <TabControl Grid.Column="0" Classes="Laterales" Padding="0" Background="{StaticResource PincelDePanel}">
+                <TabItem Header="Explorador">
+                    <vistasExplorador:PanelDelExplorador DataContext="{Binding Explorador}" />
+                </TabItem>
+                <TabItem Header="Historial">
+                    <vistasHistorial:PanelDelHistorial DataContext="{Binding Historial}" />
+                </TabItem>
+            </TabControl>
 
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
 

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using YoshiSQL.Dominio.Contratos;
+using YoshiSQL.Infraestructura.Exportacion;
 using YoshiSQL.Infraestructura.Persistencia;
 using YoshiSQL.Infraestructura.Seguridad;
 using YoshiSQL.Infraestructura.SqlServer;
@@ -16,6 +17,12 @@ public static class RegistroDeInfraestructura
         servicios.AddSingleton<IAlmacenDeCredenciales, AlmacenDeCredencialesCifrado>();
         servicios.AddSingleton<IRepositorioDeDiagramas, RepositorioDeDiagramasJson>();
         servicios.AddSingleton<IRepositorioDeSesion, RepositorioDeSesionJson>();
+        servicios.AddSingleton<IRepositorioDeHistorial, RepositorioDeHistorialJson>();
+
+        servicios.AddSingleton<IExportadorDeResultados, ExportadorCsv>();
+        servicios.AddSingleton<IExportadorDeResultados, ExportadorJson>();
+        servicios.AddSingleton<IExportadorDeResultados, ExportadorExcel>();
+        servicios.AddSingleton<IExportadorDeResultados, ExportadorDeTextoTabulado>();
 
         servicios.AgregarProveedorSqlServer();
 
