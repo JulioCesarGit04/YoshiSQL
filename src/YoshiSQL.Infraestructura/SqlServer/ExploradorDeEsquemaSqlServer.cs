@@ -100,6 +100,21 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                 grupo => (IReadOnlyList<Columna>)grupo.Select(fila => fila.Columna).ToList());
     }
 
+    public async Task<string?> ObtenerDefinicionAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion)
+    {
+        var definiciones = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ObtenerDefinicion",
+            CrearParametrosDelObjeto(objeto),
+            lector => lector.IsDBNull(0) ? null : lector.GetString(0),
+            tokenDeCancelacion);
+
+        return definiciones.Count == 0 ? null : definiciones[0];
+    }
+
     public async Task<IReadOnlyList<Indice>> ObtenerIndicesAsync(
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,

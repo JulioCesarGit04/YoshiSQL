@@ -22,6 +22,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private readonly ServicioDeEjecucion _servicioDeEjecucion;
     private readonly ServicioDelExplorador _servicioDelExplorador;
     private readonly ServicioDeArchivosSql _servicioDeArchivosSql;
+    private readonly ServicioDeFormatoSql _servicioDeFormato;
     private readonly ServicioDeDiagramas _servicioDeDiagramas;
     private readonly IServicioDeDialogos _servicioDeDialogos;
     private readonly IServicioDeErrores _servicioDeErrores;
@@ -35,6 +36,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         ServicioDeArchivosSql servicioDeArchivosSql,
         ServicioDeGeneracionDeScripts servicioDeGeneracionDeScripts,
         ServicioDeDiagramas servicioDeDiagramas,
+        ServicioDeFormatoSql servicioDeFormato,
         IServicioDeDialogos servicioDeDialogos,
         IServicioDeErrores servicioDeErrores,
         IServicioDelSistemaOperativo sistemaOperativo,
@@ -44,6 +46,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         _servicioDeErrores = servicioDeErrores;
         _sistemaOperativo = sistemaOperativo;
         _servicioDeDiagramas = servicioDeDiagramas;
+        _servicioDeFormato = servicioDeFormato;
         _servicioDeEjecucion = servicioDeEjecucion;
         _servicioDelExplorador = servicioDelExplorador;
         _servicioDeArchivosSql = servicioDeArchivosSql;
@@ -247,6 +250,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             nombreDelArchivo ?? GenerarNombreDeConsultaNueva(),
             _servicioDeEjecucion,
             _servicioDelExplorador,
+            _servicioDeFormato,
             _servicioDeErrores);
 
         pestana.CargarTexto(textoInicial);

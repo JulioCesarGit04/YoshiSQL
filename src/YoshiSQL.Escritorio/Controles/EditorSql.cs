@@ -4,6 +4,7 @@ using Avalonia.Data;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
+using AvaloniaEdit.Search;
 using YoshiSQL.Escritorio.ModelosDeVista.Editor;
 
 namespace YoshiSQL.Escritorio.Controles;
@@ -23,6 +24,8 @@ public sealed class EditorSql : TextEditor
 
     private static readonly Lazy<IHighlightingDefinition> DefinicionDeResaltado = new(CargarDefinicionDeResaltado);
 
+    private readonly SearchPanel _panelDeBusqueda;
+
     public EditorSql()
     {
         SyntaxHighlighting = DefinicionDeResaltado.Value;
@@ -34,6 +37,9 @@ public sealed class EditorSql : TextEditor
         Options.EnableEmailHyperlinks = false;
 
         TextArea.SelectionChanged += (_, _) => PublicarSeleccion();
+
+        // Panel de buscar y reemplazar incluido en AvaloniaEdit (Ctrl+F)
+        _panelDeBusqueda = SearchPanel.Install(this);
     }
 
     public RangoDeTexto Seleccion
@@ -44,6 +50,20 @@ public sealed class EditorSql : TextEditor
 
     // Reutiliza la plantilla visual del TextEditor original
     protected override Type StyleKeyOverride => typeof(TextEditor);
+
+    /// <summary>
+    /// Abre el panel de búsqueda con el texto subrayado como término a buscar.
+    /// </summary>
+    public void AbrirBusqueda(bool conReemplazo)
+    {
+        if (!TextArea.Selection.IsEmpty && !TextArea.Selection.IsMultiline)
+        {
+            _panelDeBusqueda.SearchPattern = TextArea.Selection.GetText();
+        }
+
+        _panelDeBusqueda.IsReplaceMode = conReemplazo;
+        _panelDeBusqueda.Open();
+    }
 
     /// <summary>
     /// Subraya la línea indicada y la desplaza a la vista; se usa al hacer doble clic en un error.

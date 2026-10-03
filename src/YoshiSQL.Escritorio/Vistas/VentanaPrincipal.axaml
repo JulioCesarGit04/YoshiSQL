@@ -32,6 +32,8 @@
         <KeyBinding Gesture="Ctrl+S" Command="{Binding GuardarCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding GuardarComoCommand}" />
         <KeyBinding Gesture="Ctrl+W" Command="{Binding CerrarPestanaCommand}" />
+        <KeyBinding Gesture="Ctrl+H" Command="{Binding ConsultaSeleccionada.ReemplazarCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}" />
     </Window.KeyBindings>
 
     <DockPanel>
@@ -46,6 +48,15 @@
                 <MenuItem Header="Guardar como..." InputGesture="Ctrl+Shift+S" Command="{Binding GuardarComoCommand}" />
                 <Separator />
                 <MenuItem Header="Cerrar pestaña" InputGesture="Ctrl+W" Command="{Binding CerrarPestanaCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Editar">
+                <MenuItem Header="Buscar..." InputGesture="Ctrl+F" Command="{Binding ConsultaSeleccionada.BuscarCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <MenuItem Header="Reemplazar..." InputGesture="Ctrl+H" Command="{Binding ConsultaSeleccionada.ReemplazarCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <Separator />
+                <MenuItem Header="Formatear SQL" InputGesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
             </MenuItem>
             <MenuItem Header="_Consulta">
                 <MenuItem Header="Ejecutar" InputGesture="F5" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />

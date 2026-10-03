@@ -7,6 +7,7 @@ namespace YoshiSQL.Escritorio.Vistas.Editor;
 
 public partial class PestanaDeConsulta : UserControl
 {
+    private PestanaDeConsultaModeloDeVista? _pestanaObservada;
     private ResultadosModeloDeVista? _resultadosObservados;
 
     public PestanaDeConsulta()
@@ -27,7 +28,18 @@ public partial class PestanaDeConsulta : UserControl
             _resultadosObservados.IrALineaSolicitado -= IrALinea;
         }
 
-        _resultadosObservados = (DataContext as PestanaDeConsultaModeloDeVista)?.Resultados;
+        if (_pestanaObservada is not null)
+        {
+            _pestanaObservada.BusquedaSolicitada -= AbrirBusqueda;
+        }
+
+        _pestanaObservada = DataContext as PestanaDeConsultaModeloDeVista;
+        _resultadosObservados = _pestanaObservada?.Resultados;
+
+        if (_pestanaObservada is not null)
+        {
+            _pestanaObservada.BusquedaSolicitada += AbrirBusqueda;
+        }
 
         if (_resultadosObservados is not null)
         {
@@ -37,4 +49,6 @@ public partial class PestanaDeConsulta : UserControl
     }
 
     private void IrALinea(object? remitente, int numeroDeLinea) => Editor.IrALinea(numeroDeLinea);
+
+    private void AbrirBusqueda(object? remitente, bool conReemplazo) => Editor.AbrirBusqueda(conReemplazo);
 }

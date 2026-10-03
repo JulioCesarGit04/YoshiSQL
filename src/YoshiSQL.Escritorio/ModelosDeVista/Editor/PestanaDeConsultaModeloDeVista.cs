@@ -21,6 +21,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
 {
     private readonly ServicioDeEjecucion _servicioDeEjecucion;
     private readonly ServicioDelExplorador _servicioDelExplorador;
+    private readonly ServicioDeFormatoSql _servicioDeFormato;
     private readonly IServicioDeErrores _servicioDeErrores;
     private ISesionDeConsulta? _sesion;
     private CancellationTokenSource? _cancelacionDeLaEjecucion;
@@ -32,9 +33,11 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         string nombreDelArchivo,
         ServicioDeEjecucion servicioDeEjecucion,
         ServicioDelExplorador servicioDelExplorador,
+        ServicioDeFormatoSql servicioDeFormato,
         IServicioDeErrores servicioDeErrores)
         : base(servidor)
     {
+        _servicioDeFormato = servicioDeFormato;
         _servicioDeErrores = servicioDeErrores;
         BaseDeDatosActual = baseDeDatos;
         NombreDelArchivo = nombreDelArchivo;
@@ -58,6 +61,11 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     /// Se dispara después de ejecutar un script que crea, elimina o modifica bases de datos.
     /// </summary>
     public event EventHandler? BasesDeDatosModificadas;
+
+    /// <summary>
+    /// Pide a la vista abrir el panel de búsqueda; el argumento indica si también se quiere reemplazar.
+    /// </summary>
+    public event EventHandler<bool>? BusquedaSolicitada;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(InformacionAdicional))]
@@ -210,6 +218,33 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
 
     private bool PuedeEjecutar() => !EstaEjecutando;
 
+    /// <summary>
+    /// Formatea el texto subrayado o, si no hay selección, todo el editor. Se puede deshacer con Ctrl+Z.
+    /// </summary>
+    [RelayCommand]
+    private void Formatear()
+    {
+        var (inicio, longitud) = ObtenerRangoAProcesar();
+
+        try
+        {
+            var codigoFormateado = _servicioDeFormato.Formatear(Documento.GetText(inicio, longitud));
+            Documento.Replace(inicio, longitud, codigoFormateado);
+            TextoDeEstado = "Código formateado. Puedes deshacerlo con Ctrl+Z.";
+        }
+        catch (Exception error)
+        {
+            Resultados.MostrarError(_servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Formatear SQL")));
+            TextoDeEstado = "No se pudo formatear el código.";
+        }
+    }
+
+    [RelayCommand]
+    private void Buscar() => BusquedaSolicitada?.Invoke(this, false);
+
+    [RelayCommand]
+    private void Reemplazar() => BusquedaSolicitada?.Invoke(this, true);
+
     [RelayCommand(CanExecute = nameof(EstaEjecutando))]
     private void Cancelar() => _cancelacionDeLaEjecucion?.Cancel();
 
@@ -229,18 +264,21 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     /// </summary>
     private FragmentoDeCodigo ObtenerFragmentoAEjecutar()
     {
+        var (inicio, longitud) = ObtenerRangoAProcesar();
+        var lineaInicial = Documento.GetLineByOffset(inicio).LineNumber;
+
+        return new FragmentoDeCodigo(Documento.GetText(inicio, longitud), lineaInicial);
+    }
+
+    /// <summary>
+    /// La selección actual si es válida; si no, todo el documento.
+    /// </summary>
+    private (int Inicio, int Longitud) ObtenerRangoAProcesar()
+    {
         var seleccionEsValida = !Seleccion.EstaVacio
             && Seleccion.Inicio + Seleccion.Longitud <= Documento.TextLength;
 
-        if (!seleccionEsValida)
-        {
-            return new FragmentoDeCodigo(Documento.Text, LineaInicial: 1);
-        }
-
-        var texto = Documento.GetText(Seleccion.Inicio, Seleccion.Longitud);
-        var lineaInicial = Documento.GetLineByOffset(Seleccion.Inicio).LineNumber;
-
-        return new FragmentoDeCodigo(texto, lineaInicial);
+        return seleccionEsValida ? (Seleccion.Inicio, Seleccion.Longitud) : (0, Documento.TextLength);
     }
 
     private void MostrarResultado(ResultadoDeEjecucion resultado)

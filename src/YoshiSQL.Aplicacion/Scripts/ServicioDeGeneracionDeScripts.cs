@@ -1,5 +1,6 @@
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Dominio.Contratos;
+using YoshiSQL.Dominio.Errores;
 using YoshiSQL.Dominio.Esquema;
 
 namespace YoshiSQL.Aplicacion.Scripts;
@@ -47,6 +48,42 @@ public sealed class ServicioDeGeneracionDeScripts
 
     public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(nombreDeLaBaseDeDatos);
+
+    /// <summary>
+    /// Script ALTER con el código actual de una vista, procedimiento o función (opción "Modificar").
+    /// </summary>
+    public async Task<string> GenerarModificacionAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion)
+    {
+        var definicion = await ObtenerDefinicionObligatoriaAsync(servidor, baseDeDatos, objeto, tokenDeCancelacion);
+        return _generadorDeScripts.GenerarModificacionDesdeDefinicion(baseDeDatos, definicion);
+    }
+
+    public async Task<string> GenerarCreacionDeObjetoAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion)
+    {
+        var definicion = await ObtenerDefinicionObligatoriaAsync(servidor, baseDeDatos, objeto, tokenDeCancelacion);
+        return _generadorDeScripts.GenerarCreacionDesdeDefinicion(baseDeDatos, definicion);
+    }
+
+    private async Task<string> ObtenerDefinicionObligatoriaAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion)
+    {
+        var definicion = await _exploradorDeEsquema.ObtenerDefinicionAsync(
+            servidor.DatosDeAcceso, baseDeDatos, objeto, tokenDeCancelacion);
+
+        return definicion ?? throw new ErrorDeYoshiSql(
+            $"No se puede ver el código de {objeto.NombreCompleto}: el objeto está cifrado o tu usuario no tiene permiso VIEW DEFINITION.");
+    }
 
     public async Task<string> GenerarCreacionDeTablaAsync(
         ServidorConectado servidor,

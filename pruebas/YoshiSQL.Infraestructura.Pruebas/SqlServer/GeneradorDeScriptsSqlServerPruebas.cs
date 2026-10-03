@@ -42,3 +42,33 @@ public class GeneradorDeScriptsSqlServerPruebas
         Assert.Contains("DROP VIEW IF EXISTS [dbo].[VentasDelMes];", script);
     }
 }
+
+public class GeneracionDeModificacionPruebas
+{
+    private readonly GeneradorDeScriptsSqlServer _generador = new();
+
+    [Fact]
+    public void GenerarModificacionDesdeDefinicion_CambiaCreatePorAlter()
+    {
+        var script = _generador.GenerarModificacionDesdeDefinicion("Ventas", "CREATE VIEW dbo.Activos AS SELECT 1 AS Uno");
+
+        Assert.Contains("ALTER VIEW dbo.Activos AS SELECT 1 AS Uno", script);
+        Assert.StartsWith("USE [Ventas];", script);
+    }
+
+    [Fact]
+    public void GenerarModificacionDesdeDefinicion_ConComentarioInicial_RespetaElComentario()
+    {
+        var script = _generador.GenerarModificacionDesdeDefinicion("Ventas", "-- creado por Julio\ncreate procedure dbo.Listar as select 1");
+
+        Assert.Contains("-- creado por Julio\nALTER procedure dbo.Listar", script);
+    }
+
+    [Fact]
+    public void GenerarModificacionDesdeDefinicion_CreateOrAlter_NoLoCambia()
+    {
+        var script = _generador.GenerarModificacionDesdeDefinicion("Ventas", "CREATE OR ALTER VIEW dbo.V AS SELECT 1 AS Uno");
+
+        Assert.Contains("CREATE OR ALTER VIEW", script);
+    }
+}

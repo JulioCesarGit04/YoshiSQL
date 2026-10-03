@@ -18,6 +18,8 @@ public interface IProveedorDeBaseDeDatos
 
     IGeneradorDeScripts GeneradorDeScripts { get; }
 
+    IFormateadorDeSql Formateador { get; }
+
     /// <summary>
     /// Verifica que el servidor responda; lanza ErrorDeConexion si no es posible.
     /// </summary>

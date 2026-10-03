@@ -15,5 +15,15 @@ public interface IGeneradorDeScripts
 
     string GenerarEliminacion(string baseDeDatos, ObjetoDeEsquema objeto);
 
+    /// <summary>
+    /// Script para crear el objeto tal como existe hoy, a partir de su definición.
+    /// </summary>
+    string GenerarCreacionDesdeDefinicion(string baseDeDatos, string definicion);
+
+    /// <summary>
+    /// Script para modificar el objeto: su definición actual con CREATE cambiado por ALTER.
+    /// </summary>
+    string GenerarModificacionDesdeDefinicion(string baseDeDatos, string definicion);
+
     string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos);
 }

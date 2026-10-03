@@ -201,6 +201,8 @@ public sealed class FabricaDeNodos
 
         nodo.EstablecerAcciones(
             AccionDeSeleccionarFilas(contexto, vista),
+            AccionDeModificar(contexto, vista),
+            AccionDeGenerarCreacion(contexto, vista),
             AccionQueAbreScript("Generar script DROP VIEW", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(contexto.BaseDeDatosOPredeterminada, vista)),
             AccionDeActualizar(nodo));
@@ -212,9 +214,14 @@ public sealed class FabricaDeNodos
     {
         var nodo = new NodoDelArbolModeloDeVista(objeto.NombreCompleto, tipo, contexto);
 
+        var accionDeModificar = AccionDeModificar(contexto, objeto);
+
         nodo.EstablecerAcciones(
+            accionDeModificar,
+            AccionDeGenerarCreacion(contexto, objeto),
             AccionQueAbreScript("Generar script DROP", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(contexto.BaseDeDatosOPredeterminada, objeto)));
+        nodo.EstablecerComandoAlHacerDobleClic(accionDeModificar.Comando);
 
         return nodo;
     }
@@ -252,6 +259,22 @@ public sealed class FabricaDeNodos
 
     private AccionDelNodo AccionDeNuevaConsulta(ContextoDelNodo contexto) =>
         AccionQueAbreScript("Nueva consulta", contexto, () => string.Empty);
+
+    private AccionDelNodo AccionDeModificar(ContextoDelNodo contexto, ObjetoDeEsquema objeto) =>
+        new("Modificar", ComandoSeguro("Modificar objeto", contexto, async () =>
+        {
+            var script = await _generadorDeScripts.GenerarModificacionAsync(
+                contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, CancellationToken.None);
+            await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
+        }));
+
+    private AccionDelNodo AccionDeGenerarCreacion(ContextoDelNodo contexto, ObjetoDeEsquema objeto) =>
+        new("Generar script CREATE", ComandoSeguro("Generar script CREATE", contexto, async () =>
+        {
+            var script = await _generadorDeScripts.GenerarCreacionDeObjetoAsync(
+                contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, CancellationToken.None);
+            await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
+        }));
 
     private AccionDelNodo AccionDeVerDiagrama(ContextoDelNodo contexto) =>
         new("Ver diagrama", ComandoSeguro("Abrir diagrama", contexto, () => _acciones.AbrirDiagramaAsync(contexto)));

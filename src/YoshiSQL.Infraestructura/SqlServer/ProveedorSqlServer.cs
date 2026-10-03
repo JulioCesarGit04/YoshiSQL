@@ -9,8 +9,10 @@ public sealed class ProveedorSqlServer : IProveedorDeBaseDeDatos
         IExploradorDeEsquema explorador,
         IEjecutorDeConsultas ejecutor,
         IDivisorDeLotes divisorDeLotes,
-        IGeneradorDeScripts generadorDeScripts)
+        IGeneradorDeScripts generadorDeScripts,
+        IFormateadorDeSql formateador)
     {
+        Formateador = formateador;
         Explorador = explorador;
         Ejecutor = ejecutor;
         DivisorDeLotes = divisorDeLotes;
@@ -26,6 +28,8 @@ public sealed class ProveedorSqlServer : IProveedorDeBaseDeDatos
     public IDivisorDeLotes DivisorDeLotes { get; }
 
     public IGeneradorDeScripts GeneradorDeScripts { get; }
+
+    public IFormateadorDeSql Formateador { get; }
 
     public async Task ProbarConexionAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion)
     {

@@ -48,6 +48,16 @@ public interface IExploradorDeEsquema
         string baseDeDatos,
         CancellationToken tokenDeCancelacion);
 
+    /// <summary>
+    /// Código con el que se creó una vista, procedimiento o función.
+    /// </summary>
+    /// <returns>El código, o nulo si el objeto está cifrado o no hay permiso para verlo.</returns>
+    Task<string?> ObtenerDefinicionAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion);
+
     Task<IReadOnlyList<Indice>> ObtenerIndicesAsync(
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,

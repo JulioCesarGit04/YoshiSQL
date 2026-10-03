@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Esquema;
 using static YoshiSQL.Infraestructura.SqlServer.DelimitadorDeIdentificadores;
@@ -73,6 +74,12 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             """;
     }
 
+    public string GenerarCreacionDesdeDefinicion(string baseDeDatos, string definicion) =>
+        EnvolverEnBaseDeDatos(baseDeDatos, definicion);
+
+    public string GenerarModificacionDesdeDefinicion(string baseDeDatos, string definicion) =>
+        EnvolverEnBaseDeDatos(baseDeDatos, CambiarCreatePorAlter(definicion));
+
     public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         $"""
         USE [master];
@@ -82,6 +89,30 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         DROP DATABASE {Delimitar(nombreDeLaBaseDeDatos)};
         GO
         """;
+
+    private static string EnvolverEnBaseDeDatos(string baseDeDatos, string definicion) =>
+        $"USE {Delimitar(baseDeDatos)};{Environment.NewLine}GO{Environment.NewLine}{Environment.NewLine}{definicion.Trim()}{Environment.NewLine}GO";
+
+    /// <summary>
+    /// Reemplaza la primera palabra CREATE del código por ALTER, respetando comentarios previos.
+    /// Si la definición ya dice CREATE OR ALTER, se deja igual porque sirve para modificar.
+    /// </summary>
+    private static string CambiarCreatePorAlter(string definicion)
+    {
+        var tokens = new TSql170Parser(initialQuotedIdentifiers: true).GetTokenStream(new StringReader(definicion), out _);
+        var tokensSignificativos = tokens?
+            .Where(token => token.TokenType is not (TSqlTokenType.WhiteSpace or TSqlTokenType.SingleLineComment or TSqlTokenType.MultilineComment))
+            .Take(2)
+            .ToList();
+
+        if (tokensSignificativos is not [{ TokenType: TSqlTokenType.Create } tokenCreate, var siguienteToken]
+            || siguienteToken.TokenType == TSqlTokenType.Or)
+        {
+            return definicion;
+        }
+
+        return string.Concat(definicion.AsSpan(0, tokenCreate.Offset), "ALTER", definicion.AsSpan(tokenCreate.Offset + tokenCreate.Text.Length));
+    }
 
     private static string DefinirColumna(Columna columna)
     {

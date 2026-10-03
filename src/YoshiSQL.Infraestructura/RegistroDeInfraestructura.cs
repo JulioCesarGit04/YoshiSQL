@@ -28,6 +28,7 @@ public static class RegistroDeInfraestructura
         servicios.AddSingleton<IEjecutorDeConsultas, EjecutorDeConsultasSqlServer>();
         servicios.AddSingleton<IDivisorDeLotes, DivisorDeLotesTSql>();
         servicios.AddSingleton<IGeneradorDeScripts, GeneradorDeScriptsSqlServer>();
+        servicios.AddSingleton<IFormateadorDeSql, FormateadorDeSqlTSql>();
         servicios.AddSingleton<IProveedorDeBaseDeDatos, ProveedorSqlServer>();
     }
 }
