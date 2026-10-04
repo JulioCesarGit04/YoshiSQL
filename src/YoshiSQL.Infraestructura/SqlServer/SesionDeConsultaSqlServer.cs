@@ -19,9 +19,6 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     // Igual que SSMS: las consultas no tienen tiempo límite, el usuario las cancela
     private const int SinTiempoLimite = 0;
 
-    // Nombre fijo que usa SQL Server para la columna que contiene el plan real
-    private const string NombreDeColumnaDelPlan = "Microsoft SQL Server 2005 XML Showplan";
-
     private readonly SqlConnection _conexion;
     private readonly List<MensajeDeEjecucion> _mensajesDeLaEjecucion = [];
     private int _lineaInicialDelLoteActual = 1;
@@ -71,7 +68,7 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
 
             try
             {
-                return SepararPlanesReales(await EjecutarYMedirAsync(lotes, tokenDeCancelacion));
+                return SeparadorDePlanesReales.Separar(await EjecutarYMedirAsync(lotes, tokenDeCancelacion));
             }
             finally
             {
@@ -152,26 +149,6 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
         }
 
         return planes;
-    }
-
-    /// <summary>
-    /// Con STATISTICS XML el servidor agrega un conjunto de resultados con el plan después de cada
-    /// instrucción; se separan para que la grilla muestre solo los datos.
-    /// </summary>
-    private static ResultadoDeEjecucion SepararPlanesReales(ResultadoDeEjecucion resultado)
-    {
-        var esConjuntoDePlan = (ConjuntoDeResultados conjunto) =>
-            conjunto.Columnas is [{ Nombre: NombreDeColumnaDelPlan }];
-
-        return resultado with
-        {
-            ConjuntosDeResultados = resultado.ConjuntosDeResultados.Where(conjunto => !esConjuntoDePlan(conjunto)).ToList(),
-            PlanesRealesXml = resultado.ConjuntosDeResultados
-                .Where(esConjuntoDePlan)
-                .SelectMany(conjunto => conjunto.Filas.Select(fila => fila[0] as string))
-                .OfType<string>()
-                .ToList()
-        };
     }
 
     private async Task EjecutarInstruccionDeConfiguracionAsync(string instruccion, CancellationToken tokenDeCancelacion)

@@ -73,7 +73,7 @@ public sealed class AnalizadorDePlanesSqlServer : IAnalizadorDePlanes
         var contadoresReales = operacion.Element(InformacionDeEjecucion)?.Elements().ToList();
 
         return new NodoDelPlan(
-            (string?)operacion.Attribute("PhysicalOp") ?? "?",
+            ObtenerNombreDeLaOperacion(operacion),
             (string?)operacion.Attribute("LogicalOp") ?? string.Empty,
             DescribirObjeto(BuscarDescendientesPropios(operacion, Objeto).FirstOrDefault()),
             Math.Round(porcentaje, 1),
@@ -82,6 +82,19 @@ public sealed class AnalizadorDePlanesSqlServer : IAnalizadorDePlanes
             contadoresReales is { Count: > 0 } ? contadoresReales.Sum(contador => (long?)contador.Attribute("ActualExecutions") ?? 0) : null,
             LeerAdvertencias(operacion.Element(Advertencias)).ToList(),
             operacionesHijas.Select(hija => InterpretarOperacion(hija, costoTotalDeLaInstruccion)).ToList());
+    }
+
+    /// <summary>
+    /// Un Clustered Index Seek marcado como búsqueda (Lookup) es un "Key Lookup": después de usar un índice,
+    /// vuelve a la tabla por las columnas que ese índice no tiene. SSMS lo muestra con ese nombre.
+    /// </summary>
+    private static string ObtenerNombreDeLaOperacion(XElement operacion)
+    {
+        var nombre = (string?)operacion.Attribute("PhysicalOp") ?? "?";
+        var esBusquedaEnLaTabla = BuscarDescendientesPropios(operacion, EspacioDeNombres + "IndexScan")
+            .Any(busqueda => (string?)busqueda.Attribute("Lookup") is "1" or "true");
+
+        return esBusquedaEnLaTabla ? "Key Lookup" : nombre;
     }
 
     /// <summary>

@@ -62,4 +62,34 @@ public class AnalizadorDePlanesSqlServerPruebas
         Assert.Contains("Falta un índice que mejoraría esta consulta", instruccion.Advertencias);
         Assert.Contains("Conversión implícita que empeora el plan", instruccion.Raiz!.Hijos[0].Advertencias);
     }
+
+    [Fact]
+    public void Interpretar_BusquedaEnLaTablaDespuesDeUnIndice_LaLlamaKeyLookup()
+    {
+        const string planConLookup = """
+            <ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan">
+              <BatchSequence><Batch><Statements>
+                <StmtSimple StatementText="SELECT * FROM [Pedidos] WHERE [ClienteId]=@1" StatementSubTreeCost="0.156836">
+                  <QueryPlan>
+                    <RelOp PhysicalOp="Nested Loops" LogicalOp="Inner Join" EstimateRows="50" EstimatedTotalSubtreeCost="0.156836">
+                      <NestedLoops>
+                        <RelOp PhysicalOp="Index Seek" LogicalOp="Index Seek" EstimateRows="50" EstimatedTotalSubtreeCost="0.003337">
+                          <IndexScan Ordered="1"><Object Schema="[dbo]" Table="[Pedidos]" Index="[IX_Pedidos_ClienteId]" /></IndexScan>
+                        </RelOp>
+                        <RelOp PhysicalOp="Clustered Index Seek" LogicalOp="Clustered Index Seek" EstimateRows="1" EstimatedTotalSubtreeCost="0.15329">
+                          <IndexScan Lookup="1" Ordered="1"><Object Schema="[dbo]" Table="[Pedidos]" Index="[PK_Pedidos]" /></IndexScan>
+                        </RelOp>
+                      </NestedLoops>
+                    </RelOp>
+                  </QueryPlan>
+                </StmtSimple>
+              </Statements></Batch></BatchSequence>
+            </ShowPlanXML>
+            """;
+
+        var raiz = _analizador.Interpretar([planConLookup], esReal: false).Instrucciones[0].Raiz!;
+
+        Assert.Equal("Index Seek", raiz.Hijos[0].OperacionFisica);
+        Assert.Equal("Key Lookup", raiz.Hijos[1].OperacionFisica);
+    }
 }
