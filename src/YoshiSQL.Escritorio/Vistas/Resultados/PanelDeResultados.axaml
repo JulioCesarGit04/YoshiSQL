@@ -41,11 +41,13 @@
                      DoubleTapped="AlHacerDobleClicEnMensaje">
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="consultas:MensajeDeEjecucion">
-                        <SelectableTextBlock Text="{Binding Texto}"
+                        <SelectableTextBlock Classes="Mensaje"
+                                             Classes.Error="{Binding EsError}"
+                                             Classes.Advertencia="{Binding EsAdvertencia}"
+                                             Text="{Binding Texto}"
                                              TextWrapping="Wrap"
                                              FontFamily="{StaticResource FuenteMonoespaciada}"
-                                             FontSize="12.5"
-                                             Foreground="{Binding Tipo, Converter={x:Static conv:TipoDeMensajeAColor.Instancia}}" />
+                                             FontSize="12.5" />
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

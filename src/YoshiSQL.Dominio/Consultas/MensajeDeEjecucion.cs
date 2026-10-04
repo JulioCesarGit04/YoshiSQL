@@ -6,6 +6,10 @@ namespace YoshiSQL.Dominio.Consultas;
 /// <param name="NumeroDeLinea">Línea del editor relacionada con el mensaje, si se conoce.</param>
 public sealed record MensajeDeEjecucion(TipoDeMensaje Tipo, string Texto, int? NumeroDeLinea = null)
 {
+    public bool EsError => Tipo == TipoDeMensaje.Error;
+
+    public bool EsAdvertencia => Tipo == TipoDeMensaje.Advertencia;
+
     public static MensajeDeEjecucion Informacion(string texto) => new(TipoDeMensaje.Informacion, texto);
 
     public static MensajeDeEjecucion Error(string texto, int? numeroDeLinea = null) =>

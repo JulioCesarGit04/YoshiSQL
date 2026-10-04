@@ -65,6 +65,17 @@
         <Setter Property="Stretch" Value="None" />
     </Style>
 
+    <!-- Mensajes de la ejecución: color normal del tema, rojo para errores y amarillo para advertencias -->
+    <Style Selector="SelectableTextBlock.Mensaje">
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTexto}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.Mensaje.Advertencia">
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeAdvertencia}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.Mensaje.Error">
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeError}" />
+    </Style>
+
     <Style Selector="GridSplitter">
         <Setter Property="Background" Value="{DynamicResource PincelDeBorde}" />
     </Style>
