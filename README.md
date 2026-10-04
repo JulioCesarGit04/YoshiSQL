@@ -62,7 +62,7 @@ sudo apt install -y dotnet-sdk-10.0
 ## Instalación y uso
 
 ```bash
-git clone https://github.com/TU_USUARIO/YoshiSQL.git
+git clone https://github.com/JulioCesarGit04/YoshiSQL.git
 cd YoshiSQL
 dotnet run --project src/YoshiSQL.Escritorio
 ```
