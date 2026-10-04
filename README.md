@@ -1,8 +1,8 @@
 # YoshiSQL
 
-Entorno gráfico de escritorio, libre y ligero, para administrar **SQL Server desde Linux**.
+Entorno gráfico de escritorio, libre y ligero, para administrar **SQL Server desde Linux y Windows**.
 
-SQL Server se puede instalar en Linux, pero SQL Server Management Studio (SSMS) solo existe para Windows. YoshiSQL ofrece lo esencial de SSMS con una interfaz moderna: explorar bases de datos, escribir y ejecutar consultas, diseñar tablas, ver diagramas y planes de ejecución, y administrar el servidor.
+SQL Server se puede instalar en Linux, pero SQL Server Management Studio (SSMS) solo existe para Windows. YoshiSQL ofrece lo esencial de SSMS con una interfaz moderna, y la misma aplicación funciona en ambos sistemas: explorar bases de datos, escribir y ejecutar consultas, diseñar tablas, ver diagramas y planes de ejecución, y administrar el servidor.
 
 Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código abierto.
 
@@ -47,19 +47,27 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 
 | Componente | Versión |
 |---|---|
-| Sistema operativo | Linux (probado en Ubuntu 24.04) |
-| .NET SDK | 10 |
+| Sistema operativo | Linux (probado en Ubuntu 24.04) o Windows 10/11 de 64 bits |
+| .NET SDK | 10 (solo para compilar o ejecutar desde el código) |
 | SQL Server | 2019 o superior (probado con SQL Server 2025) |
 
-Instalar .NET 10 en Ubuntu:
+Instalar .NET 10:
 
 ```bash
+# Ubuntu
 sudo apt install -y dotnet-sdk-10.0
+```
+
+```powershell
+# Windows (PowerShell)
+winget install Microsoft.DotNet.SDK.10
 ```
 
 ---
 
 ## Instalación y uso
+
+Los mismos comandos funcionan en la terminal de Linux y en PowerShell de Windows:
 
 ```bash
 git clone https://github.com/JulioCesarGit04/YoshiSQL.git
@@ -67,11 +75,27 @@ cd YoshiSQL
 dotnet run --project src/YoshiSQL.Escritorio
 ```
 
+### Crear un ejecutable
+
+Genera una versión que no necesita .NET instalado en el equipo donde se use:
+
+```bash
+# Para Windows: crea publicar/windows/YoshiSQL.exe
+dotnet publish src/YoshiSQL.Escritorio -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publicar/windows
+
+# Para Linux: crea publicar/linux/YoshiSQL
+dotnet publish src/YoshiSQL.Escritorio -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publicar/linux
+```
+
+Se puede compilar para Windows desde Linux y al revés.
+
 Al abrir, pulsa **Conectar al servidor** e ingresa los datos de tu SQL Server. En una instalación local:
 
 - **Servidor:** `localhost`
 - **Usuario:** `sa` y la contraseña que definiste al instalar SQL Server
 - Deja marcado **"Confiar en el certificado del servidor"**: las instalaciones locales usan un certificado autofirmado.
+
+En Windows también puedes elegir **Autenticación de Windows** para entrar con tu cuenta de usuario, sin contraseña. Para una instancia con nombre (por ejemplo SQL Server Express), escribe el servidor como `localhost\SQLEXPRESS`.
 
 En `ejemplos/PruebaDePlanes.sql` hay una base de datos de prueba con 100.000 filas para practicar con los planes de ejecución.
 
@@ -93,12 +117,12 @@ En `ejemplos/PruebaDePlanes.sql` hay una base de datos de prueba con 100.000 fil
 
 ## Dónde guarda sus archivos
 
-| Carpeta | Contenido |
-|---|---|
-| `~/.config/yoshisql/` | Conexiones guardadas, contraseñas cifradas, preferencias y posiciones de los diagramas |
-| `~/.local/state/yoshisql/` | Registros de errores (se conservan 14 días), pestañas abiertas, historial y scripts recuperados |
+| Linux | Windows | Contenido |
+|---|---|---|
+| `~/.config/yoshisql/` | `%APPDATA%\YoshiSQL\` | Conexiones guardadas, contraseñas cifradas, preferencias y posiciones de los diagramas |
+| `~/.local/state/yoshisql/` | `%LOCALAPPDATA%\YoshiSQL\` | Registros de errores (se conservan 14 días), pestañas abiertas, historial y scripts recuperados |
 
-Las carpetas y archivos se crean con permisos que solo tu usuario puede leer.
+Las contraseñas se guardan cifradas. En Linux, las carpetas se crean con permisos que solo tu usuario puede leer; en Windows, la clave de cifrado se protege además con DPAPI, de modo que solo tu cuenta de Windows puede usarla.
 
 ---
 
@@ -132,7 +156,7 @@ Versión **0.5.0**, en desarrollo activo.
 Pendiente:
 - Instalador para Linux (`.deb` o AppImage) con ícono en el menú de aplicaciones.
 - Valores predeterminados (`DEFAULT`) en el diseñador de tablas.
-- Compatibilidad completa con Windows y macOS.
+- Probar a fondo la versión de Windows 11 y agregar soporte para macOS.
 - Soporte para otros motores, como PostgreSQL o MySQL.
 
 ---

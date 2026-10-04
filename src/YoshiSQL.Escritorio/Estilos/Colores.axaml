@@ -42,10 +42,10 @@
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
-    <FontFamily x:Key="FuenteMonoespaciada">Cascadia Code, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace</FontFamily>
+    <FontFamily x:Key="FuenteMonoespaciada">Cascadia Code, Consolas, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace</FontFamily>
 
     <!-- Valores iniciales del editor; se reemplazan con las preferencias del usuario al iniciar -->
-    <FontFamily x:Key="FuenteDelEditor">Cascadia Code, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace</FontFamily>
+    <FontFamily x:Key="FuenteDelEditor">Cascadia Code, Consolas, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace</FontFamily>
     <sys:Double x:Key="TamanoDeLetraDelEditor">14</sys:Double>
     <sys:Boolean x:Key="MostrarNumerosDeLinea">True</sys:Boolean>
     <sys:Boolean x:Key="AjustarLineasLargas">False</sys:Boolean>

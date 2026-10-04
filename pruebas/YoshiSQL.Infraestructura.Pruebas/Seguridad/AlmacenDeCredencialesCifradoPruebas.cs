@@ -58,6 +58,31 @@ public sealed class AlmacenDeCredencialesCifradoPruebas : IDisposable
         Assert.Null(await _almacen.ObtenerContrasenaAsync(idDelPerfil, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task GuardarContrasena_LaClaveSeGuardaProtegidaPorElProtectorDelSistema()
+    {
+        var almacenConProtector = new AlmacenDeCredencialesCifrado(_rutas, new ProtectorQueInvierteLosBytes());
+        var idDelPerfil = Guid.NewGuid();
+
+        await almacenConProtector.GuardarContrasenaAsync(idDelPerfil, "Clave$Segura123", CancellationToken.None);
+
+        // Se lee con el mismo protector: la clave en disco no es la clave real, pero se recupera bien
+        Assert.Equal("Clave$Segura123", await almacenConProtector.ObtenerContrasenaAsync(idDelPerfil, CancellationToken.None));
+
+        // Con otro protector (como otra cuenta de Windows) la contraseña ya no se puede leer
+        Assert.Null(await _almacen.ObtenerContrasenaAsync(idDelPerfil, CancellationToken.None));
+    }
+
+    /// <summary>
+    /// Imita a DPAPI: transforma la clave de forma reversible para comprobar que el almacén usa el protector.
+    /// </summary>
+    private sealed class ProtectorQueInvierteLosBytes : IProtectorDeLaClave
+    {
+        public byte[] Proteger(byte[] clave) => clave.Select(valor => (byte)~valor).ToArray();
+
+        public byte[] Desproteger(byte[] claveProtegida) => Proteger(claveProtegida);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_carpetaTemporal))

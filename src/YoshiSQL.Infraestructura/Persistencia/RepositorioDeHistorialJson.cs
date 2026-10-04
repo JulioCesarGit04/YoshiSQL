@@ -6,7 +6,7 @@ using YoshiSQL.Dominio.Contratos;
 namespace YoshiSQL.Infraestructura.Persistencia;
 
 /// <summary>
-/// Historial de consultas en ~/.local/state/yoshisql/historial.json, legible solo por el usuario
+/// Historial de consultas en historial.json, dentro de la carpeta de estado, legible solo por el usuario
 /// porque contiene el texto de las consultas.
 /// </summary>
 public sealed class RepositorioDeHistorialJson : IRepositorioDeHistorial

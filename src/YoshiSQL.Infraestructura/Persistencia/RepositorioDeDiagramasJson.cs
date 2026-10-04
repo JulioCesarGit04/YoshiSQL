@@ -6,7 +6,7 @@ using YoshiSQL.Dominio.Diagramas;
 namespace YoshiSQL.Infraestructura.Persistencia;
 
 /// <summary>
-/// Guarda la disposición de cada diagrama en ~/.config/yoshisql/diagramas/servidor__base.json.
+/// Guarda la disposición de cada diagrama en diagramas/servidor__base.json, dentro de la carpeta de configuración.
 /// </summary>
 public sealed class RepositorioDeDiagramasJson : IRepositorioDeDiagramas
 {

@@ -9,8 +9,6 @@ namespace YoshiSQL.Escritorio.Servicios;
 
 public sealed class ServicioDelSistemaOperativo : IServicioDelSistemaOperativo
 {
-    // Programa estándar de Linux que abre carpetas y archivos con la aplicación predeterminada
-    private const string ProgramaParaAbrir = "xdg-open";
 
     private readonly RutasDeLaAplicacion _rutas;
     private readonly ILogger<ServicioDelSistemaOperativo> _registro;
@@ -31,7 +29,7 @@ public sealed class ServicioDelSistemaOperativo : IServicioDelSistemaOperativo
 
         try
         {
-            Process.Start(new ProcessStartInfo(ProgramaParaAbrir, CarpetaDeRegistros) { UseShellExecute = false });
+            Process.Start(new ProcessStartInfo(ObtenerProgramaParaAbrirCarpetas(), CarpetaDeRegistros) { UseShellExecute = false });
         }
         catch (Exception error)
         {
@@ -39,6 +37,19 @@ public sealed class ServicioDelSistemaOperativo : IServicioDelSistemaOperativo
             throw new Dominio.Errores.ErrorDeYoshiSql(
                 $"No se pudo abrir la carpeta automáticamente. Los registros están en:\n{CarpetaDeRegistros}", error);
         }
+    }
+
+    /// <summary>
+    /// Programa que abre una carpeta con el explorador de archivos de cada sistema.
+    /// </summary>
+    private static string ObtenerProgramaParaAbrirCarpetas()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return "explorer.exe";
+        }
+
+        return OperatingSystem.IsMacOS() ? "open" : "xdg-open";
     }
 
     public async Task CopiarAlPortapapelesAsync(string texto)

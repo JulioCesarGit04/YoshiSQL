@@ -7,10 +7,10 @@ using YoshiSQL.Infraestructura.Persistencia;
 namespace YoshiSQL.Infraestructura.Seguridad;
 
 /// <summary>
-/// Guarda las contraseñas cifradas con AES-GCM. La clave se genera al azar la primera vez
-/// y se guarda en un archivo que solo el usuario puede leer (permisos 600).
+/// Guarda las contraseñas cifradas con AES-GCM. La clave se genera al azar la primera vez y se
+/// protege según el sistema: con DPAPI en Windows y con permisos 600 en Linux.
 /// Protege contra quien vea el archivo de credenciales, pero no contra alguien con acceso
-/// total a la cuenta del usuario; más adelante se puede reemplazar por el llavero del sistema.
+/// total a la cuenta del usuario.
 /// </summary>
 public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
 {
@@ -19,11 +19,18 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
     private const int TamanoDeLaEtiquetaEnBytes = 16;
 
     private readonly RutasDeLaAplicacion _rutas;
+    private readonly IProtectorDeLaClave _protectorDeLaClave;
     private readonly SemaphoreSlim _accesoExclusivo = new(1, 1);
 
     public AlmacenDeCredencialesCifrado(RutasDeLaAplicacion rutas)
+        : this(rutas, CrearProtectorParaEsteSistema())
+    {
+    }
+
+    internal AlmacenDeCredencialesCifrado(RutasDeLaAplicacion rutas, IProtectorDeLaClave protectorDeLaClave)
     {
         _rutas = rutas;
+        _protectorDeLaClave = protectorDeLaClave;
     }
 
     public async Task GuardarContrasenaAsync(Guid idDelPerfil, string contrasena, CancellationToken tokenDeCancelacion)
@@ -56,7 +63,7 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
                 return null;
             }
 
-            var clave = await File.ReadAllBytesAsync(_rutas.ArchivoDeClave, tokenDeCancelacion);
+            var clave = await LeerClaveAsync(tokenDeCancelacion);
             return Descifrar(contrasenaCifrada, clave);
         }
         catch (CryptographicException)
@@ -121,15 +128,21 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
     {
         if (File.Exists(_rutas.ArchivoDeClave))
         {
-            return await File.ReadAllBytesAsync(_rutas.ArchivoDeClave, tokenDeCancelacion);
+            return await LeerClaveAsync(tokenDeCancelacion);
         }
 
         _rutas.AsegurarQueExistaLaCarpeta();
         var claveNueva = RandomNumberGenerator.GetBytes(TamanoDeLaClaveEnBytes);
-        await EscritorDeArchivosSeguro.EscribirAsync(_rutas.ArchivoDeClave, claveNueva, tokenDeCancelacion);
+        await EscritorDeArchivosSeguro.EscribirAsync(_rutas.ArchivoDeClave, _protectorDeLaClave.Proteger(claveNueva), tokenDeCancelacion);
 
         return claveNueva;
     }
+
+    private async Task<byte[]> LeerClaveAsync(CancellationToken tokenDeCancelacion) =>
+        _protectorDeLaClave.Desproteger(await File.ReadAllBytesAsync(_rutas.ArchivoDeClave, tokenDeCancelacion));
+
+    private static IProtectorDeLaClave CrearProtectorParaEsteSistema() =>
+        OperatingSystem.IsWindows() ? new ProtectorDeLaClaveConDpapi() : new ProtectorDeLaClaveConPermisosDeArchivo();
 
     private async Task<Dictionary<Guid, string>> LeerCredencialesAsync(CancellationToken tokenDeCancelacion)
     {

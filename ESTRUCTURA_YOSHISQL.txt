@@ -392,10 +392,19 @@ YoshiSQL/
 
     Dónde guarda sus archivos
     -------------------------
-    ~/.config/yoshisql/        conexiones.json, credenciales.json (cifrado), clave.bin,
-                               preferencias.json, diagramas/
-    ~/.local/state/yoshisql/   registros/ (log diario, 14 días), sesion.json, historial.json,
-                               recuperados/
+    Configuración  Linux: ~/.config/yoshisql/        Windows: %APPDATA%\YoshiSQL\
+                   conexiones.json, credenciales.json (cifrado), clave.bin,
+                   preferencias.json, diagramas/
+    Estado         Linux: ~/.local/state/yoshisql/   Windows: %LOCALAPPDATA%\YoshiSQL\
+                   registros/ (log diario, 14 días), sesion.json, historial.json,
+                   recuperados/
+
+    Compatibilidad con Windows
+    --------------------------
+    RutasDeLaAplicacion               Elige las carpetas según el sistema operativo.
+    Seguridad/IProtectorDeLaClave     DPAPI en Windows; permisos 600 en Linux.
+    ServicioDelSistemaOperativo       explorer.exe en Windows, xdg-open en Linux.
+    OpcionDeAutenticacion             "Autenticación de Windows" en Windows.
 
     Capas agregadas durante la implementación
     -----------------------------------------
@@ -408,7 +417,7 @@ YoshiSQL/
     Escritorio:       Registro (Serilog), Servicios, y un modelo de vista + vista por cada
                       tipo de pestaña (consulta, diagrama, diseño, edición, monitor).
 
-    Pruebas automáticas: 119 (Dominio 19, Aplicacion 32, Infraestructura 68).
+    Pruebas automáticas: 129 (Dominio 22, Aplicacion 32, Infraestructura 75).
 
     Pendiente
     ---------
@@ -417,3 +426,4 @@ YoshiSQL/
     - Otros motores (PostgreSQL, MySQL): la arquitectura ya lo permite con un
       nuevo proveedor en Infraestructura.
     - Probar todas las funciones contra el servidor real.
+    - Probar la versión de Windows 11 en un equipo con Windows.

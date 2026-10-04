@@ -7,6 +7,7 @@ public sealed record OpcionDeAutenticacion(TipoDeAutenticacion Tipo, string Desc
     public static readonly IReadOnlyList<OpcionDeAutenticacion> Todas =
     [
         new(TipoDeAutenticacion.SqlServer, "Autenticación de SQL Server"),
-        new(TipoDeAutenticacion.Windows, "Autenticación integrada (Kerberos)")
+        // En Windows usa la cuenta con la que iniciaste sesión; en Linux requiere Kerberos configurado
+        new(TipoDeAutenticacion.Windows, OperatingSystem.IsWindows() ? "Autenticación de Windows" : "Autenticación integrada (Kerberos)")
     ];
 }

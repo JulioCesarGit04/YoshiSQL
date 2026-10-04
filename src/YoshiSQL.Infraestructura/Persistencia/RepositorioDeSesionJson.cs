@@ -8,7 +8,7 @@ using YoshiSQL.Dominio.Sesion;
 namespace YoshiSQL.Infraestructura.Persistencia;
 
 /// <summary>
-/// Guarda las pestañas abiertas en ~/.local/state/yoshisql/sesion.json (solo legible por el usuario)
+/// Guarda las pestañas abiertas en sesion.json, dentro de la carpeta de estado (solo legible por el usuario)
 /// y usa un archivo de marca para saber si YoshiSQL se cerró de forma inesperada.
 /// </summary>
 public sealed class RepositorioDeSesionJson : IRepositorioDeSesion

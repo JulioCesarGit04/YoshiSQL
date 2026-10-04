@@ -69,3 +69,17 @@ public class DivisorDeLotesTSqlPruebas
         Assert.Single(lotes);
     }
 }
+
+public class DivisorDeLotesConSaltosDeWindowsPruebas
+{
+    [Fact]
+    public void DividirEnLotes_SaltosDeLineaDeWindows_SeparaYCalculaLineasIgual()
+    {
+        var lotes = new DivisorDeLotesTSql().DividirEnLotes("CREATE DATABASE Prueba;\r\nGO\r\nUSE Prueba;\r\nGO 3\r\nSELECT 1;");
+
+        Assert.Equal(3, lotes.Count);
+        Assert.Equal([1, 3, 5], lotes.Select(lote => lote.LineaInicial));
+        Assert.Equal(3, lotes[1].Repeticiones);
+        Assert.DoesNotContain("GO", lotes[1].Texto);
+    }
+}

@@ -1,18 +1,20 @@
 namespace YoshiSQL.Infraestructura.Persistencia;
 
 /// <summary>
-/// Ubicación de los archivos de YoshiSQL según el estándar de Linux (XDG):
-/// configuración en ~/.config/yoshisql y estado (registros, sesión, historial) en ~/.local/state/yoshisql.
+/// Ubicación de los archivos de YoshiSQL según las convenciones de cada sistema:
+/// <list type="bullet">
+/// <item>Linux: configuración en ~/.config/yoshisql y estado (registros, sesión, historial) en ~/.local/state/yoshisql.</item>
+/// <item>Windows: configuración en %APPDATA%\YoshiSQL y estado en %LOCALAPPDATA%\YoshiSQL.</item>
+/// </list>
 /// </summary>
 public sealed class RutasDeLaAplicacion
 {
-    private const string NombreDeLaCarpeta = "yoshisql";
+    private const string NombreDeLaCarpetaEnLinux = "yoshisql";
+    private const string NombreDeLaCarpetaEnWindows = "YoshiSQL";
     private const string VariableDeCarpetaDeEstado = "XDG_STATE_HOME";
 
     public RutasDeLaAplicacion()
-        : this(
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), NombreDeLaCarpeta),
-            Path.Combine(ObtenerCarpetaBaseDeEstado(), NombreDeLaCarpeta))
+        : this(ObtenerCarpetaDeConfiguracionDelSistema(), ObtenerCarpetaDeEstadoDelSistema())
     {
     }
 
@@ -74,6 +76,20 @@ public sealed class RutasDeLaAplicacion
             Directory.CreateDirectory(carpeta, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
     }
+
+    private static string ObtenerCarpetaDeConfiguracionDelSistema()
+    {
+        var nombreDeLaCarpeta = OperatingSystem.IsWindows() ? NombreDeLaCarpetaEnWindows : NombreDeLaCarpetaEnLinux;
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), nombreDeLaCarpeta);
+    }
+
+    /// <summary>
+    /// En Windows los datos que no se sincronizan entre equipos (registros, historial) van en la carpeta local.
+    /// </summary>
+    private static string ObtenerCarpetaDeEstadoDelSistema() =>
+        OperatingSystem.IsWindows()
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), NombreDeLaCarpetaEnWindows)
+            : Path.Combine(ObtenerCarpetaBaseDeEstado(), NombreDeLaCarpetaEnLinux);
 
     private static string ObtenerCarpetaBaseDeEstado()
     {

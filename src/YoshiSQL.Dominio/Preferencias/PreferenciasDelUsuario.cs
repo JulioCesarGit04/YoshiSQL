@@ -4,7 +4,7 @@ public sealed record PreferenciasDelUsuario
 {
     public const double TamanoDeLetraMinimo = 9;
     public const double TamanoDeLetraMaximo = 28;
-    public const string FuentePredeterminada = "Cascadia Code, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace";
+    public const string FuentePredeterminada = "Cascadia Code, Consolas, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace";
 
     public static readonly PreferenciasDelUsuario Predeterminadas = new();
 

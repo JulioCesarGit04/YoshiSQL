@@ -81,3 +81,18 @@ public class AnalizadorDeContextoTSqlPruebas
         return _analizador.Analizar(textoConCursor.Remove(posicionDelCursor, 1), posicionDelCursor);
     }
 }
+
+public class AnalizadorDeContextoConSaltosDeWindowsPruebas
+{
+    [Fact]
+    public void Analizar_SaltosDeLineaDeWindows_ReconoceAliasYLote()
+    {
+        const string texto = "SELECT * FROM Viejo v\r\nGO\r\nSELECT c.\r\nFROM dbo.Clientes c";
+        var posicionDelCursor = texto.IndexOf("c.", StringComparison.Ordinal) + 2;
+
+        var contexto = new AnalizadorDeContextoTSql().Analizar(texto, posicionDelCursor);
+
+        Assert.Equal(Dominio.Autocompletado.TipoDeContexto.DespuesDePunto, contexto.Tipo);
+        Assert.Equal("Clientes", Assert.Single(contexto.TablasDeLaInstruccion).Nombre);
+    }
+}

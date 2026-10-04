@@ -7,7 +7,7 @@ using YoshiSQL.Dominio.Preferencias;
 namespace YoshiSQL.Infraestructura.Persistencia;
 
 /// <summary>
-/// Preferencias en ~/.config/yoshisql/preferencias.json, legible y editable a mano.
+/// Preferencias en preferencias.json, dentro de la carpeta de configuración, legible y editable a mano.
 /// </summary>
 public sealed class RepositorioDePreferenciasJson : IRepositorioDePreferencias
 {
