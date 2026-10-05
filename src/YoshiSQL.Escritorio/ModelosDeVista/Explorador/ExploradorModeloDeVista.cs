@@ -19,6 +19,18 @@ public sealed partial class ExploradorModeloDeVista : ModeloDeVistaBase
     [ObservableProperty]
     public partial NodoDelArbolModeloDeVista? NodoSeleccionado { get; set; }
 
+    /// <summary>Filtra los objetos ya cargados del árbol por nombre; vacío muestra todo.</summary>
+    [ObservableProperty]
+    public partial string? TextoDeFiltro { get; set; }
+
+    partial void OnTextoDeFiltroChanged(string? value)
+    {
+        foreach (var servidor in Servidores)
+        {
+            servidor.AplicarFiltro(value ?? string.Empty);
+        }
+    }
+
     /// <summary>
     /// Servidor y base de datos donde se abrirá una nueva consulta: los del nodo seleccionado
     /// o, si no hay ninguno, los del primer servidor conectado.

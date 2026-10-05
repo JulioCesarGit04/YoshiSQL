@@ -12,13 +12,13 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 
 ### Conexión y explorador de objetos
 - Conexiones guardadas, con la contraseña cifrada en tu equipo.
-- Árbol desplegable como en SSMS: bases de datos, tablas, vistas, procedimientos, funciones, columnas, índices y seguridad (inicios de sesión, usuarios y roles).
+- Árbol desplegable como en SSMS: bases de datos, tablas, vistas, procedimientos, funciones, columnas, índices y seguridad (inicios de sesión, usuarios y roles), con un filtro por nombre.
 - Menú contextual con las acciones de cada objeto: seleccionar filas, editar, diseñar, modificar, generar scripts `CREATE` y `DROP`, respaldar y restaurar.
 
 ### Editor de consultas
 - Resaltado de sintaxis T-SQL y **autocompletado** de tablas, columnas, palabras clave y funciones.
 - Ejecuta todo el script o **solo el texto subrayado**, respetando los separadores `GO` y `GO n`.
-- Varias pestañas, abrir y guardar archivos `.sql`, buscar y reemplazar, y formatear el código.
+- Varias pestañas, abrir y guardar archivos `.sql`, buscar y reemplazar, formatear, comentar o descomentar (`Ctrl+/`) y cambiar mayúsculas/minúsculas.
 - Doble clic en un error para saltar a su línea.
 
 ### Resultados
@@ -112,6 +112,7 @@ En `ejemplos/PruebaDePlanes.sql` hay una base de datos de prueba con 100.000 fil
 | `Ctrl+Espacio` | Autocompletar | `Ctrl+W` | Cerrar pestaña |
 | `Ctrl+F` | Buscar | `Ctrl+H` | Reemplazar |
 | `Ctrl+Shift+F` | Formatear SQL | `Ctrl+,` | Preferencias |
+| `Ctrl+/` | Comentar/descomentar | `Ctrl+Shift+U` / `Ctrl+Shift+L` | MAYÚSCULAS / minúsculas |
 
 ---
 

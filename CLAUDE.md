@@ -107,16 +107,19 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 - 🔴 PENDIENTE: Editar filas a través de una vista actualizable.
 
 ### Prioridad 2 — Funciones rápidas de alto impacto (todas 🟢 salvo nota)
-- ⭐ Comentar / descomentar líneas (Ctrl+K,Ctrl+C / Ctrl+K,Ctrl+U).
-- ⭐ Cambiar de base de datos desde la barra (desplegable con la base activa de la pestaña = USE).
-- ⭐ Filtrar objetos del explorador por nombre.
-- Copiar filas de resultados como sentencias INSERT.
-- Sumas / promedios / conteo de las celdas numéricas seleccionadas.
-- ⭐ Color por conexión en la barra de estado (no equivocarse con producción).
-- Mayúsculas / minúsculas del texto seleccionado (Ctrl+Shift+U / L).
-- Abrir una celda XML/JSON formateada en su propia pestaña.
-- ⭐ Resultados en texto plano (Ctrl+T).
-- Marcadores de línea (Ctrl+K,Ctrl+K).
+- ✅ HECHO (sin commit) ⭐ Comentar / descomentar líneas con Ctrl+/ (Ctrl+OemQuestion). Avalonia no soporta
+  acordes tipo Ctrl+K,Ctrl+C, por eso se usa un solo gesto. Lógica en `EditorSql.AlternarComentario`.
+- ✅ HECHO (sin commit) Mayúsculas / minúsculas del texto seleccionado (Ctrl+Shift+U / Ctrl+Shift+L),
+  `EditorSql.ConvertirSeleccion`.
+- ✅ HECHO (sin commit) ⭐ Filtrar objetos del explorador por nombre (caja arriba del árbol).
+  Filtra solo lo ya cargado; `NodoDelArbolModeloDeVista.AplicarFiltro` + `EsVisible`.
+- PENDIENTE ⭐ Cambiar de base de datos desde la barra (desplegable con la base activa de la pestaña = USE).
+- PENDIENTE Copiar filas de resultados como sentencias INSERT (ojo: una grilla de resultados no tiene tabla destino; requiere pedir el nombre).
+- PENDIENTE Sumas / promedios / conteo de las celdas numéricas seleccionadas.
+- PENDIENTE ⭐ Color por conexión en la barra de estado (no equivocarse con producción).
+- PENDIENTE Abrir una celda XML/JSON formateada en su propia pestaña.
+- PENDIENTE ⭐ Resultados en texto plano (Ctrl+T).
+- PENDIENTE Marcadores de línea.
 
 ### Prioridad 3 — Información de objetos y servidor
 - ⭐🟡 Propiedades de la tabla (filas, tamaño en disco, fecha, espacio de índices).

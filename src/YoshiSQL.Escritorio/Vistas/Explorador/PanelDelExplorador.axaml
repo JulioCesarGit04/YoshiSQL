@@ -26,6 +26,12 @@
                    Foreground="{DynamicResource PincelDeTextoSecundario}"
                    Text="No hay servidores conectados." />
 
+        <TextBox DockPanel.Dock="Top" Margin="12,2,6,6"
+                 IsVisible="{Binding TieneServidores}"
+                 Text="{Binding TextoDeFiltro}"
+                 PlaceholderText="Filtrar objetos cargados..."
+                 ToolTip.Tip="Filtra por nombre lo que ya se cargó en el árbol" />
+
         <TreeView x:Name="ArbolDeObjetos"
                   ItemsSource="{Binding Servidores}"
                   SelectedItem="{Binding NodoSeleccionado}"
@@ -34,6 +40,7 @@
             <TreeView.Styles>
                 <Style Selector="TreeViewItem" x:DataType="vm:NodoDelArbolModeloDeVista">
                     <Setter Property="IsExpanded" Value="{Binding EstaExpandido, Mode=TwoWay}" />
+                    <Setter Property="IsVisible" Value="{Binding EsVisible}" />
                 </Style>
             </TreeView.Styles>
 

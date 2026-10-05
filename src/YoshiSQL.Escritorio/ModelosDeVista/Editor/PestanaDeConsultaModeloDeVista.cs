@@ -73,6 +73,12 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     /// </summary>
     public event EventHandler<bool>? BusquedaSolicitada;
 
+    /// <summary>Pide al editor comentar o descomentar las líneas de la selección.</summary>
+    public event EventHandler? ComentarioSolicitado;
+
+    /// <summary>Pide al editor convertir la selección a mayúsculas (true) o minúsculas (false).</summary>
+    public event EventHandler<bool>? CambioDeCapitalizacionSolicitado;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(InformacionAdicional))]
     public partial string? RutaDelArchivo { get; private set; }
@@ -314,6 +320,15 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
 
     [RelayCommand]
     private void Reemplazar() => BusquedaSolicitada?.Invoke(this, true);
+
+    [RelayCommand]
+    private void Comentar() => ComentarioSolicitado?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private void ConvertirAMayusculas() => CambioDeCapitalizacionSolicitado?.Invoke(this, true);
+
+    [RelayCommand]
+    private void ConvertirAMinusculas() => CambioDeCapitalizacionSolicitado?.Invoke(this, false);
 
     [RelayCommand(CanExecute = nameof(EstaEjecutando))]
     private void Cancelar() => _cancelacionDeLaEjecucion?.Cancel();

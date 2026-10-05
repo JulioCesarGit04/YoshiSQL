@@ -50,6 +50,9 @@
         <KeyBinding Gesture="Ctrl+W" Command="{Binding CerrarPestanaCommand}" />
         <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding MostrarPreferenciasCommand}" />
         <KeyBinding Gesture="Ctrl+H" Command="{Binding ConsultaSeleccionada.ReemplazarCommand}" />
+        <KeyBinding Gesture="Ctrl+OemQuestion" Command="{Binding ConsultaSeleccionada.ComentarCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+U" Command="{Binding ConsultaSeleccionada.ConvertirAMayusculasCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+L" Command="{Binding ConsultaSeleccionada.ConvertirAMinusculasCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}" />
         <KeyBinding Gesture="Ctrl+L" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}" />
         <KeyBinding Gesture="Ctrl+M" Command="{Binding ConsultaSeleccionada.ConmutarPlanRealCommand}" />
@@ -74,6 +77,13 @@
                 <MenuItem Header="Buscar..." InputGesture="Ctrl+F" Command="{Binding ConsultaSeleccionada.BuscarCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
                 <MenuItem Header="Reemplazar..." InputGesture="Ctrl+H" Command="{Binding ConsultaSeleccionada.ReemplazarCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <Separator />
+                <MenuItem Header="Comentar o descomentar" InputGesture="Ctrl+OemQuestion" Command="{Binding ConsultaSeleccionada.ComentarCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <MenuItem Header="Pasar a MAYÚSCULAS" InputGesture="Ctrl+Shift+U" Command="{Binding ConsultaSeleccionada.ConvertirAMayusculasCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <MenuItem Header="Pasar a minúsculas" InputGesture="Ctrl+Shift+L" Command="{Binding ConsultaSeleccionada.ConvertirAMinusculasCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
                 <Separator />
                 <MenuItem Header="Formatear SQL" InputGesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}"

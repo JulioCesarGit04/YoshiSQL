@@ -23,6 +23,7 @@ public sealed partial class NodoDelArbolModeloDeVista : ModeloDeVistaBase
         Tipo = tipo;
         Contexto = contexto;
         _cargarHijos = cargarHijos;
+        EsVisible = true;
 
         if (PuedeTenerHijos)
         {
@@ -54,6 +55,68 @@ public sealed partial class NodoDelArbolModeloDeVista : ModeloDeVistaBase
 
     [ObservableProperty]
     public partial bool EstaExpandido { get; set; }
+
+    /// <summary>El filtro del explorador oculta los nodos que no coinciden ni tienen descendientes que coincidan.</summary>
+    [ObservableProperty]
+    public partial bool EsVisible { get; set; }
+
+    /// <summary>
+    /// Oculta los nodos ya cargados que no contengan el texto buscado (ni sus descendientes).
+    /// Con texto vacío vuelve a mostrar todo. Solo afecta lo ya cargado: no consulta al servidor.
+    /// </summary>
+    /// <returns>true si este nodo queda visible.</returns>
+    public bool AplicarFiltro(string termino)
+    {
+        if (string.IsNullOrWhiteSpace(termino))
+        {
+            MostrarTodo();
+            return true;
+        }
+
+        var coincideEste = Texto.Contains(termino, StringComparison.OrdinalIgnoreCase);
+        var algunHijoCoincide = false;
+
+        foreach (var hijo in Hijos)
+        {
+            if (hijo.Tipo is TipoDeNodo.Cargando)
+            {
+                hijo.EsVisible = true;
+                continue;
+            }
+
+            if (hijo.AplicarFiltro(termino))
+            {
+                algunHijoCoincide = true;
+            }
+        }
+
+        // Si coincide la carpeta por su nombre, se muestra su contenido completo
+        if (coincideEste && !algunHijoCoincide)
+        {
+            foreach (var hijo in Hijos)
+            {
+                hijo.MostrarTodo();
+            }
+        }
+
+        if (algunHijoCoincide)
+        {
+            EstaExpandido = true;
+        }
+
+        EsVisible = coincideEste || algunHijoCoincide;
+        return EsVisible;
+    }
+
+    private void MostrarTodo()
+    {
+        EsVisible = true;
+
+        foreach (var hijo in Hijos)
+        {
+            hijo.MostrarTodo();
+        }
+    }
 
     public static NodoDelArbolModeloDeVista CrearNodoDeError(string mensaje) =>
         new(mensaje, TipoDeNodo.Error, contexto: null);

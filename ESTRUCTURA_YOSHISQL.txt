@@ -389,6 +389,8 @@ YoshiSQL/
     Ctrl+Espacio  Autocompletar         Ctrl+W        Cerrar pestaña
     Ctrl+F        Buscar                Ctrl+H        Reemplazar
     Ctrl+Shift+F  Formatear SQL         Ctrl+,        Preferencias
+    Ctrl+/        Comentar/descomentar  Ctrl+Shift+U  MAYÚSCULAS
+    Ctrl+Shift+L  minúsculas
 
     Dónde guarda sus archivos
     -------------------------

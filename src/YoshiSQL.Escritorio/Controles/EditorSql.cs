@@ -88,6 +88,133 @@ public sealed class EditorSql : TextEditor
     }
 
     /// <summary>
+    /// Comenta con "-- " las líneas de la selección, o las descomenta si ya lo estaban todas.
+    /// Un solo paso de deshacer (Ctrl+Z).
+    /// </summary>
+    public void AlternarComentario()
+    {
+        if (Document is null)
+        {
+            return;
+        }
+
+        var (lineaInicial, lineaFinal) = LineasDeLaSeleccion();
+        var todasComentadas = TodasLasLineasEstanComentadas(lineaInicial, lineaFinal);
+
+        Document.BeginUpdate();
+        try
+        {
+            // De la última línea a la primera para que los offsets de las anteriores no se corran
+            for (var numero = lineaFinal; numero >= lineaInicial; numero--)
+            {
+                if (todasComentadas)
+                {
+                    QuitarComentarioDeLinea(numero);
+                }
+                else
+                {
+                    AgregarComentarioALinea(numero);
+                }
+            }
+        }
+        finally
+        {
+            Document.EndUpdate();
+        }
+    }
+
+    /// <summary>
+    /// Convierte el texto subrayado a mayúsculas o minúsculas, conservando la selección.
+    /// </summary>
+    public void ConvertirSeleccion(bool aMayusculas)
+    {
+        var segmento = TextArea.Selection.SurroundingSegment;
+
+        if (Document is null || segmento is null || segmento.Length == 0)
+        {
+            return;
+        }
+
+        var texto = Document.GetText(segmento.Offset, segmento.Length);
+        var convertido = aMayusculas ? texto.ToUpperInvariant() : texto.ToLowerInvariant();
+
+        if (convertido == texto)
+        {
+            return;
+        }
+
+        Document.Replace(segmento.Offset, segmento.Length, convertido);
+        Select(segmento.Offset, convertido.Length);
+    }
+
+    private (int Inicial, int Final) LineasDeLaSeleccion()
+    {
+        var segmento = TextArea.Selection.SurroundingSegment;
+
+        if (segmento is null)
+        {
+            var linea = Document.GetLineByOffset(CaretOffset).LineNumber;
+            return (linea, linea);
+        }
+
+        var lineaInicial = Document.GetLineByOffset(segmento.Offset).LineNumber;
+        var lineaFinal = Document.GetLineByOffset(segmento.Offset + segmento.Length);
+
+        // Si la selección termina justo al inicio de una línea, esa línea no se incluye
+        if (lineaFinal.Offset == segmento.Offset + segmento.Length && lineaFinal.LineNumber > lineaInicial)
+        {
+            return (lineaInicial, lineaFinal.LineNumber - 1);
+        }
+
+        return (lineaInicial, lineaFinal.LineNumber);
+    }
+
+    private bool TodasLasLineasEstanComentadas(int lineaInicial, int lineaFinal)
+    {
+        for (var numero = lineaInicial; numero <= lineaFinal; numero++)
+        {
+            var linea = Document.GetLineByNumber(numero);
+            var texto = Document.GetText(linea.Offset, linea.Length).TrimStart();
+
+            if (texto.Length > 0 && !texto.StartsWith("--", StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void AgregarComentarioALinea(int numero)
+    {
+        var linea = Document.GetLineByNumber(numero);
+        var texto = Document.GetText(linea.Offset, linea.Length);
+
+        if (texto.Trim().Length == 0)
+        {
+            return;
+        }
+
+        var columna = texto.Length - texto.TrimStart().Length;
+        Document.Insert(linea.Offset + columna, "-- ");
+    }
+
+    private void QuitarComentarioDeLinea(int numero)
+    {
+        var linea = Document.GetLineByNumber(numero);
+        var texto = Document.GetText(linea.Offset, linea.Length);
+        var posicion = texto.IndexOf("--", StringComparison.Ordinal);
+
+        if (posicion < 0 || texto[..posicion].Trim().Length != 0)
+        {
+            return;
+        }
+
+        var cantidad = posicion + 2 < texto.Length && texto[posicion + 2] == ' ' ? 3 : 2;
+        Document.Remove(linea.Offset + posicion, cantidad);
+    }
+
+    /// <summary>
     /// Subraya la línea indicada y la desplaza a la vista; se usa al hacer doble clic en un error.
     /// </summary>
     public void IrALinea(int numeroDeLinea)
