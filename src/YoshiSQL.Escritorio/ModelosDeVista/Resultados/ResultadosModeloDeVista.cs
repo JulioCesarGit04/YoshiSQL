@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Planes;
+using YoshiSQL.Escritorio.Convertidores;
 using YoshiSQL.Escritorio.ModelosDeVista.Planes;
 using YoshiSQL.Escritorio.Servicios;
 
@@ -51,6 +54,10 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     [ObservableProperty]
     public partial int IndiceDePestanaSeleccionada { get; set; }
 
+    /// <summary>Muestra los resultados como texto monoespaciado en vez de grillas (Ctrl+T, como en SSMS).</summary>
+    [ObservableProperty]
+    public partial bool MostrarComoTexto { get; set; }
+
     public ConjuntoDeResultadosModeloDeVista? ConjuntoUnico => Conjuntos.Count == 1 ? Conjuntos[0] : null;
 
     public bool TieneUnSoloConjunto => Conjuntos.Count == 1;
@@ -58,6 +65,16 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     public bool TieneVariosConjuntos => Conjuntos.Count > 1;
 
     public bool NoTieneConjuntos => Conjuntos.Count == 0;
+
+    public bool MostrarGrillaUnica => !MostrarComoTexto && TieneUnSoloConjunto;
+
+    public bool MostrarVariasGrillas => !MostrarComoTexto && TieneVariosConjuntos;
+
+    public bool MostrarTexto => MostrarComoTexto && !NoTieneConjuntos;
+
+    public string TextoDeResultados => ConstruirTexto();
+
+    partial void OnMostrarComoTextoChanged(bool value) => NotificarCambioDeConjuntos();
 
     public event EventHandler<int>? IrALineaSolicitado;
 
@@ -113,5 +130,63 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
         OnPropertyChanged(nameof(TieneUnSoloConjunto));
         OnPropertyChanged(nameof(TieneVariosConjuntos));
         OnPropertyChanged(nameof(NoTieneConjuntos));
+        OnPropertyChanged(nameof(MostrarGrillaUnica));
+        OnPropertyChanged(nameof(MostrarVariasGrillas));
+        OnPropertyChanged(nameof(MostrarTexto));
+        OnPropertyChanged(nameof(TextoDeResultados));
     }
+
+    /// <summary>Arma todos los conjuntos como tablas de texto con columnas alineadas, estilo SSMS.</summary>
+    private string ConstruirTexto()
+    {
+        if (Conjuntos.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var texto = new StringBuilder();
+
+        foreach (var modelo in Conjuntos)
+        {
+            if (texto.Length > 0)
+            {
+                texto.AppendLine().AppendLine();
+            }
+
+            AgregarConjunto(texto, modelo.Conjunto);
+        }
+
+        return texto.ToString();
+    }
+
+    private static void AgregarConjunto(StringBuilder texto, ConjuntoDeResultados conjunto)
+    {
+        var columnas = conjunto.Columnas;
+        var celdas = conjunto.Filas
+            .Select(fila => fila.Select(TextoDeCelda).ToArray())
+            .ToList();
+
+        var anchos = new int[columnas.Count];
+        for (var j = 0; j < columnas.Count; j++)
+        {
+            anchos[j] = columnas[j].Nombre.Length;
+            foreach (var fila in celdas)
+            {
+                anchos[j] = Math.Max(anchos[j], fila[j].Length);
+            }
+        }
+
+        texto.AppendLine(string.Join(" ", columnas.Select((columna, j) => columna.Nombre.PadRight(anchos[j]))));
+        texto.AppendLine(string.Join(" ", anchos.Select(ancho => new string('-', ancho))));
+
+        foreach (var fila in celdas)
+        {
+            texto.AppendLine(string.Join(" ", fila.Select((valor, j) => valor.PadRight(anchos[j]))));
+        }
+
+        texto.Append(CultureInfo.InvariantCulture, $"({conjunto.CantidadDeFilas} filas afectadas)");
+    }
+
+    private static string TextoDeCelda(object? valor) =>
+        ValorDeCeldaATexto.Instancia.Convert(valor, typeof(string), null, CultureInfo.InvariantCulture) as string ?? string.Empty;
 }

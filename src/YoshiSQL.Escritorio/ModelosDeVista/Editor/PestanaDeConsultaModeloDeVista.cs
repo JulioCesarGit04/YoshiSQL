@@ -330,6 +330,9 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     [RelayCommand]
     private void ConvertirAMinusculas() => CambioDeCapitalizacionSolicitado?.Invoke(this, false);
 
+    [RelayCommand]
+    private void ConmutarResultadosEnTexto() => Resultados.MostrarComoTexto = !Resultados.MostrarComoTexto;
+
     [RelayCommand(CanExecute = nameof(EstaEjecutando))]
     private void Cancelar() => _cancelacionDeLaEjecucion?.Cancel();
 

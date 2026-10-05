@@ -57,6 +57,7 @@
         <KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}" />
         <KeyBinding Gesture="Ctrl+L" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}" />
         <KeyBinding Gesture="Ctrl+M" Command="{Binding ConsultaSeleccionada.ConmutarPlanRealCommand}" />
+        <KeyBinding Gesture="Ctrl+T" Command="{Binding ConsultaSeleccionada.ConmutarResultadosEnTextoCommand}" />
     </Window.KeyBindings>
 
     <DockPanel>
@@ -96,6 +97,8 @@
                 <Separator />
                 <MenuItem Header="Mostrar plan estimado" InputGesture="Ctrl+L" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}" />
                 <MenuItem Header="Incluir plan real" InputGesture="Ctrl+M" Command="{Binding ConsultaSeleccionada.ConmutarPlanRealCommand}" />
+                <Separator />
+                <MenuItem Header="Resultados en texto" InputGesture="Ctrl+T" Command="{Binding ConsultaSeleccionada.ConmutarResultadosEnTextoCommand}" />
             </MenuItem>
             <MenuItem Header="A_yuda">
                 <MenuItem Header="Abrir carpeta de registros" Command="{Binding AbrirCarpetaDeRegistrosCommand}" />

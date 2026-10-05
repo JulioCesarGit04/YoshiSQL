@@ -16,10 +16,10 @@
                            Margin="12" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="La consulta no devolvió resultados." />
 
-                <resultados:GrillaDeResultados IsVisible="{Binding TieneUnSoloConjunto}"
+                <resultados:GrillaDeResultados IsVisible="{Binding MostrarGrillaUnica}"
                                                Conjunto="{Binding ConjuntoUnico}" />
 
-                <ScrollViewer IsVisible="{Binding TieneVariosConjuntos}">
+                <ScrollViewer IsVisible="{Binding MostrarVariasGrillas}">
                     <ItemsControl ItemsSource="{Binding Conjuntos}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ConjuntoDeResultadosModeloDeVista">
@@ -30,6 +30,12 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </ScrollViewer>
+
+                <ScrollViewer IsVisible="{Binding MostrarTexto}" HorizontalScrollBarVisibility="Auto">
+                    <SelectableTextBlock Text="{Binding TextoDeResultados}"
+                                         FontFamily="{StaticResource FuenteMonoespaciada}" FontSize="12.5"
+                                         Padding="8" />
                 </ScrollViewer>
             </Panel>
         </TabItem>
