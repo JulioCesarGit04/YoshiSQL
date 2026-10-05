@@ -27,6 +27,8 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
         TamanoDeLetraDelEditor = (decimal)actuales.TamanoDeLetraDelEditor;
         MostrarNumerosDeLinea = actuales.MostrarNumerosDeLinea;
         AjustarLineasLargas = actuales.AjustarLineasLargas;
+        FilasAlSeleccionar = actuales.FilasAlSeleccionar;
+        FilasAlEditar = actuales.FilasAlEditar;
     }
 
     public IReadOnlyList<OpcionDeTema> OpcionesDeTema => OpcionDeTema.Todas;
@@ -36,6 +38,10 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
     public decimal TamanoMinimo => (decimal)PreferenciasDelUsuario.TamanoDeLetraMinimo;
 
     public decimal TamanoMaximo => (decimal)PreferenciasDelUsuario.TamanoDeLetraMaximo;
+
+    public decimal FilasMinimas => PreferenciasDelUsuario.FilasMinimas;
+
+    public decimal FilasMaximas => PreferenciasDelUsuario.FilasMaximas;
 
     [ObservableProperty]
     public partial OpcionDeTema TemaSeleccionado { get; set; }
@@ -51,6 +57,12 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
 
     [ObservableProperty]
     public partial bool AjustarLineasLargas { get; set; }
+
+    [ObservableProperty]
+    public partial decimal? FilasAlSeleccionar { get; set; }
+
+    [ObservableProperty]
+    public partial decimal? FilasAlEditar { get; set; }
 
     [ObservableProperty]
     public partial string? MensajeDeError { get; private set; }
@@ -69,7 +81,9 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
             FuenteDelEditor = FuenteDelEditor,
             TamanoDeLetraDelEditor = (double)(TamanoDeLetraDelEditor ?? (decimal)PreferenciasDelUsuario.Predeterminadas.TamanoDeLetraDelEditor),
             MostrarNumerosDeLinea = MostrarNumerosDeLinea,
-            AjustarLineasLargas = AjustarLineasLargas
+            AjustarLineasLargas = AjustarLineasLargas,
+            FilasAlSeleccionar = (int)(FilasAlSeleccionar ?? PreferenciasDelUsuario.Predeterminadas.FilasAlSeleccionar),
+            FilasAlEditar = (int)(FilasAlEditar ?? PreferenciasDelUsuario.Predeterminadas.FilasAlEditar)
         };
 
         try
@@ -92,6 +106,8 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
         TamanoDeLetraDelEditor = (decimal)predeterminadas.TamanoDeLetraDelEditor;
         MostrarNumerosDeLinea = predeterminadas.MostrarNumerosDeLinea;
         AjustarLineasLargas = predeterminadas.AjustarLineasLargas;
+        FilasAlSeleccionar = predeterminadas.FilasAlSeleccionar;
+        FilasAlEditar = predeterminadas.FilasAlEditar;
     }
 
     [RelayCommand]

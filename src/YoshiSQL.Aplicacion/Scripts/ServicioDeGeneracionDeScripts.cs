@@ -1,4 +1,5 @@
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.Preferencias;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Errores;
 using YoshiSQL.Dominio.Esquema;
@@ -10,16 +11,19 @@ namespace YoshiSQL.Aplicacion.Scripts;
 /// </summary>
 public sealed class ServicioDeGeneracionDeScripts
 {
-    public const int FilasPorDefectoAlSeleccionar = 1000;
-
     private readonly IGeneradorDeScripts _generadorDeScripts;
     private readonly IExploradorDeEsquema _exploradorDeEsquema;
+    private readonly ServicioDePreferencias _servicioDePreferencias;
 
-    public ServicioDeGeneracionDeScripts(IProveedorDeBaseDeDatos proveedor)
+    public ServicioDeGeneracionDeScripts(IProveedorDeBaseDeDatos proveedor, ServicioDePreferencias servicioDePreferencias)
     {
         _generadorDeScripts = proveedor.GeneradorDeScripts;
         _exploradorDeEsquema = proveedor.Explorador;
+        _servicioDePreferencias = servicioDePreferencias;
     }
+
+    /// <summary>Filas que trae "Seleccionar las primeras N filas"; se configura en Preferencias.</summary>
+    public int FilasPorDefectoAlSeleccionar => _servicioDePreferencias.Actuales.FilasAlSeleccionar;
 
     public string GenerarSeleccionDeFilas(string baseDeDatos, ObjetoDeEsquema objeto) =>
         _generadorDeScripts.GenerarSeleccionDeFilas(baseDeDatos, objeto, FilasPorDefectoAlSeleccionar);

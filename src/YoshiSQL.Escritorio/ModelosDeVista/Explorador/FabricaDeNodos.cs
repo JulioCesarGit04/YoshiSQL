@@ -1,8 +1,8 @@
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
-using YoshiSQL.Aplicacion.EdicionDeFilas;
 using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
+using YoshiSQL.Aplicacion.Preferencias;
 using YoshiSQL.Aplicacion.Scripts;
 using YoshiSQL.Dominio.Errores;
 using YoshiSQL.Dominio.Esquema;
@@ -20,17 +20,20 @@ public sealed class FabricaDeNodos
     private readonly ServicioDeGeneracionDeScripts _generadorDeScripts;
     private readonly IAccionesDelExplorador _acciones;
     private readonly IServicioDeErrores _servicioDeErrores;
+    private readonly ServicioDePreferencias _servicioDePreferencias;
 
     public FabricaDeNodos(
         ServicioDelExplorador servicioDelExplorador,
         ServicioDeGeneracionDeScripts generadorDeScripts,
         IAccionesDelExplorador acciones,
-        IServicioDeErrores servicioDeErrores)
+        IServicioDeErrores servicioDeErrores,
+        ServicioDePreferencias servicioDePreferencias)
     {
         _servicioDelExplorador = servicioDelExplorador;
         _generadorDeScripts = generadorDeScripts;
         _acciones = acciones;
         _servicioDeErrores = servicioDeErrores;
+        _servicioDePreferencias = servicioDePreferencias;
     }
 
     public NodoDelArbolModeloDeVista CrearNodoDeServidor(ServidorConectado servidor)
@@ -242,7 +245,7 @@ public sealed class FabricaDeNodos
 
         nodo.EstablecerAcciones(
             AccionDeSeleccionarFilas(contexto, tabla),
-            new AccionDelNodo($"Editar las primeras {ServicioDeEdicionDeFilas.CantidadDeFilasAEditar} filas",
+            new AccionDelNodo($"Editar las primeras {_servicioDePreferencias.Actuales.FilasAlEditar} filas",
                 ComandoSeguro("Editar filas", contexto, () => _acciones.AbrirEdicionDeFilasAsync(contexto, tabla))),
             new AccionDelNodo("Diseñar", ComandoSeguro("Diseñar tabla", contexto, () => _acciones.AbrirDisenadorDeTablaAsync(contexto, tabla))),
             new AccionDelNodo("Generar script CREATE TABLE", ComandoSeguro("Generar script CREATE TABLE", contexto, async () =>
@@ -359,7 +362,7 @@ public sealed class FabricaDeNodos
         new("Ver diagrama", ComandoSeguro("Abrir diagrama", contexto, () => _acciones.AbrirDiagramaAsync(contexto)));
 
     private AccionDelNodo AccionDeSeleccionarFilas(ContextoDelNodo contexto, ObjetoDeEsquema objeto) =>
-        new($"Seleccionar las primeras {ServicioDeGeneracionDeScripts.FilasPorDefectoAlSeleccionar} filas", ComandoSeguro("Seleccionar filas", contexto, () =>
+        new($"Seleccionar las primeras {_generadorDeScripts.FilasPorDefectoAlSeleccionar} filas", ComandoSeguro("Seleccionar filas", contexto, () =>
         {
             var script = _generadorDeScripts.GenerarSeleccionDeFilas(contexto.BaseDeDatosOPredeterminada, objeto);
             return _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: true);

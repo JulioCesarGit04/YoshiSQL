@@ -11,7 +11,7 @@
     <StackPanel Margin="24,20" Spacing="16">
         <TextBlock Text="Preferencias" FontSize="18" FontWeight="SemiBold" />
 
-        <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
+        <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12">
             <TextBlock Grid.Row="0" Text="Tema" VerticalAlignment="Center" />
             <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
                       ItemsSource="{Binding OpcionesDeTema}" SelectedItem="{Binding TemaSeleccionado}">
@@ -38,6 +38,18 @@
                 <CheckBox Content="Mostrar números de línea" IsChecked="{Binding MostrarNumerosDeLinea}" />
                 <CheckBox Content="Ajustar líneas largas al ancho del editor" IsChecked="{Binding AjustarLineasLargas}" />
             </StackPanel>
+
+            <TextBlock Grid.Row="4" Text="Filas al seleccionar" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="4" Grid.Column="1" HorizontalAlignment="Left" Width="140"
+                           Value="{Binding FilasAlSeleccionar}"
+                           Minimum="{Binding FilasMinimas}" Maximum="{Binding FilasMaximas}" Increment="100" FormatString="0"
+                           ToolTip.Tip="Filas que trae &quot;Seleccionar las primeras N filas&quot;" />
+
+            <TextBlock Grid.Row="5" Text="Filas al editar" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="5" Grid.Column="1" HorizontalAlignment="Left" Width="140"
+                           Value="{Binding FilasAlEditar}"
+                           Minimum="{Binding FilasMinimas}" Maximum="{Binding FilasMaximas}" Increment="50" FormatString="0"
+                           ToolTip.Tip="Filas que trae &quot;Editar las primeras N filas&quot;" />
         </Grid>
 
         <TextBlock Text="{Binding MensajeDeError}" Foreground="{DynamicResource PincelDeError}" TextWrapping="Wrap"

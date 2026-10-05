@@ -28,7 +28,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 
 ### Diseño y datos
 - **Diseñador de tablas**: crea tablas y modifica columnas. Los cambios se aplican en una transacción y puedes ver el script antes.
-- **Editar las primeras 200 filas** directamente en la grilla, con comandos parametrizados en una transacción.
+- **Editar las primeras N filas** directamente en la grilla, con comandos parametrizados en una transacción. Puedes filtrar con `WHERE` y `ORDER BY`, y poner una celda en `NULL` con `Ctrl+0`.
 - **Diagramas de base de datos** con tablas que se pueden mover y relaciones dibujadas automáticamente.
 
 ### Administración
@@ -39,7 +39,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 ### Robustez y preferencias
 - Si algo falla, YoshiSQL muestra un aviso claro con un **código de error** y guarda el detalle en un registro legible.
 - Autoguardado de las pestañas y recuperación de scripts si el programa se cierra de forma inesperada.
-- Tema oscuro, claro o según el sistema, y tipo y tamaño de letra del editor configurables.
+- Tema oscuro, claro o según el sistema, tipo y tamaño de letra del editor, y la cantidad de filas al seleccionar y al editar, todo configurable.
 
 ---
 

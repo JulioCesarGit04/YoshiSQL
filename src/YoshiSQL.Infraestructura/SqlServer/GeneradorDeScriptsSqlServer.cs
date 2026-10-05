@@ -13,14 +13,32 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 {
     private const string SangriaDeColumna = "    ";
 
-    public string GenerarSeleccionDeFilas(string baseDeDatos, ObjetoDeEsquema objeto, int cantidadDeFilas) =>
-        $"""
-        USE {Delimitar(baseDeDatos)};
-        GO
+    public string GenerarSeleccionDeFilas(
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        int cantidadDeFilas,
+        string? filtroWhere = null,
+        string? ordenarPor = null)
+    {
+        var consulta = new StringBuilder()
+            .AppendLine($"USE {Delimitar(baseDeDatos)};")
+            .AppendLine("GO")
+            .AppendLine()
+            .AppendLine($"SELECT TOP ({cantidadDeFilas}) *")
+            .Append($"FROM {Delimitar(objeto.Esquema, objeto.Nombre)}");
 
-        SELECT TOP ({cantidadDeFilas}) *
-        FROM {Delimitar(objeto.Esquema, objeto.Nombre)};
-        """;
+        if (!string.IsNullOrWhiteSpace(filtroWhere))
+        {
+            consulta.AppendLine().Append($"WHERE {filtroWhere.Trim()}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(ordenarPor))
+        {
+            consulta.AppendLine().Append($"ORDER BY {ordenarPor.Trim()}");
+        }
+
+        return consulta.Append(';').ToString();
+    }
 
     public string GenerarCreacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         $"""

@@ -26,6 +26,29 @@
             </Grid>
         </Border>
 
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource PincelDePanel}"
+                BorderBrush="{DynamicResource PincelDeBorde}"
+                BorderThickness="0,0,0,1"
+                Padding="8,6">
+            <Grid ColumnDefinitions="Auto,2*,Auto,1*,Auto">
+                <TextBlock Text="WHERE" VerticalAlignment="Center" Margin="0,0,6,0"
+                           Foreground="{DynamicResource PincelDeTextoSecundario}" FontSize="11.5" />
+                <TextBox Grid.Column="1" Text="{Binding FiltroWhere}"
+                         PlaceholderText="ej. Ciudad = 'Lima' AND Activo = 1"
+                         ToolTip.Tip="Condición del WHERE, sin escribir la palabra WHERE" />
+
+                <TextBlock Grid.Column="2" Text="ORDER BY" VerticalAlignment="Center" Margin="12,0,6,0"
+                           Foreground="{DynamicResource PincelDeTextoSecundario}" FontSize="11.5" />
+                <TextBox Grid.Column="3" Text="{Binding OrdenarPor}"
+                         PlaceholderText="ej. Fecha DESC"
+                         ToolTip.Tip="Columnas del ORDER BY, sin escribir las palabras ORDER BY" />
+
+                <Button Grid.Column="4" Classes="Herramienta" Content="Aplicar filtro" Margin="8,0,0,0"
+                        Command="{Binding CargarCommand}" IsDefault="True" />
+            </Grid>
+        </Border>
+
         <vistas:GrillaDeEdicion />
     </DockPanel>
 </UserControl>

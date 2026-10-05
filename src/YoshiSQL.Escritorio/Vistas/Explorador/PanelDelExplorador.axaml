@@ -26,7 +26,8 @@
                    Foreground="{DynamicResource PincelDeTextoSecundario}"
                    Text="No hay servidores conectados." />
 
-        <TreeView ItemsSource="{Binding Servidores}"
+        <TreeView x:Name="ArbolDeObjetos"
+                  ItemsSource="{Binding Servidores}"
                   SelectedItem="{Binding NodoSeleccionado}"
                   DoubleTapped="AlHacerDobleClicEnNodo"
                   Background="Transparent">
@@ -40,7 +41,7 @@
                 <TreeDataTemplate x:DataType="vm:NodoDelArbolModeloDeVista" ItemsSource="{Binding Hijos}">
                     <StackPanel Orientation="Horizontal" Spacing="7" Background="Transparent">
                         <StackPanel.ContextMenu>
-                            <ContextMenu ItemsSource="{Binding Acciones}" Opening="AlAbrirMenuContextual">
+                            <ContextMenu ItemsSource="{Binding Acciones}">
                                 <ContextMenu.Styles>
                                     <Style Selector="MenuItem" x:DataType="vm:AccionDelNodo">
                                         <Setter Property="Header" Value="{Binding Texto}" />

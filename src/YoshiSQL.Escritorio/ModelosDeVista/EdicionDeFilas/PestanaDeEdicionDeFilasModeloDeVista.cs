@@ -50,6 +50,14 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
     [ObservableProperty]
     public partial FilaEditableModeloDeVista? FilaSeleccionada { get; set; }
 
+    /// <summary>Condición del WHERE (sin la palabra WHERE) para filtrar las filas que se editan.</summary>
+    [ObservableProperty]
+    public partial string? FiltroWhere { get; set; }
+
+    /// <summary>Columnas del ORDER BY (sin las palabras ORDER BY).</summary>
+    [ObservableProperty]
+    public partial string? OrdenarPor { get; set; }
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AgregarFilaCommand), nameof(EliminarFilaCommand), nameof(GuardarCambiosCommand))]
     public partial bool PuedeEditarse { get; private set; }
@@ -71,7 +79,7 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
 
         try
         {
-            var datos = await _servicioDeEdicion.CargarAsync(Servidor, BaseDeDatos, Tabla, CancellationToken.None);
+            var datos = await _servicioDeEdicion.CargarAsync(Servidor, BaseDeDatos, Tabla, CancellationToken.None, FiltroWhere, OrdenarPor);
             MostrarDatos(datos);
         }
         catch (Exception error)
@@ -130,7 +138,7 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
         try
         {
             var filasAfectadas = await _servicioDeEdicion.GuardarCambiosAsync(Servidor, BaseDeDatos, Tabla, Columnas, cambios, CancellationToken.None);
-            var datos = await _servicioDeEdicion.CargarAsync(Servidor, BaseDeDatos, Tabla, CancellationToken.None);
+            var datos = await _servicioDeEdicion.CargarAsync(Servidor, BaseDeDatos, Tabla, CancellationToken.None, FiltroWhere, OrdenarPor);
             MostrarDatos(datos);
             TextoDeEstado = $"Cambios guardados ({filasAfectadas} filas afectadas).";
         }
@@ -161,7 +169,7 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
         PuedeEditarse = datos.PuedeEditarse;
         ActualizarTitulo();
         TextoDeEstado = datos.PuedeEditarse
-            ? $"{Filas.Count} filas. Escribe NULL para dejar una celda vacía."
+            ? $"{Filas.Count} filas. Escribe NULL o pulsa Ctrl+0 para dejar una celda vacía."
             : "La tabla no tiene llave primaria: se muestra en modo de solo lectura.";
     }
 

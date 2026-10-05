@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using YoshiSQL.Dominio.Edicion;
@@ -48,6 +49,27 @@ public sealed class GrillaDeEdicion : UserControl
                 _modelo.FilaSeleccionada = _grilla.SelectedItem as FilaEditableModeloDeVista;
             }
         };
+        _grilla.KeyDown += AlPresionarTecla;
+    }
+
+    // Ctrl+0 pone NULL en la celda activa, como en SSMS
+    private void AlPresionarTecla(object? remitente, KeyEventArgs argumentos)
+    {
+        var esCeroConControl = argumentos.KeyModifiers.HasFlag(KeyModifiers.Control)
+            && argumentos.Key is Key.D0 or Key.NumPad0;
+
+        if (!esCeroConControl
+            || _grilla.CurrentColumn is not { } columna
+            || columna.IsReadOnly
+            || columna.Tag is not int posicion
+            || _grilla.SelectedItem is not FilaEditableModeloDeVista fila)
+        {
+            return;
+        }
+
+        _grilla.CancelEdit();
+        fila[posicion] = FilaEditableModeloDeVista.TextoDeNulo;
+        argumentos.Handled = true;
     }
 
     protected override void OnDataContextChanged(EventArgs argumentos)
@@ -123,6 +145,8 @@ public sealed class GrillaDeEdicion : UserControl
     private static DataGridTextColumn CrearColumnaDeDatos(Columna columna, int posicion) => new()
     {
         Header = columna.EsLlavePrimaria ? $"{columna.Nombre} (PK)" : columna.Nombre,
+        // El Tag guarda la posición del valor en la fila; lo usa Ctrl+0 para poner NULL
+        Tag = posicion,
         Binding = new Binding($"[{posicion}]") { Mode = BindingMode.TwoWay },
         // Identidad, rowversion y binarios los maneja SQL Server o no se pueden escribir como texto
         IsReadOnly = columna.EsIdentidad || columna.TipoDeDato.Nombre is "timestamp" or "rowversion" or "varbinary" or "binary" or "image",

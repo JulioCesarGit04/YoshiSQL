@@ -6,6 +6,7 @@ using YoshiSQL.Aplicacion.Consultas;
 using YoshiSQL.Aplicacion.Diagramas;
 using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
+using YoshiSQL.Aplicacion.Preferencias;
 using YoshiSQL.Aplicacion.Scripts;
 using YoshiSQL.Aplicacion.Sesion;
 using YoshiSQL.Dominio.Consultas;
@@ -52,7 +53,8 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         ServicioDeSesion servicioDeSesion,
         HistorialDeConsultas historialDeConsultas,
         ServiciosDeDiseno serviciosDeDiseno,
-        ServicioDeMonitor servicioDeMonitor)
+        ServicioDeMonitor servicioDeMonitor,
+        ServicioDePreferencias servicioDePreferencias)
     {
         _servicioDeMonitor = servicioDeMonitor;
         _serviciosDeDiseno = serviciosDeDiseno;
@@ -66,7 +68,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         _servicioDeArchivosSql = servicioDeArchivosSql;
         _servicioDeDialogos = servicioDeDialogos;
 
-        var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this, servicioDeErrores);
+        var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this, servicioDeErrores, servicioDePreferencias);
         Explorador = new ExploradorModeloDeVista(fabricaDeNodos);
         Historial = new HistorialModeloDeVista(historialDeConsultas, this, servicioDeDialogos, sistemaOperativo, servicioDeErrores);
     }

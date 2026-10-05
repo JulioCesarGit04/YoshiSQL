@@ -18,6 +18,25 @@ public class GeneradorDeScriptsSqlServerPruebas
     }
 
     [Fact]
+    public void GenerarSeleccionDeFilas_ConFiltroYOrden_AgregaWhereYOrderBy()
+    {
+        var script = _generador.GenerarSeleccionDeFilas("Ventas", new Tabla("dbo", "Clientes"), 200, "Ciudad = 'Lima'", "Fecha DESC");
+
+        Assert.Contains("SELECT TOP (200) *", script);
+        Assert.Contains("WHERE Ciudad = 'Lima'", script);
+        Assert.Contains("ORDER BY Fecha DESC", script);
+    }
+
+    [Fact]
+    public void GenerarSeleccionDeFilas_SinFiltro_NoAgregaWhereNiOrderBy()
+    {
+        var script = _generador.GenerarSeleccionDeFilas("Ventas", new Tabla("dbo", "Clientes"), 200, filtroWhere: "   ", ordenarPor: null);
+
+        Assert.DoesNotContain("WHERE", script);
+        Assert.DoesNotContain("ORDER BY", script);
+    }
+
+    [Fact]
     public void GenerarCreacionDeTabla_ConIdentidadYLlavePrimaria_GeneraDefinicionCompleta()
     {
         var columnas = new[]

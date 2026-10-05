@@ -59,9 +59,12 @@ public sealed partial class FormateadorDeSqlTSql : IFormateadorDeSql
     /// </summary>
     private static string NormalizarSeparadores(string codigo)
     {
-        var codigoSinEspaciosAlFinal = ExpresionDeEspaciosAlFinalDeLinea().Replace(codigo, string.Empty);
+        // El generador usa el salto de línea del sistema (\r\n en Windows); las expresiones trabajan con \n
+        var codigoConSaltosUnix = codigo.ReplaceLineEndings("\n");
+        var codigoSinEspaciosAlFinal = ExpresionDeEspaciosAlFinalDeLinea().Replace(codigoConSaltosUnix, string.Empty);
         var codigoConGoUniforme = ExpresionDeSeparadorGo().Replace(codigoSinEspaciosAlFinal, "\nGO\n\n");
-        return ExpresionDeLineasEnBlancoRepetidas().Replace(codigoConGoUniforme, "\n\n").Trim();
+        var codigoNormalizado = ExpresionDeLineasEnBlancoRepetidas().Replace(codigoConGoUniforme, "\n\n").Trim();
+        return codigoNormalizado.ReplaceLineEndings(Environment.NewLine);
     }
 
     [GeneratedRegex(@"[ \t]+$", RegexOptions.Multiline)]

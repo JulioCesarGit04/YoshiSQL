@@ -36,7 +36,7 @@ public sealed class AlmacenDeCredencialesCifradoPruebas : IDisposable
         Assert.DoesNotContain("Clave$Segura123", contenidoDelArchivo);
     }
 
-    [Fact]
+    [FactFueraDeWindows]
     [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public async Task GuardarContrasena_ArchivosSoloLegiblesPorElUsuario()
     {

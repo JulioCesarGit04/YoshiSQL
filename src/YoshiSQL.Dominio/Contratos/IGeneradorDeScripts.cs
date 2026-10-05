@@ -9,7 +9,14 @@ namespace YoshiSQL.Dominio.Contratos;
 /// </summary>
 public interface IGeneradorDeScripts
 {
-    string GenerarSeleccionDeFilas(string baseDeDatos, ObjetoDeEsquema objeto, int cantidadDeFilas);
+    /// <param name="filtroWhere">Condición del WHERE escrita por el usuario, sin la palabra WHERE; nula u opcional.</param>
+    /// <param name="ordenarPor">Columnas del ORDER BY escritas por el usuario, sin las palabras ORDER BY; nula u opcional.</param>
+    string GenerarSeleccionDeFilas(
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        int cantidadDeFilas,
+        string? filtroWhere = null,
+        string? ordenarPor = null);
 
     string GenerarCreacionDeBaseDeDatos(string nombreDeLaBaseDeDatos);
 
