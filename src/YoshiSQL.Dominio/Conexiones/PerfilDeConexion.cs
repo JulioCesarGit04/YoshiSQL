@@ -21,5 +21,11 @@ public sealed record PerfilDeConexion
 
     public bool RecordarContrasena { get; init; } = true;
 
+    /// <summary>
+    /// Color de la conexión en formato "#RRGGBB" para distinguirla en la barra de estado
+    /// (por ejemplo, rojo para producción). Nulo si el usuario no eligió ninguno.
+    /// </summary>
+    public string? Color { get; init; }
+
     public string NombreVisible => Puerto == PuertoPredeterminado ? Servidor : $"{Servidor},{Puerto}";
 }

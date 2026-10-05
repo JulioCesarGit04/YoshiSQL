@@ -20,6 +20,9 @@ public abstract partial class DocumentoModeloDeVista : ModeloDeVistaBase, IAsync
 
     public string DescripcionDeLaConexion => $"{Servidor.Perfil.NombreVisible} ({Servidor.Perfil.Usuario})";
 
+    /// <summary>Color "#RRGGBB" de la conexión para la barra de estado; nulo si no se eligió uno.</summary>
+    public string? ColorDeLaConexion => Servidor.Perfil.Color;
+
     public abstract string Titulo { get; }
 
     /// <summary>

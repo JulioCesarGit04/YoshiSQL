@@ -26,7 +26,10 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         _servicioDeConexiones = servicioDeConexiones;
         _servicioDeErrores = servicioDeErrores;
         AutenticacionSeleccionada = OpcionDeAutenticacion.Todas[0];
+        ColorSeleccionado = OpcionDeColor.Todas[0];
     }
+
+    public IReadOnlyList<OpcionDeColor> OpcionesDeColor => OpcionDeColor.Todas;
 
     public ObservableCollection<PerfilDeConexion> PerfilesGuardados { get; } = [];
 
@@ -64,6 +67,9 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
 
     [ObservableProperty]
     public partial bool ConfiarEnCertificadoDelServidor { get; set; } = true;
+
+    [ObservableProperty]
+    public partial OpcionDeColor ColorSeleccionado { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConectarCommand))]
@@ -191,6 +197,7 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         BaseDeDatos = perfil.BaseDeDatosPredeterminada;
         RecordarContrasena = perfil.RecordarContrasena;
         ConfiarEnCertificadoDelServidor = perfil.ConfiarEnCertificadoDelServidor;
+        ColorSeleccionado = OpcionesDeColor.FirstOrDefault(opcion => opcion.Hex == perfil.Color) ?? OpcionesDeColor[0];
         try
         {
             Contrasena = await _servicioDeConexiones.ObtenerContrasenaGuardadaAsync(perfil, CancellationToken.None) ?? string.Empty;
@@ -211,7 +218,8 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         Usuario = UsaAutenticacionDeSqlServer ? Usuario.Trim() : string.Empty,
         BaseDeDatosPredeterminada = string.IsNullOrWhiteSpace(BaseDeDatos) ? PerfilDeConexion.BaseDeDatosDelSistema : BaseDeDatos.Trim(),
         RecordarContrasena = RecordarContrasena,
-        ConfiarEnCertificadoDelServidor = ConfiarEnCertificadoDelServidor
+        ConfiarEnCertificadoDelServidor = ConfiarEnCertificadoDelServidor,
+        Color = ColorSeleccionado.Hex
     };
 
     /// <summary>

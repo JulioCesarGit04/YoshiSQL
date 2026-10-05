@@ -113,10 +113,12 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
   `EditorSql.ConvertirSeleccion`.
 - ✅ HECHO (sin commit) ⭐ Filtrar objetos del explorador por nombre (caja arriba del árbol).
   Filtra solo lo ya cargado; `NodoDelArbolModeloDeVista.AplicarFiltro` + `EsVisible`.
-- PENDIENTE ⭐ Cambiar de base de datos desde la barra (desplegable con la base activa de la pestaña = USE).
+- ✅ YA EXISTÍA ⭐ Cambiar de base de datos desde la barra (ComboBox en la barra de herramientas,
+  `PestanaDeConsultaModeloDeVista.BaseDeDatosSeleccionada` ejecuta el USE).
+- ✅ HECHO (sin commit) ⭐ Color por conexión en la barra de estado. `PerfilDeConexion.Color` (#RRGGBB),
+  selector en el diálogo de conexión (`OpcionDeColor`), franja + punto en la barra vía `CadenaHexAPincel`.
 - PENDIENTE Copiar filas de resultados como sentencias INSERT (ojo: una grilla de resultados no tiene tabla destino; requiere pedir el nombre).
 - PENDIENTE Sumas / promedios / conteo de las celdas numéricas seleccionadas.
-- PENDIENTE ⭐ Color por conexión en la barra de estado (no equivocarse con producción).
 - PENDIENTE Abrir una celda XML/JSON formateada en su propia pestaña.
 - PENDIENTE ⭐ Resultados en texto plano (Ctrl+T).
 - PENDIENTE Marcadores de línea.

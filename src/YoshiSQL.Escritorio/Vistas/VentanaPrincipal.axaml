@@ -13,6 +13,7 @@
         xmlns:vistasEdicion="using:YoshiSQL.Escritorio.Vistas.EdicionDeFilas"
         xmlns:administracion="using:YoshiSQL.Escritorio.ModelosDeVista.Administracion"
         xmlns:vistasAdministracion="using:YoshiSQL.Escritorio.Vistas.Administracion"
+        xmlns:conv="using:YoshiSQL.Escritorio.Convertidores"
         x:Class="YoshiSQL.Escritorio.Vistas.VentanaPrincipal"
         x:DataType="vm:VentanaPrincipalModeloDeVista"
         Title="YoshiSQL"
@@ -150,10 +151,15 @@
                 Background="{DynamicResource PincelDePanel}"
                 BorderBrush="{DynamicResource PincelDeBorde}"
                 BorderThickness="0,1,0,0"
-                Padding="12,4">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                Padding="0">
+          <DockPanel>
+            <!-- Franja con el color de la conexión (ej. rojo = producción) -->
+            <Border DockPanel.Dock="Left" Width="4"
+                    Background="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static conv:CadenaHexAPincel.Instancia}}"
+                    IsVisible="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" Margin="12,4">
                 <Ellipse Grid.Column="0" Width="8" Height="8" Margin="0,0,8,0"
-                         Fill="{DynamicResource PincelDeAcento}" />
+                         Fill="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static conv:CadenaHexAPincel.Instancia}, FallbackValue={DynamicResource PincelDeAcento}, TargetNullValue={DynamicResource PincelDeAcento}}" />
                 <TextBlock Grid.Column="1" Text="{Binding DocumentoSeleccionado.TextoDeEstado, FallbackValue='Sin conexión'}" />
                 <TextBlock Grid.Column="2" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding DocumentoSeleccionado.DescripcionDeLaConexion, FallbackValue=''}" />
@@ -164,6 +170,7 @@
                 <TextBlock Grid.Column="5" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding ConsultaSeleccionada.TotalDeFilas, StringFormat='{}{0} filas', FallbackValue=''}" />
             </Grid>
+          </DockPanel>
         </Border>
 
         <!-- Explorador a la izquierda, documentos a la derecha -->

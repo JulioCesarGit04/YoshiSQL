@@ -11,7 +11,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 ## Funciones
 
 ### Conexión y explorador de objetos
-- Conexiones guardadas, con la contraseña cifrada en tu equipo.
+- Conexiones guardadas, con la contraseña cifrada en tu equipo y un color opcional para distinguirlas en la barra de estado (por ejemplo, rojo para producción).
 - Árbol desplegable como en SSMS: bases de datos, tablas, vistas, procedimientos, funciones, columnas, índices y seguridad (inicios de sesión, usuarios y roles), con un filtro por nombre.
 - Menú contextual con las acciones de cada objeto: seleccionar filas, editar, diseñar, modificar, generar scripts `CREATE` y `DROP`, respaldar y restaurar.
 
