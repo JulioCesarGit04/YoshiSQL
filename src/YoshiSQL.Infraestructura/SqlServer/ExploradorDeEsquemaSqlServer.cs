@@ -221,6 +221,20 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             : throw new InvalidOperationException($"No se encontraron las propiedades de la base de datos {baseDeDatos}.");
     }
 
+    public Task<IReadOnlyList<DependenciaDeObjeto>> ObtenerDependenciasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ObtenerDependencias",
+            CrearParametrosDelObjeto(objeto),
+            lector => new DependenciaDeObjeto(
+                Esquema: lector.IsDBNull(0) ? null : lector.GetString(0),
+                Nombre: lector.GetString(1),
+                Relacion: lector.GetString(2)),
+            tokenDeCancelacion);
+
     public Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion) =>

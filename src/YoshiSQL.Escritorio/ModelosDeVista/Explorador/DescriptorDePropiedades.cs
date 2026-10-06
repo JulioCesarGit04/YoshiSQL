@@ -44,6 +44,33 @@ internal static class DescriptorDePropiedades
         return string.Join(Environment.NewLine, lineas);
     }
 
+    public static string Describir(ObjetoDeEsquema objeto, IReadOnlyList<DependenciaDeObjeto> dependencias)
+    {
+        if (dependencias.Count == 0)
+        {
+            return $"{objeto.NombreCompleto} no tiene dependencias registradas.";
+        }
+
+        var texto = new System.Text.StringBuilder();
+
+        foreach (var grupo in dependencias.GroupBy(dependencia => dependencia.Relacion))
+        {
+            if (texto.Length > 0)
+            {
+                texto.AppendLine();
+            }
+
+            texto.AppendLine($"{grupo.Key}:");
+
+            foreach (var dependencia in grupo)
+            {
+                texto.AppendLine($"    {dependencia.NombreCompleto}");
+            }
+        }
+
+        return texto.ToString().TrimEnd();
+    }
+
     private static string DescribirFecha(DateTime fecha) => fecha.ToString("yyyy-MM-dd HH:mm", Cultura);
 
     private static string DescribirTamano(long kilobytes) => kilobytes switch

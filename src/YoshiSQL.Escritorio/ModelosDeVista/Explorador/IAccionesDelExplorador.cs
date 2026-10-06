@@ -20,6 +20,8 @@ public interface IAccionesDelExplorador
 
     Task MostrarPropiedadesDeBaseDeDatosAsync(ContextoDelNodo contexto);
 
+    Task MostrarDependenciasAsync(ContextoDelNodo contexto, ObjetoDeEsquema objeto);
+
     Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto);
 
     Task MostrarRespaldoAsync(ContextoDelNodo contexto);

@@ -140,7 +140,9 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
   → `ObtenerPropiedadesDeTabla.sql` + `PropiedadesDeTabla` + `DescriptorDePropiedades`, se ve en `DialogoDeTexto`.
 - ✅ HECHO (sin commit) ⭐🟡 Propiedades de la base de datos (estado, recuperación, compatibilidad, intercalación,
   propietario, tamaño, fecha): menú "Propiedades" → `ObtenerPropiedadesDeBaseDeDatos.sql` + `PropiedadesDeBaseDeDatos`.
-- ⭐🟡 Ver dependencias (qué usa una tabla y de qué depende). PENDIENTE (siguiente).
+- ✅ HECHO (sin commit) ⭐🟡 Ver dependencias (de qué depende el objeto y quién lo usa): menú "Ver dependencias"
+  en tablas, vistas, procedimientos y funciones. `ObtenerDependencias.sql` (sys.sql_expression_dependencies)
+  + `DependenciaDeObjeto`; se agrupa por relación en `DialogoDeTexto`.
 - ⭐🟡 Mantenimiento de índices: ver fragmentación y reconstruir/reorganizar.
 - 🟢 Renombrar objeto (F2, con sp_rename). PENDIENTE.
 - ✅ HECHO (sin commit) 🟢 Script como SELECT / INSERT / UPDATE / DELETE desde el menú del explorador

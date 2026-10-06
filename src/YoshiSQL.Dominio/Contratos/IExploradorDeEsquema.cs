@@ -84,6 +84,12 @@ public interface IExploradorDeEsquema
         string baseDeDatos,
         CancellationToken tokenDeCancelacion);
 
+    Task<IReadOnlyList<DependenciaDeObjeto>> ObtenerDependenciasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        ObjetoDeEsquema objeto,
+        CancellationToken tokenDeCancelacion);
+
     Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion);

@@ -309,6 +309,16 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             DescriptorDePropiedades.Describir(propiedades));
     }
 
+    public async Task MostrarDependenciasAsync(ContextoDelNodo contexto, Dominio.Esquema.ObjetoDeEsquema objeto)
+    {
+        var dependencias = await _servicioDelExplorador.ObtenerDependenciasAsync(
+            contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, CancellationToken.None);
+
+        await _servicioDeDialogos.MostrarTextoAsync(
+            $"Dependencias de {objeto.NombreCompleto}",
+            DescriptorDePropiedades.Describir(objeto, dependencias));
+    }
+
     public async Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto)
     {
         var monitorAbierto = Documentos
