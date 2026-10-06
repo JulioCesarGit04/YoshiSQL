@@ -37,6 +37,52 @@ public class GeneradorDeScriptsSqlServerPruebas
     }
 
     [Fact]
+    public void GenerarInstruccionDml_Insert_ExcluyeLaIdentidadYUsaMarcadores()
+    {
+        var columnas = new[]
+        {
+            new Columna("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: true, Posicion: 1),
+            new Columna("Nombre", new TipoDeDato("nvarchar", 100), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 2)
+        };
+
+        var script = _generador.GenerarInstruccionDml("Ventas", new Tabla("dbo", "Clientes"), columnas, TipoDeScriptDml.Insercion);
+
+        Assert.Contains("INSERT INTO [dbo].[Clientes] ([Nombre])", script);
+        Assert.DoesNotContain("[Id]", script);
+        Assert.Contains("<Nombre, nvarchar(100),>", script);
+    }
+
+    [Fact]
+    public void GenerarInstruccionDml_Update_UsaLaLlavePrimariaEnElWhere()
+    {
+        var columnas = new[]
+        {
+            new Columna("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: true, Posicion: 1),
+            new Columna("Nombre", new TipoDeDato("nvarchar", 100), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 2)
+        };
+
+        var script = _generador.GenerarInstruccionDml("Ventas", new Tabla("dbo", "Clientes"), columnas, TipoDeScriptDml.Actualizacion);
+
+        Assert.Contains("UPDATE [dbo].[Clientes]", script);
+        Assert.Contains("[Nombre] = <Nombre, nvarchar(100),>", script);
+        Assert.Contains("WHERE [Id] = <Id, int,>", script);
+    }
+
+    [Fact]
+    public void GenerarInstruccionDml_DeleteSinLlavePrimaria_DejaMarcadorDeCondicion()
+    {
+        var columnas = new[]
+        {
+            new Columna("Nombre", new TipoDeDato("nvarchar", 100), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 1)
+        };
+
+        var script = _generador.GenerarInstruccionDml("Ventas", new Tabla("dbo", "Clientes"), columnas, TipoDeScriptDml.Eliminacion);
+
+        Assert.Contains("DELETE FROM [dbo].[Clientes]", script);
+        Assert.Contains("WHERE <condición de búsqueda, ,>", script);
+    }
+
+    [Fact]
     public void GenerarCreacionDeTabla_ConIdentidadYLlavePrimaria_GeneraDefinicionCompleta()
     {
         var columnas = new[]

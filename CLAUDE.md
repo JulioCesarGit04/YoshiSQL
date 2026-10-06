@@ -130,8 +130,11 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 - ⭐🟡 Propiedades de la base de datos (tamaño, archivos, modelo de recuperación, compatibilidad, propietario).
 - ⭐🟡 Ver dependencias (qué usa una tabla y de qué depende).
 - ⭐🟡 Mantenimiento de índices: ver fragmentación y reconstruir/reorganizar.
-- 🟢 Renombrar objeto (F2, con sp_rename).
-- 🟢 Script como SELECT / INSERT / UPDATE / DELETE / EXEC (no solo CREATE/DROP).
+- 🟢 Renombrar objeto (F2, con sp_rename). PENDIENTE.
+- ✅ HECHO (sin commit) 🟢 Script como SELECT / INSERT / UPDATE / DELETE desde el menú del explorador
+  (tablas: los 4; vistas: SELECT). `IGeneradorDeScripts.GenerarInstruccionDml` + `TipoDeScriptDml`,
+  servicio `GenerarInstruccionDmlAsync`, acciones en `FabricaDeNodos`. EXEC de procedimientos queda PENDIENTE
+  (necesita leer los parámetros del procedimiento del catálogo).
 - 🟡 Ejecutar procedimiento… (diálogo que pide parámetros y genera el EXEC).
 - 🟡 Más carpetas en el explorador: triggers, restricciones (CHECK/DEFAULT), sinónimos, tipos de usuario, esquemas, secuencias.
 - 🟢 Visor del log de errores del servidor (sp_readerrorlog).
@@ -149,6 +152,12 @@ El usuario destacó estas como "espectaculares". No son copiar a SSMS; son el mo
 - ⭐🟡 **Panel "salud de la base"**: una sola pantalla con tablas más pesadas, índices fragmentados,
   índices que faltan (ya se analizan en los planes) y consultas más lentas.
 - 🟢 **Favoritos / fragmentos de consultas personales**: guardar consultas con nombre y ejecutarlas con un clic o un atajo en el editor.
+
+### Imagen de la app (branding) — PENDIENTE
+- 🟡 Logo propio de YoshiSQL: ícono de la ventana y de la app (ItemGroup AvaloniaResource / ApplicationIcon),
+  y mostrarlo en el diálogo "Acerca de" y en la pantalla de conexión.
+- 🟡 Splash screen al iniciar (ventana de bienvenida con el logo mientras carga), como en SSMS/otras apps.
+  En Avalonia se hace con una ventana ligera que se muestra antes de la principal o con un SplashScreen.
 
 ### Prioridad 5 — Grandes / a futuro
 - 🔴 Importar / exportar datos desde CSV o Excel a una tabla.

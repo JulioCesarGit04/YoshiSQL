@@ -253,6 +253,9 @@ public sealed class FabricaDeNodos
                 var script = await _generadorDeScripts.GenerarCreacionDeTablaAsync(contexto.Servidor, baseDeDatos, tabla, CancellationToken.None);
                 await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
             })),
+            AccionDeScriptDml("Generar script INSERT", contexto, tabla, TipoDeScriptDml.Insercion),
+            AccionDeScriptDml("Generar script UPDATE", contexto, tabla, TipoDeScriptDml.Actualizacion),
+            AccionDeScriptDml("Generar script DELETE", contexto, tabla, TipoDeScriptDml.Eliminacion),
             AccionQueAbreScript("Generar script DROP TABLE", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(baseDeDatos, tabla)),
             AccionDeActualizar(nodo));
@@ -270,6 +273,7 @@ public sealed class FabricaDeNodos
 
         nodo.EstablecerAcciones(
             AccionDeSeleccionarFilas(contexto, vista),
+            AccionDeScriptDml("Generar script SELECT", contexto, vista, TipoDeScriptDml.Seleccion),
             AccionDeModificar(contexto, vista),
             AccionDeGenerarCreacion(contexto, vista),
             AccionQueAbreScript("Generar script DROP VIEW", contexto,
@@ -366,6 +370,14 @@ public sealed class FabricaDeNodos
         {
             var script = _generadorDeScripts.GenerarSeleccionDeFilas(contexto.BaseDeDatosOPredeterminada, objeto);
             return _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: true);
+        }));
+
+    private AccionDelNodo AccionDeScriptDml(string texto, ContextoDelNodo contexto, ObjetoDeEsquema objeto, TipoDeScriptDml tipo) =>
+        new(texto, ComandoSeguro(texto, contexto, async () =>
+        {
+            var script = await _generadorDeScripts.GenerarInstruccionDmlAsync(
+                contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, tipo, CancellationToken.None);
+            await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
         }));
 
     private AccionDelNodo AccionQueAbreScript(string texto, ContextoDelNodo contexto, Func<string> generarScript) =>

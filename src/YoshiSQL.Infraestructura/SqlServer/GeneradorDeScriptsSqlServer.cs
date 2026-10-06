@@ -40,6 +40,67 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         return consulta.Append(';').ToString();
     }
 
+    public string GenerarInstruccionDml(string baseDeDatos, ObjetoDeEsquema objeto, IReadOnlyList<Columna> columnas, TipoDeScriptDml tipo)
+    {
+        var ordenadas = columnas.OrderBy(columna => columna.Posicion).ToList();
+
+        var instruccion = tipo switch
+        {
+            TipoDeScriptDml.Seleccion => CrearSeleccionExplicita(objeto, ordenadas),
+            TipoDeScriptDml.Insercion => CrearInsercion(objeto, ordenadas),
+            TipoDeScriptDml.Actualizacion => CrearActualizacion(objeto, ordenadas),
+            TipoDeScriptDml.Eliminacion => CrearEliminacionDeFilas(objeto, ordenadas),
+            _ => throw new ArgumentOutOfRangeException(nameof(tipo))
+        };
+
+        return EnvolverEnBaseDeDatos(baseDeDatos, instruccion);
+    }
+
+    // Marcador tipo SSMS que el usuario reemplaza por un valor: <Nombre, tipo,>
+    private static string MarcadorDeValor(Columna columna) => $"<{columna.Nombre}, {columna.TipoDeDato.Describir()},>";
+
+    private static string CrearSeleccionExplicita(ObjetoDeEsquema objeto, IReadOnlyList<Columna> columnas)
+    {
+        var lista = columnas.Count == 0
+            ? "*"
+            : string.Join($",{Environment.NewLine}       ", columnas.Select(columna => Delimitar(columna.Nombre)));
+
+        return $"SELECT {lista}{Environment.NewLine}FROM {Delimitar(objeto.Esquema, objeto.Nombre)};";
+    }
+
+    private static string CrearInsercion(ObjetoDeEsquema objeto, IReadOnlyList<Columna> columnas)
+    {
+        // La identidad la asigna SQL Server; no se incluye en el INSERT
+        var insertables = columnas.Where(columna => !columna.EsIdentidad).ToList();
+
+        return $"INSERT INTO {Delimitar(objeto.Esquema, objeto.Nombre)} ({UnirNombres(insertables.Select(columna => columna.Nombre))}){Environment.NewLine}"
+            + $"VALUES ({string.Join(", ", insertables.Select(MarcadorDeValor))});";
+    }
+
+    private static string CrearActualizacion(ObjetoDeEsquema objeto, IReadOnlyList<Columna> columnas)
+    {
+        var modificables = columnas.Where(columna => !columna.EsIdentidad).ToList();
+        var asignaciones = string.Join(
+            $",{Environment.NewLine}    ",
+            modificables.Select(columna => $"{Delimitar(columna.Nombre)} = {MarcadorDeValor(columna)}"));
+
+        return $"UPDATE {Delimitar(objeto.Esquema, objeto.Nombre)}{Environment.NewLine}"
+            + $"SET {asignaciones}{Environment.NewLine}"
+            + $"WHERE {CondicionDeBusqueda(columnas)};";
+    }
+
+    private static string CrearEliminacionDeFilas(ObjetoDeEsquema objeto, IReadOnlyList<Columna> columnas) =>
+        $"DELETE FROM {Delimitar(objeto.Esquema, objeto.Nombre)}{Environment.NewLine}WHERE {CondicionDeBusqueda(columnas)};";
+
+    private static string CondicionDeBusqueda(IReadOnlyList<Columna> columnas)
+    {
+        var llave = columnas.Where(columna => columna.EsLlavePrimaria).ToList();
+
+        return llave.Count == 0
+            ? "<condición de búsqueda, ,>"
+            : string.Join(" AND ", llave.Select(columna => $"{Delimitar(columna.Nombre)} = {MarcadorDeValor(columna)}"));
+    }
+
     public string GenerarCreacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         $"""
         CREATE DATABASE {Delimitar(nombreDeLaBaseDeDatos)};

@@ -22,6 +22,11 @@ public interface IGeneradorDeScripts
 
     string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas);
 
+    /// <summary>
+    /// Plantilla SELECT, INSERT, UPDATE o DELETE para una tabla o vista, lista para editar en el editor.
+    /// </summary>
+    string GenerarInstruccionDml(string baseDeDatos, ObjetoDeEsquema objeto, IReadOnlyList<Columna> columnas, TipoDeScriptDml tipo);
+
     string GenerarEliminacion(string baseDeDatos, ObjetoDeEsquema objeto);
 
     /// <summary>
