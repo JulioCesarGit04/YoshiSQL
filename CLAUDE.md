@@ -136,9 +136,11 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 - PENDIENTE (fiddly) Marcadores de línea: AvaloniaEdit no trae marcadores; requiere un margen propio. Bajo valor.
 
 ### Prioridad 3 — Información de objetos y servidor
-- ⭐🟡 Propiedades de la tabla (filas, tamaño en disco, fecha, espacio de índices).
-- ⭐🟡 Propiedades de la base de datos (tamaño, archivos, modelo de recuperación, compatibilidad, propietario).
-- ⭐🟡 Ver dependencias (qué usa una tabla y de qué depende).
+- ✅ HECHO (sin commit) ⭐🟡 Propiedades de la tabla (filas, columnas, índices, espacio, fechas): menú "Propiedades"
+  → `ObtenerPropiedadesDeTabla.sql` + `PropiedadesDeTabla` + `DescriptorDePropiedades`, se ve en `DialogoDeTexto`.
+- ✅ HECHO (sin commit) ⭐🟡 Propiedades de la base de datos (estado, recuperación, compatibilidad, intercalación,
+  propietario, tamaño, fecha): menú "Propiedades" → `ObtenerPropiedadesDeBaseDeDatos.sql` + `PropiedadesDeBaseDeDatos`.
+- ⭐🟡 Ver dependencias (qué usa una tabla y de qué depende). PENDIENTE (siguiente).
 - ⭐🟡 Mantenimiento de índices: ver fragmentación y reconstruir/reorganizar.
 - 🟢 Renombrar objeto (F2, con sp_rename). PENDIENTE.
 - ✅ HECHO (sin commit) 🟢 Script como SELECT / INSERT / UPDATE / DELETE desde el menú del explorador

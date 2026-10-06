@@ -73,6 +73,17 @@ public interface IExploradorDeEsquema
         Tabla tabla,
         CancellationToken tokenDeCancelacion);
 
+    Task<PropiedadesDeTabla> ObtenerPropiedadesDeTablaAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion);
+
+    Task<PropiedadesDeBaseDeDatos> ObtenerPropiedadesDeBaseDeDatosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
     Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion);

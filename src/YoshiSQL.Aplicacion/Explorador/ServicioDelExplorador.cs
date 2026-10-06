@@ -53,6 +53,19 @@ public sealed class ServicioDelExplorador
         CancellationToken tokenDeCancelacion) =>
         _exploradorDeEsquema.ObtenerColumnasAsync(servidor.DatosDeAcceso, baseDeDatos, objeto, tokenDeCancelacion);
 
+    public Task<PropiedadesDeTabla> ObtenerPropiedadesDeTablaAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion) =>
+        _exploradorDeEsquema.ObtenerPropiedadesDeTablaAsync(servidor.DatosDeAcceso, baseDeDatos, tabla, tokenDeCancelacion);
+
+    public Task<PropiedadesDeBaseDeDatos> ObtenerPropiedadesDeBaseDeDatosAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        _exploradorDeEsquema.ObtenerPropiedadesDeBaseDeDatosAsync(servidor.DatosDeAcceso, baseDeDatos, tokenDeCancelacion);
+
     public Task<IReadOnlyList<Indice>> ObtenerIndicesAsync(
         ServidorConectado servidor,
         string baseDeDatos,

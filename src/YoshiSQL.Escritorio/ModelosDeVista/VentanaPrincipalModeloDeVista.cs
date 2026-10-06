@@ -289,6 +289,26 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         await edicion.CargarCommand.ExecuteAsync(null);
     }
 
+    public async Task MostrarPropiedadesDeTablaAsync(ContextoDelNodo contexto, Tabla tabla)
+    {
+        var propiedades = await _servicioDelExplorador.ObtenerPropiedadesDeTablaAsync(
+            contexto.Servidor, contexto.BaseDeDatosOPredeterminada, tabla, CancellationToken.None);
+
+        await _servicioDeDialogos.MostrarTextoAsync(
+            $"Propiedades de {tabla.NombreCompleto}",
+            DescriptorDePropiedades.Describir(tabla, propiedades));
+    }
+
+    public async Task MostrarPropiedadesDeBaseDeDatosAsync(ContextoDelNodo contexto)
+    {
+        var propiedades = await _servicioDelExplorador.ObtenerPropiedadesDeBaseDeDatosAsync(
+            contexto.Servidor, contexto.BaseDeDatosOPredeterminada, CancellationToken.None);
+
+        await _servicioDeDialogos.MostrarTextoAsync(
+            $"Propiedades de {propiedades.Nombre}",
+            DescriptorDePropiedades.Describir(propiedades));
+    }
+
     public async Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto)
     {
         var monitorAbierto = Documentos

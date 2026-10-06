@@ -16,6 +16,10 @@ public interface IAccionesDelExplorador
 
     Task AbrirEdicionDeFilasAsync(ContextoDelNodo contexto, Tabla tabla);
 
+    Task MostrarPropiedadesDeTablaAsync(ContextoDelNodo contexto, Tabla tabla);
+
+    Task MostrarPropiedadesDeBaseDeDatosAsync(ContextoDelNodo contexto);
+
     Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto);
 
     Task MostrarRespaldoAsync(ContextoDelNodo contexto);

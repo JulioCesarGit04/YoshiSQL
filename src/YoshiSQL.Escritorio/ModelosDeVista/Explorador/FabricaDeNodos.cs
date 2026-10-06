@@ -123,6 +123,7 @@ public sealed class FabricaDeNodos
             AccionDeRestaurar(contexto),
             AccionQueAbreScript("Generar script DROP DATABASE", contexto with { BaseDeDatos = null },
                 () => _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(baseDeDatos.Nombre)),
+            new AccionDelNodo("Propiedades", ComandoSeguro("Ver propiedades de la base de datos", contexto, () => _acciones.MostrarPropiedadesDeBaseDeDatosAsync(contexto))),
             AccionDeActualizar(nodo));
 
         return nodo;
@@ -258,6 +259,7 @@ public sealed class FabricaDeNodos
             AccionDeScriptDml("Generar script DELETE", contexto, tabla, TipoDeScriptDml.Eliminacion),
             AccionQueAbreScript("Generar script DROP TABLE", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(baseDeDatos, tabla)),
+            new AccionDelNodo("Propiedades", ComandoSeguro("Ver propiedades de la tabla", contexto, () => _acciones.MostrarPropiedadesDeTablaAsync(contexto, tabla))),
             AccionDeActualizar(nodo));
 
         return nodo;

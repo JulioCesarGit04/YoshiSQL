@@ -173,6 +173,54 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             .ToList();
     }
 
+    public async Task<PropiedadesDeTabla> ObtenerPropiedadesDeTablaAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion)
+    {
+        var propiedades = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ObtenerPropiedadesDeTabla",
+            CrearParametrosDelObjeto(tabla),
+            lector => new PropiedadesDeTabla(
+                Creacion: lector.GetDateTime(0),
+                Modificacion: lector.GetDateTime(1),
+                Filas: lector.GetInt64(2),
+                EspacioTotalKb: lector.GetInt64(3),
+                EspacioUsadoKb: lector.GetInt64(4),
+                Columnas: lector.GetInt32(5),
+                Indices: lector.GetInt32(6)),
+            tokenDeCancelacion);
+
+        return propiedades.Count > 0
+            ? propiedades[0]
+            : throw new InvalidOperationException($"No se encontraron las propiedades de la tabla {tabla.NombreCompleto}.");
+    }
+
+    public async Task<PropiedadesDeBaseDeDatos> ObtenerPropiedadesDeBaseDeDatosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion)
+    {
+        var propiedades = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ObtenerPropiedadesDeBaseDeDatos",
+            [new SqlParameter("@nombre", baseDeDatos)],
+            lector => new PropiedadesDeBaseDeDatos(
+                Nombre: lector.GetString(0),
+                Estado: lector.GetString(1),
+                ModeloDeRecuperacion: lector.GetString(2),
+                Intercalacion: lector.IsDBNull(3) ? null : lector.GetString(3),
+                NivelDeCompatibilidad: lector.GetByte(4),
+                Propietario: lector.IsDBNull(5) ? null : lector.GetString(5),
+                Creacion: lector.GetDateTime(6),
+                TamanoKb: lector.GetInt64(7)),
+            tokenDeCancelacion);
+
+        return propiedades.Count > 0
+            ? propiedades[0]
+            : throw new InvalidOperationException($"No se encontraron las propiedades de la base de datos {baseDeDatos}.");
+    }
+
     public Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion) =>
