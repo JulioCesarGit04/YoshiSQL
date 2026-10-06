@@ -24,6 +24,7 @@ public static class CatalogoDeIconos
         [TipoDeNodo.Columna] = Crear("M5,2.5 H11 V13.5 H5 Z M5,6 H11", "#9DA5B4"),
         [TipoDeNodo.LlavePrimaria] = Crear("M2,8 A3,3 0 1 0 8,8 A3,3 0 1 0 2,8 Z M8,8 H14.5 M12,8 V10.5 M14.5,8 V10", "#E5C07B"),
         [TipoDeNodo.Indice] = Crear("M3,4 H13 M3,8 H10 M3,12 H7", "#98C379"),
+        [TipoDeNodo.Disparador] = Crear("M9,1.5 L3,9 H8 L7,14.5 L13,7 H8 Z", "#E5C07B"),
         [TipoDeNodo.InicioDeSesion] = Crear("M8,2.5 A2.75,2.75 0 1 0 8.01,2.5 Z M2.5,14 C2.5,10.5 13.5,10.5 13.5,14", "#C8CDD4"),
         [TipoDeNodo.Usuario] = Crear("M8,2.5 A2.75,2.75 0 1 0 8.01,2.5 Z M2.5,14 C2.5,10.5 13.5,10.5 13.5,14", "#6CC24A"),
         [TipoDeNodo.Rol] = Crear("M5.5,3 A2.25,2.25 0 1 0 5.51,3 Z M1,13 C1,10 10,10 10,13 M11,4 A2,2 0 1 0 11.01,4 Z M10.5,9.5 C13,9.3 15,10.5 15,12.5", "#D19A66"),

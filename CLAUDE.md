@@ -150,7 +150,9 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
   servicio `GenerarInstruccionDmlAsync`, acciones en `FabricaDeNodos`. EXEC de procedimientos queda PENDIENTE
   (necesita leer los parámetros del procedimiento del catálogo).
 - 🟡 Ejecutar procedimiento… (diálogo que pide parámetros y genera el EXEC).
-- 🟡 Más carpetas en el explorador: triggers, restricciones (CHECK/DEFAULT), sinónimos, tipos de usuario, esquemas, secuencias.
+- 🟡 Más carpetas en el explorador: ✅ HECHO (sin commit) Disparadores (triggers) bajo cada tabla
+  (`ListarDisparadores.sql` + `Disparador` + `TipoDeNodo.Disparador`). PENDIENTE: restricciones (CHECK/DEFAULT),
+  sinónimos, tipos de usuario, esquemas, secuencias.
 - ✅ HECHO (sin commit) 🟢 Visor del log del servidor: acción "Ver log de errores del servidor" en el nodo del
   servidor que abre y ejecuta `EXEC sys.sp_readerrorlog;`.
 - ✅ HECHO (sin commit) 🟢 SET STATISTICS IO/TIME: toggle "Incluir estadísticas (IO y tiempo)" en el menú Consulta.

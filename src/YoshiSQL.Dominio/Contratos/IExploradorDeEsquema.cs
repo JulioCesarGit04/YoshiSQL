@@ -90,6 +90,12 @@ public interface IExploradorDeEsquema
         ObjetoDeEsquema objeto,
         CancellationToken tokenDeCancelacion);
 
+    Task<IReadOnlyList<Disparador>> ObtenerDisparadoresAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion);
+
     Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion);

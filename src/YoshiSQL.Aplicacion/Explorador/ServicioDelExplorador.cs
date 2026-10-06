@@ -73,6 +73,13 @@ public sealed class ServicioDelExplorador
         CancellationToken tokenDeCancelacion) =>
         _exploradorDeEsquema.ObtenerDependenciasAsync(servidor.DatosDeAcceso, baseDeDatos, objeto, tokenDeCancelacion);
 
+    public Task<IReadOnlyList<Disparador>> ObtenerDisparadoresAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion) =>
+        _exploradorDeEsquema.ObtenerDisparadoresAsync(servidor.DatosDeAcceso, baseDeDatos, tabla, tokenDeCancelacion);
+
     public Task<IReadOnlyList<Indice>> ObtenerIndicesAsync(
         ServidorConectado servidor,
         string baseDeDatos,

@@ -235,6 +235,17 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                 Relacion: lector.GetString(2)),
             tokenDeCancelacion);
 
+    public Task<IReadOnlyList<Disparador>> ObtenerDisparadoresAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarDisparadores",
+            CrearParametrosDelObjeto(tabla),
+            lector => new Disparador(lector.GetString(0), lector.GetBoolean(1)),
+            tokenDeCancelacion);
+
     public Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion) =>

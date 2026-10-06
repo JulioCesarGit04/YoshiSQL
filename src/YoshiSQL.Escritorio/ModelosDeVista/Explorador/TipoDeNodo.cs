@@ -16,6 +16,7 @@ public enum TipoDeNodo
     Columna,
     LlavePrimaria,
     Indice,
+    Disparador,
     InicioDeSesion,
     Usuario,
     Rol,

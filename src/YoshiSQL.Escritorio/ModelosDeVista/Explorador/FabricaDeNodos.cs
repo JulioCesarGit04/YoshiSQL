@@ -243,7 +243,8 @@ public sealed class FabricaDeNodos
             _ => Task.FromResult<IReadOnlyList<NodoDelArbolModeloDeVista>>(
             [
                 CrearCarpetaDeColumnas(contexto, tabla),
-                CrearCarpetaDeIndices(contexto, tabla)
+                CrearCarpetaDeIndices(contexto, tabla),
+                CrearCarpetaDeDisparadores(contexto, tabla)
             ]));
 
         nodo.EstablecerAcciones(
@@ -312,6 +313,14 @@ public sealed class FabricaDeNodos
                 .Select(columna => new NodoDelArbolModeloDeVista(
                     columna.DescribirParaExplorador(),
                     columna.EsLlavePrimaria ? TipoDeNodo.LlavePrimaria : TipoDeNodo.Columna,
+                    contexto)));
+
+    private NodoDelArbolModeloDeVista CrearCarpetaDeDisparadores(ContextoDelNodo contexto, Tabla tabla) =>
+        CrearCarpeta("Disparadores", contexto, async token =>
+            (await _servicioDelExplorador.ObtenerDisparadoresAsync(contexto.Servidor, contexto.BaseDeDatosOPredeterminada, tabla, token))
+                .Select(disparador => new NodoDelArbolModeloDeVista(
+                    disparador.EstaDeshabilitado ? $"{disparador.Nombre} (deshabilitado)" : disparador.Nombre,
+                    TipoDeNodo.Disparador,
                     contexto)));
 
     private NodoDelArbolModeloDeVista CrearCarpetaDeIndices(ContextoDelNodo contexto, Tabla tabla) =>
