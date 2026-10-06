@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controles="using:YoshiSQL.Escritorio.Controles"
+        x:Class="YoshiSQL.Escritorio.Vistas.Comunes.PantallaDeBienvenida"
+        Width="440" Height="280"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Topmost="True"
+        Background="#15181C"
+        WindowStartupLocation="CenterScreen">
+
+    <Border BorderBrush="#2A2F37" BorderThickness="1">
+        <Grid RowDefinitions="*,Auto">
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
+                <controles:LogoDeYoshiSql Width="92" Height="92" HorizontalAlignment="Center" />
+                <TextBlock Text="YoshiSQL" FontSize="30" FontWeight="SemiBold" Foreground="#F2F4F7" HorizontalAlignment="Center" />
+                <TextBlock Text="Entorno gráfico para SQL Server" FontSize="13" Foreground="#9AA2AD" HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <Grid Grid.Row="1" Margin="22,0,22,18" ColumnDefinitions="*,Auto">
+                <ProgressBar IsIndeterminate="True" Height="2" MinHeight="2" VerticalAlignment="Center" />
+                <TextBlock x:Name="TextoDeVersion" Grid.Column="1" Margin="12,0,0,0"
+                           FontSize="11.5" Foreground="#6B7078" VerticalAlignment="Center" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

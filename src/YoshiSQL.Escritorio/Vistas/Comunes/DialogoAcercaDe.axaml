@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controles="using:YoshiSQL.Escritorio.Controles"
         x:Class="YoshiSQL.Escritorio.Vistas.Comunes.DialogoAcercaDe"
         Title="Acerca de YoshiSQL"
         Width="480" SizeToContent="Height"
@@ -8,10 +9,13 @@
         WindowStartupLocation="CenterOwner">
 
     <StackPanel Margin="28,24" Spacing="16">
-        <StackPanel Spacing="2">
-            <TextBlock Text="YoshiSQL" FontSize="28" FontWeight="Light" Foreground="{DynamicResource PincelDeAcento}" />
-            <TextBlock Text="Entorno gráfico libre para SQL Server en Linux"
-                       Foreground="{DynamicResource PincelDeTextoSecundario}" />
+        <StackPanel Orientation="Horizontal" Spacing="14">
+            <controles:LogoDeYoshiSql Width="56" Height="56" VerticalAlignment="Center" />
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="YoshiSQL" FontSize="28" FontWeight="Light" Foreground="{DynamicResource PincelDeAcento}" />
+                <TextBlock Text="Entorno gráfico libre para SQL Server en Linux y Windows"
+                           Foreground="{DynamicResource PincelDeTextoSecundario}" />
+            </StackPanel>
         </StackPanel>
 
         <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">

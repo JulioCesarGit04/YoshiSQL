@@ -1,6 +1,9 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using YoshiSQL.Aplicacion.Errores;
@@ -9,6 +12,7 @@ using YoshiSQL.Escritorio.Controles;
 using YoshiSQL.Escritorio.ModelosDeVista;
 using YoshiSQL.Escritorio.Servicios;
 using YoshiSQL.Escritorio.Vistas;
+using YoshiSQL.Escritorio.Vistas.Comunes;
 
 namespace YoshiSQL.Escritorio;
 
@@ -24,16 +28,61 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime escritorio)
         {
+            var bienvenida = new PantallaDeBienvenida();
+            bienvenida.Show();
+
             var proveedorDeServicios = ContenedorDeDependencias.Construir();
             RegistrarCapturaDeErroresDeLaInterfaz(proveedorDeServicios.GetRequiredService<IServicioDeErrores>());
             AplicarPreferenciasGuardadas(proveedorDeServicios);
 
             var modeloPrincipal = proveedorDeServicios.GetRequiredService<VentanaPrincipalModeloDeVista>();
-            escritorio.MainWindow = new VentanaPrincipal { DataContext = modeloPrincipal };
+            var ventana = new VentanaPrincipal { DataContext = modeloPrincipal, Icon = CrearIconoSeguro() };
+            escritorio.MainWindow = ventana;
             escritorio.Exit += (_, _) => proveedorDeServicios.Dispose();
+
+            MostrarVentanaTrasLaBienvenida(ventana, bienvenida);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Deja ver la pantalla de bienvenida un instante y luego la cierra (la ventana principal ya está debajo).
+    /// </summary>
+    private static void MostrarVentanaTrasLaBienvenida(Window ventana, Window bienvenida)
+    {
+        var temporizador = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
+        temporizador.Tick += (_, _) =>
+        {
+            temporizador.Stop();
+            ventana.Activate();
+            bienvenida.Close();
+        };
+        temporizador.Start();
+    }
+
+    /// <summary>
+    /// Genera el ícono de la ventana dibujando el logo vectorial en un mapa de bits.
+    /// Si el dibujo fallara, la ventana simplemente queda sin ícono en vez de impedir el arranque.
+    /// </summary>
+    private static WindowIcon? CrearIconoSeguro()
+    {
+        try
+        {
+            const int tamano = 64;
+            var logo = new LogoDeYoshiSql { Width = tamano, Height = tamano };
+            logo.Measure(new Size(tamano, tamano));
+            logo.Arrange(new Rect(0, 0, tamano, tamano));
+
+            var mapaDeBits = new RenderTargetBitmap(new PixelSize(tamano, tamano), new Vector(96, 96));
+            mapaDeBits.Render(logo);
+
+            return new WindowIcon(mapaDeBits);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>

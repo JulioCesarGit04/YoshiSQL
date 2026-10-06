@@ -175,11 +175,13 @@ El usuario destacó estas como "espectaculares". No son copiar a SSMS; son el mo
   índices que faltan (ya se analizan en los planes) y consultas más lentas.
 - 🟢 **Favoritos / fragmentos de consultas personales**: guardar consultas con nombre y ejecutarlas con un clic o un atajo en el editor.
 
-### Imagen de la app (branding) — PENDIENTE
-- 🟡 Logo propio de YoshiSQL: ícono de la ventana y de la app (ItemGroup AvaloniaResource / ApplicationIcon),
-  y mostrarlo en el diálogo "Acerca de" y en la pantalla de conexión.
-- 🟡 Splash screen al iniciar (ventana de bienvenida con el logo mientras carga), como en SSMS/otras apps.
-  En Avalonia se hace con una ventana ligera que se muestra antes de la principal o con un SplashScreen.
+### Imagen de la app (branding)
+- ✅ HECHO (sin commit) Logo vectorial reutilizable `Controles/LogoDeYoshiSql` (cilindro de BD sobre tile verde).
+  Se usa en el splash y en "Acerca de". El ícono de la ventana se genera dibujando el logo a un `RenderTargetBitmap`
+  en `App.CrearIconoSeguro` (mejor esfuerzo: si falla, la ventana queda sin ícono, no rompe el arranque).
+- ✅ HECHO (sin commit) Splash: `Vistas/Comunes/PantallaDeBienvenida` (ventana sin bordes, Topmost) que se muestra
+  ~1.6 s al iniciar y se cierra sola; la ventana principal ya queda debajo.
+- PENDIENTE: ícono a nivel de SO para el ejecutable publicado (`ApplicationIcon` .ico) — necesita un archivo de imagen.
 
 ### Prioridad 5 — Grandes / a futuro
 - 🔴 Importar / exportar datos desde CSV o Excel a una tabla.
