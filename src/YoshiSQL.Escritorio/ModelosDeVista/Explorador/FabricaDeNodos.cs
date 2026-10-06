@@ -263,6 +263,7 @@ public sealed class FabricaDeNodos
             AccionQueAbreScript("Generar script DROP TABLE", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(baseDeDatos, tabla)),
             AccionDeVerDependencias(contexto, tabla),
+            AccionDeRenombrar(contexto, tabla),
             new AccionDelNodo("Propiedades", ComandoSeguro("Ver propiedades de la tabla", contexto, () => _acciones.MostrarPropiedadesDeTablaAsync(contexto, tabla))),
             AccionDeActualizar(nodo));
 
@@ -285,6 +286,7 @@ public sealed class FabricaDeNodos
             AccionQueAbreScript("Generar script DROP VIEW", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(contexto.BaseDeDatosOPredeterminada, vista)),
             AccionDeVerDependencias(contexto, vista),
+            AccionDeRenombrar(contexto, vista),
             AccionDeActualizar(nodo));
 
         return nodo;
@@ -301,7 +303,8 @@ public sealed class FabricaDeNodos
             AccionDeGenerarCreacion(contexto, objeto),
             AccionQueAbreScript("Generar script DROP", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(contexto.BaseDeDatosOPredeterminada, objeto)),
-            AccionDeVerDependencias(contexto, objeto));
+            AccionDeVerDependencias(contexto, objeto),
+            AccionDeRenombrar(contexto, objeto));
         nodo.EstablecerComandoAlHacerDobleClic(accionDeModificar.Comando);
 
         return nodo;
@@ -390,6 +393,9 @@ public sealed class FabricaDeNodos
 
     private AccionDelNodo AccionDeVerDependencias(ContextoDelNodo contexto, ObjetoDeEsquema objeto) =>
         new("Ver dependencias", ComandoSeguro("Ver dependencias", contexto, () => _acciones.MostrarDependenciasAsync(contexto, objeto)));
+
+    private AccionDelNodo AccionDeRenombrar(ContextoDelNodo contexto, ObjetoDeEsquema objeto) =>
+        new("Renombrar...", ComandoSeguro("Renombrar", contexto, () => _acciones.RenombrarObjetoAsync(contexto, objeto)));
 
     private AccionDelNodo AccionDeScriptDml(string texto, ContextoDelNodo contexto, ObjetoDeEsquema objeto, TipoDeScriptDml tipo) =>
         new(texto, ComandoSeguro(texto, contexto, async () =>

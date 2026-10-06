@@ -144,7 +144,9 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
   en tablas, vistas, procedimientos y funciones. `ObtenerDependencias.sql` (sys.sql_expression_dependencies)
   + `DependenciaDeObjeto`; se agrupa por relación en `DialogoDeTexto`.
 - ⭐🟡 Mantenimiento de índices: ver fragmentación y reconstruir/reorganizar.
-- 🟢 Renombrar objeto (F2, con sp_rename). PENDIENTE.
+- ✅ HECHO (sin commit) 🟢 Renombrar objeto (sp_rename): acción "Renombrar..." en tablas, vistas, procedimientos
+  y funciones. Estrena `DialogoDeEntrada` + `IServicioDeDialogos.PedirTextoAsync` (reutilizable). El script
+  `GenerarRenombrado` se abre y ejecuta; el usuario refresca el árbol con "Actualizar".
 - ✅ HECHO (sin commit) 🟢 Script como SELECT / INSERT / UPDATE / DELETE desde el menú del explorador
   (tablas: los 4; vistas: SELECT). `IGeneradorDeScripts.GenerarInstruccionDml` + `TipoDeScriptDml`,
   servicio `GenerarInstruccionDmlAsync`, acciones en `FabricaDeNodos`. EXEC de procedimientos queda PENDIENTE

@@ -29,6 +29,9 @@ public interface IGeneradorDeScripts
 
     string GenerarEliminacion(string baseDeDatos, ObjetoDeEsquema objeto);
 
+    /// <summary>Script EXEC sp_rename para cambiar el nombre de un objeto.</summary>
+    string GenerarRenombrado(string baseDeDatos, ObjetoDeEsquema objeto, string nuevoNombre);
+
     /// <summary>
     /// Script para crear el objeto tal como existe hoy, a partir de su definición.
     /// </summary>

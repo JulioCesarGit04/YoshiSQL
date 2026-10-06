@@ -83,6 +83,15 @@ public class GeneradorDeScriptsSqlServerPruebas
     }
 
     [Fact]
+    public void GenerarRenombrado_UsaSpRenameConElNombreCalificadoYElNuevo()
+    {
+        var script = _generador.GenerarRenombrado("Ventas", new Tabla("dbo", "Clientes"), "ClientesNuevo");
+
+        Assert.Contains("USE [Ventas];", script);
+        Assert.Contains("EXEC sys.sp_rename N'[dbo].[Clientes]', N'ClientesNuevo';", script);
+    }
+
+    [Fact]
     public void GenerarCreacionDeTabla_ConIdentidadYLlavePrimaria_GeneraDefinicionCompleta()
     {
         var columnas = new[]

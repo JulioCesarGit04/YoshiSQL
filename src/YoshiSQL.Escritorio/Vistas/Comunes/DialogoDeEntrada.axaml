@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="YoshiSQL.Escritorio.Vistas.Comunes.DialogoDeEntrada"
+        Width="420" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="24,20" Spacing="14">
+        <TextBlock x:Name="Etiqueta" TextWrapping="Wrap" />
+        <TextBox x:Name="CajaDeTexto" KeyDown="AlPresionarTecla" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Classes="Primario" Content="Aceptar" MinWidth="96" IsDefault="True" Click="AlAceptar" />
+            <Button Content="Cancelar" MinWidth="96" IsCancel="True" Click="AlCancelar" />
+        </StackPanel>
+    </StackPanel>
+</Window>

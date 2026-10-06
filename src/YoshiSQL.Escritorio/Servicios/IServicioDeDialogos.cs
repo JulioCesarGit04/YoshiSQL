@@ -18,6 +18,9 @@ public interface IServicioDeDialogos
     /// <summary>Muestra un texto largo (propiedades, XML, JSON) en una ventana desplazable.</summary>
     Task MostrarTextoAsync(string titulo, string texto);
 
+    /// <summary>Pide un texto al usuario; devuelve lo escrito o null si cancela.</summary>
+    Task<string?> PedirTextoAsync(string titulo, string etiqueta, string valorInicial);
+
     Task<string?> SeleccionarArchivoParaAbrirAsync();
 
     Task<string?> SeleccionarArchivoParaGuardarAsync(string nombreSugerido, TipoDeArchivo tipoDeArchivo);

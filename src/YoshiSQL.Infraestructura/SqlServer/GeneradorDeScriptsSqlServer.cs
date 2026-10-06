@@ -101,6 +101,11 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             : string.Join(" AND ", llave.Select(columna => $"{Delimitar(columna.Nombre)} = {MarcadorDeValor(columna)}"));
     }
 
+    public string GenerarRenombrado(string baseDeDatos, ObjetoDeEsquema objeto, string nuevoNombre) =>
+        EnvolverEnBaseDeDatos(
+            baseDeDatos,
+            $"EXEC sys.sp_rename {EscribirTexto(Delimitar(objeto.Esquema, objeto.Nombre))}, {EscribirTexto(nuevoNombre)};");
+
     public string GenerarCreacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         $"""
         CREATE DATABASE {Delimitar(nombreDeLaBaseDeDatos)};

@@ -104,6 +104,9 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     public Task MostrarTextoAsync(string titulo, string texto) =>
         new DialogoDeTexto(titulo, texto).ShowDialog(ObtenerVentanaActiva());
 
+    public Task<string?> PedirTextoAsync(string titulo, string etiqueta, string valorInicial) =>
+        new DialogoDeEntrada(titulo, etiqueta, valorInicial).ShowDialog<string?>(ObtenerVentanaActiva());
+
     public Task MostrarPreferenciasAsync()
     {
         var fuentesInstaladas = FontManager.Current.SystemFonts

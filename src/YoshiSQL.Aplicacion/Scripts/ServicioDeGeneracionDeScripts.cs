@@ -34,6 +34,9 @@ public sealed class ServicioDeGeneracionDeScripts
     public string GenerarEliminacion(string baseDeDatos, ObjetoDeEsquema objeto) =>
         _generadorDeScripts.GenerarEliminacion(baseDeDatos, objeto);
 
+    public string GenerarRenombrado(string baseDeDatos, ObjetoDeEsquema objeto, string nuevoNombre) =>
+        _generadorDeScripts.GenerarRenombrado(baseDeDatos, objeto, nuevoNombre);
+
     public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(nombreDeLaBaseDeDatos);
 

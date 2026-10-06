@@ -30,6 +30,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
 
     private readonly ServiciosDeConsulta _serviciosDeConsulta;
     private readonly ServicioDelExplorador _servicioDelExplorador;
+    private readonly ServicioDeGeneracionDeScripts _servicioDeGeneracionDeScripts;
     private readonly ServicioDeArchivosSql _servicioDeArchivosSql;
     private readonly ServicioDeDiagramas _servicioDeDiagramas;
     private readonly IServicioDeDialogos _servicioDeDialogos;
@@ -67,6 +68,8 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         _servicioDelExplorador = servicioDelExplorador;
         _servicioDeArchivosSql = servicioDeArchivosSql;
         _servicioDeDialogos = servicioDeDialogos;
+
+        _servicioDeGeneracionDeScripts = servicioDeGeneracionDeScripts;
 
         var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this, servicioDeErrores, servicioDePreferencias);
         Explorador = new ExploradorModeloDeVista(fabricaDeNodos);
@@ -317,6 +320,20 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         await _servicioDeDialogos.MostrarTextoAsync(
             $"Dependencias de {objeto.NombreCompleto}",
             DescriptorDePropiedades.Describir(objeto, dependencias));
+    }
+
+    public async Task RenombrarObjetoAsync(ContextoDelNodo contexto, Dominio.Esquema.ObjetoDeEsquema objeto)
+    {
+        var nuevoNombre = await _servicioDeDialogos.PedirTextoAsync(
+            "Renombrar", $"Nuevo nombre para {objeto.NombreCompleto}:", objeto.Nombre);
+
+        if (string.IsNullOrWhiteSpace(nuevoNombre) || nuevoNombre == objeto.Nombre)
+        {
+            return;
+        }
+
+        var script = _servicioDeGeneracionDeScripts.GenerarRenombrado(contexto.BaseDeDatosOPredeterminada, objeto, nuevoNombre);
+        await AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: true);
     }
 
     public async Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto)

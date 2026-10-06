@@ -22,6 +22,8 @@ public interface IAccionesDelExplorador
 
     Task MostrarDependenciasAsync(ContextoDelNodo contexto, ObjetoDeEsquema objeto);
 
+    Task RenombrarObjetoAsync(ContextoDelNodo contexto, ObjetoDeEsquema objeto);
+
     Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto);
 
     Task MostrarRespaldoAsync(ContextoDelNodo contexto);
