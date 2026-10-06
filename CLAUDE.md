@@ -151,8 +151,10 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
   (necesita leer los parámetros del procedimiento del catálogo).
 - 🟡 Ejecutar procedimiento… (diálogo que pide parámetros y genera el EXEC).
 - 🟡 Más carpetas en el explorador: triggers, restricciones (CHECK/DEFAULT), sinónimos, tipos de usuario, esquemas, secuencias.
-- 🟢 Visor del log de errores del servidor (sp_readerrorlog).
-- 🟢 SET STATISTICS IO/TIME con resumen de lecturas y tiempo.
+- ✅ HECHO (sin commit) 🟢 Visor del log del servidor: acción "Ver log de errores del servidor" en el nodo del
+  servidor que abre y ejecuta `EXEC sys.sp_readerrorlog;`.
+- ✅ HECHO (sin commit) 🟢 SET STATISTICS IO/TIME: toggle "Incluir estadísticas (IO y tiempo)" en el menú Consulta.
+  `ISesionDeConsulta.EjecutarConEstadisticasAsync` envuelve con SET STATISTICS IO, TIME ON/OFF; salen en Mensajes.
 - 🟡 Bloqueos en árbol (quién bloquea a quién) como mejora del monitor.
 
 ### Prioridad 4 — Funciones que DIFERENCIAN de SSMS (el valor real de YoshiSQL)

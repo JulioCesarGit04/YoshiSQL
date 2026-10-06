@@ -27,11 +27,13 @@ public sealed class ServicioDeEjecucion
         _ejecutorDeConsultas.AbrirSesionAsync(servidor.DatosDeAcceso, baseDeDatos, tokenDeCancelacion);
 
     /// <param name="incluirPlanReal">Además de ejecutar, devuelve el plan real de cada instrucción.</param>
+    /// <param name="incluirEstadisticas">Ejecuta con SET STATISTICS IO y TIME; las estadísticas llegan como mensajes.</param>
     public async Task<ResultadoDeEjecucion> EjecutarAsync(
         ServidorConectado servidor,
         ISesionDeConsulta sesion,
         FragmentoDeCodigo fragmento,
         bool incluirPlanReal,
+        bool incluirEstadisticas,
         CancellationToken tokenDeCancelacion)
     {
         var lotes = _divisorDeLotes.DividirEnLotes(fragmento.Texto, fragmento.LineaInicial);
@@ -44,7 +46,9 @@ public sealed class ServicioDeEjecucion
         var baseDeDatosAlIniciar = sesion.BaseDeDatosActual;
         var resultado = incluirPlanReal
             ? await sesion.EjecutarConPlanRealAsync(lotes, tokenDeCancelacion)
-            : await sesion.EjecutarLotesAsync(lotes, tokenDeCancelacion);
+            : incluirEstadisticas
+                ? await sesion.EjecutarConEstadisticasAsync(lotes, tokenDeCancelacion)
+                : await sesion.EjecutarLotesAsync(lotes, tokenDeCancelacion);
 
         await _historial.RegistrarAsync(new ConsultaEjecutada(
             fragmento.Texto,

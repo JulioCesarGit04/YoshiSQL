@@ -76,6 +76,23 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
             }
         });
 
+    public Task<ResultadoDeEjecucion> EjecutarConEstadisticasAsync(
+        IReadOnlyList<LoteSql> lotes,
+        CancellationToken tokenDeCancelacion) =>
+        EjecutarDeFormaExclusivaAsync(async () =>
+        {
+            await EjecutarInstruccionDeConfiguracionAsync("SET STATISTICS IO, TIME ON;", tokenDeCancelacion);
+
+            try
+            {
+                return await EjecutarYMedirAsync(lotes, tokenDeCancelacion);
+            }
+            finally
+            {
+                await EjecutarInstruccionDeConfiguracionAsync("SET STATISTICS IO, TIME OFF;", CancellationToken.None);
+            }
+        });
+
     public Task<IReadOnlyList<string>> ObtenerPlanesEstimadosAsync(
         IReadOnlyList<LoteSql> lotes,
         CancellationToken tokenDeCancelacion) =>

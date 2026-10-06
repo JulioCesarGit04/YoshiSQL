@@ -100,6 +100,10 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     [ObservableProperty]
     public partial bool IncluirPlanReal { get; set; }
 
+    /// <summary>Si está activo, cada ejecución incluye SET STATISTICS IO y TIME (las estadísticas salen en Mensajes).</summary>
+    [ObservableProperty]
+    public partial bool IncluirEstadisticas { get; set; }
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(EjecutarCommand), nameof(CancelarCommand), nameof(MostrarPlanEstimadoCommand))]
     public partial bool EstaEjecutando { get; private set; }
@@ -206,7 +210,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         try
         {
             _sesion ??= await _servicioDeEjecucion.AbrirSesionAsync(Servidor, BaseDeDatosActual, tokenDeCancelacion);
-            var resultado = await _servicioDeEjecucion.EjecutarAsync(Servidor, _sesion, fragmento, IncluirPlanReal, tokenDeCancelacion);
+            var resultado = await _servicioDeEjecucion.EjecutarAsync(Servidor, _sesion, fragmento, IncluirPlanReal, IncluirEstadisticas, tokenDeCancelacion);
             MostrarResultado(resultado);
 
             if (_servicioDeEjecucion.InterpretarPlanReal(resultado) is { } planReal)
@@ -278,6 +282,11 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         IncluirPlanReal = !IncluirPlanReal;
         TextoDeEstado = IncluirPlanReal ? "Se incluirá el plan real en la próxima ejecución." : "Plan real desactivado.";
     }
+
+    partial void OnIncluirEstadisticasChanged(bool value) =>
+        TextoDeEstado = value
+            ? "Se incluirán las estadísticas de IO y tiempo (pestaña Mensajes)."
+            : "Estadísticas desactivadas.";
 
     /// <summary>
     /// Formatea el texto subrayado o, si no hay selección, todo el editor. Se puede deshacer con Ctrl+Z.

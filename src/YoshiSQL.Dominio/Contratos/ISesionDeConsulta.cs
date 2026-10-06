@@ -24,6 +24,13 @@ public interface ISesionDeConsulta : IAsyncDisposable
         CancellationToken tokenDeCancelacion);
 
     /// <summary>
+    /// Ejecuta los lotes con SET STATISTICS IO y TIME activos; las estadísticas llegan como mensajes del servidor.
+    /// </summary>
+    Task<ResultadoDeEjecucion> EjecutarConEstadisticasAsync(
+        IReadOnlyList<LoteSql> lotes,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>
     /// Pide el plan que usaría el servidor sin ejecutar nada.
     /// </summary>
     /// <returns>Un documento XML por instrucción.</returns>

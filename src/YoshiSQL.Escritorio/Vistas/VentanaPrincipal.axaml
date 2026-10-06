@@ -97,6 +97,8 @@
                 <Separator />
                 <MenuItem Header="Mostrar plan estimado" InputGesture="Ctrl+L" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}" />
                 <MenuItem Header="Incluir plan real" InputGesture="Ctrl+M" Command="{Binding ConsultaSeleccionada.ConmutarPlanRealCommand}" />
+                <MenuItem Header="Incluir estadísticas (IO y tiempo)" ToggleType="CheckBox"
+                          IsChecked="{Binding ConsultaSeleccionada.IncluirEstadisticas}" />
                 <Separator />
                 <MenuItem Header="Resultados en texto" InputGesture="Ctrl+T" Command="{Binding ConsultaSeleccionada.ConmutarResultadosEnTextoCommand}" />
             </MenuItem>
