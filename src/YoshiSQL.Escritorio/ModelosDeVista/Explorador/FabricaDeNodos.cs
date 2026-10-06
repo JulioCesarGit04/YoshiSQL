@@ -264,6 +264,8 @@ public sealed class FabricaDeNodos
                 () => _generadorDeScripts.GenerarEliminacion(baseDeDatos, tabla)),
             AccionDeVerDependencias(contexto, tabla),
             AccionDeRenombrar(contexto, tabla),
+            new AccionDelNodo("Ver fragmentación de índices", ComandoSeguro("Ver fragmentación de índices", contexto,
+                () => _acciones.AbrirNuevaConsultaAsync(contexto, _generadorDeScripts.GenerarConsultaDeFragmentacion(baseDeDatos, tabla), ejecutarAlAbrir: true))),
             new AccionDelNodo("Propiedades", ComandoSeguro("Ver propiedades de la tabla", contexto, () => _acciones.MostrarPropiedadesDeTablaAsync(contexto, tabla))),
             AccionDeActualizar(nodo));
 
@@ -329,7 +331,21 @@ public sealed class FabricaDeNodos
     private NodoDelArbolModeloDeVista CrearCarpetaDeIndices(ContextoDelNodo contexto, Tabla tabla) =>
         CrearCarpeta("Índices", contexto, async token =>
             (await _servicioDelExplorador.ObtenerIndicesAsync(contexto.Servidor, contexto.BaseDeDatosOPredeterminada, tabla, token))
-                .Select(indice => new NodoDelArbolModeloDeVista(DescribirIndice(indice), TipoDeNodo.Indice, contexto)));
+                .Select(indice => CrearNodoDeIndice(contexto, tabla, indice)));
+
+    private NodoDelArbolModeloDeVista CrearNodoDeIndice(ContextoDelNodo contexto, Tabla tabla, Indice indice)
+    {
+        var nodo = new NodoDelArbolModeloDeVista(DescribirIndice(indice), TipoDeNodo.Indice, contexto);
+        var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
+
+        nodo.EstablecerAcciones(
+            AccionQueAbreScript("Reconstruir (REBUILD)", contexto,
+                () => _generadorDeScripts.GenerarMantenimientoDeIndice(baseDeDatos, tabla, indice.Nombre, reconstruir: true)),
+            AccionQueAbreScript("Reorganizar (REORGANIZE)", contexto,
+                () => _generadorDeScripts.GenerarMantenimientoDeIndice(baseDeDatos, tabla, indice.Nombre, reconstruir: false)));
+
+        return nodo;
+    }
 
     /// <summary>
     /// Carpeta cuyos hijos se piden al servidor al desplegarla, con la opción "Actualizar".

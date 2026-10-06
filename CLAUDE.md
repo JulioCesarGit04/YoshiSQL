@@ -143,7 +143,9 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 - ✅ HECHO (sin commit) ⭐🟡 Ver dependencias (de qué depende el objeto y quién lo usa): menú "Ver dependencias"
   en tablas, vistas, procedimientos y funciones. `ObtenerDependencias.sql` (sys.sql_expression_dependencies)
   + `DependenciaDeObjeto`; se agrupa por relación en `DialogoDeTexto`.
-- ⭐🟡 Mantenimiento de índices: ver fragmentación y reconstruir/reorganizar.
+- ✅ HECHO (sin commit) ⭐🟡 Mantenimiento de índices: acción "Ver fragmentación de índices" en la tabla
+  (`sys.dm_db_index_physical_stats`, abre y ejecuta) y "Reconstruir (REBUILD)" / "Reorganizar (REORGANIZE)"
+  en cada índice. `GenerarConsultaDeFragmentacion` + `GenerarMantenimientoDeIndice`.
 - ✅ HECHO (sin commit) 🟢 Renombrar objeto (sp_rename): acción "Renombrar..." en tablas, vistas, procedimientos
   y funciones. Estrena `DialogoDeEntrada` + `IServicioDeDialogos.PedirTextoAsync` (reutilizable). El script
   `GenerarRenombrado` se abre y ejecuta; el usuario refresca el árbol con "Actualizar".

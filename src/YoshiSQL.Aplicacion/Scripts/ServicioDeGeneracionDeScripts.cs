@@ -37,6 +37,12 @@ public sealed class ServicioDeGeneracionDeScripts
     public string GenerarRenombrado(string baseDeDatos, ObjetoDeEsquema objeto, string nuevoNombre) =>
         _generadorDeScripts.GenerarRenombrado(baseDeDatos, objeto, nuevoNombre);
 
+    public string GenerarConsultaDeFragmentacion(string baseDeDatos, Tabla tabla) =>
+        _generadorDeScripts.GenerarConsultaDeFragmentacion(baseDeDatos, tabla);
+
+    public string GenerarMantenimientoDeIndice(string baseDeDatos, Tabla tabla, string nombreDelIndice, bool reconstruir) =>
+        _generadorDeScripts.GenerarMantenimientoDeIndice(baseDeDatos, tabla, nombreDelIndice, reconstruir);
+
     public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(nombreDeLaBaseDeDatos);
 

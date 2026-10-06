@@ -106,6 +106,26 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             baseDeDatos,
             $"EXEC sys.sp_rename {EscribirTexto(Delimitar(objeto.Esquema, objeto.Nombre))}, {EscribirTexto(nuevoNombre)};");
 
+    public string GenerarConsultaDeFragmentacion(string baseDeDatos, Tabla tabla) =>
+        EnvolverEnBaseDeDatos(
+            baseDeDatos,
+            $"""
+            SELECT
+                i.name AS Indice,
+                i.type_desc AS Tipo,
+                estadisticas.avg_fragmentation_in_percent AS FragmentacionPorcentaje,
+                estadisticas.page_count AS Paginas
+            FROM sys.dm_db_index_physical_stats(DB_ID(), OBJECT_ID({EscribirTexto(Delimitar(tabla.Esquema, tabla.Nombre))}), NULL, NULL, 'LIMITED') AS estadisticas
+            JOIN sys.indexes i ON i.object_id = estadisticas.object_id AND i.index_id = estadisticas.index_id
+            WHERE i.index_id > 0
+            ORDER BY estadisticas.avg_fragmentation_in_percent DESC;
+            """);
+
+    public string GenerarMantenimientoDeIndice(string baseDeDatos, Tabla tabla, string nombreDelIndice, bool reconstruir) =>
+        EnvolverEnBaseDeDatos(
+            baseDeDatos,
+            $"ALTER INDEX {Delimitar(nombreDelIndice)} ON {Delimitar(tabla.Esquema, tabla.Nombre)} {(reconstruir ? "REBUILD" : "REORGANIZE")};");
+
     public string GenerarCreacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
         $"""
         CREATE DATABASE {Delimitar(nombreDeLaBaseDeDatos)};

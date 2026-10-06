@@ -35,7 +35,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 - **Monitor de actividad**: sesiones conectadas, consultas en ejecución, bloqueos y opción de terminar un proceso.
 - **Respaldo y restauración** de bases de datos con asistentes.
 - **Plan de ejecución** estimado y real, mostrado como un árbol con el costo de cada paso y advertencias como índices faltantes.
-- **Estadísticas de IO y tiempo** (`SET STATISTICS`) y **visor del log de errores del servidor**.
+- **Estadísticas de IO y tiempo** (`SET STATISTICS`), **visor del log de errores del servidor** y **fragmentación de índices** con reconstruir/reorganizar.
 
 ### Robustez y preferencias
 - Si algo falla, YoshiSQL muestra un aviso claro con un **código de error** y guarda el detalle en un registro legible.

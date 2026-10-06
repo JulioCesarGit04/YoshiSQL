@@ -32,6 +32,12 @@ public interface IGeneradorDeScripts
     /// <summary>Script EXEC sp_rename para cambiar el nombre de un objeto.</summary>
     string GenerarRenombrado(string baseDeDatos, ObjetoDeEsquema objeto, string nuevoNombre);
 
+    /// <summary>Consulta que muestra la fragmentación de los índices de una tabla.</summary>
+    string GenerarConsultaDeFragmentacion(string baseDeDatos, Tabla tabla);
+
+    /// <summary>Script ALTER INDEX para reconstruir (REBUILD) o reorganizar (REORGANIZE) un índice.</summary>
+    string GenerarMantenimientoDeIndice(string baseDeDatos, Tabla tabla, string nombreDelIndice, bool reconstruir);
+
     /// <summary>
     /// Script para crear el objeto tal como existe hoy, a partir de su definición.
     /// </summary>

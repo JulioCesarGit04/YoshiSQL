@@ -91,6 +91,25 @@ public class GeneradorDeScriptsSqlServerPruebas
         Assert.Contains("EXEC sys.sp_rename N'[dbo].[Clientes]', N'ClientesNuevo';", script);
     }
 
+    [Theory]
+    [InlineData(true, "REBUILD")]
+    [InlineData(false, "REORGANIZE")]
+    public void GenerarMantenimientoDeIndice_SegunReconstruir_UsaRebuildOReorganize(bool reconstruir, string esperado)
+    {
+        var script = _generador.GenerarMantenimientoDeIndice("Ventas", new Tabla("dbo", "Clientes"), "IX_Clientes_Ciudad", reconstruir);
+
+        Assert.Contains($"ALTER INDEX [IX_Clientes_Ciudad] ON [dbo].[Clientes] {esperado};", script);
+    }
+
+    [Fact]
+    public void GenerarConsultaDeFragmentacion_UsaDmvConElObjectIdDeLaTabla()
+    {
+        var script = _generador.GenerarConsultaDeFragmentacion("Ventas", new Tabla("dbo", "Clientes"));
+
+        Assert.Contains("sys.dm_db_index_physical_stats", script);
+        Assert.Contains("OBJECT_ID(N'[dbo].[Clientes]')", script);
+    }
+
     [Fact]
     public void GenerarCreacionDeTabla_ConIdentidadYLlavePrimaria_GeneraDefinicionCompleta()
     {
