@@ -22,7 +22,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 - Doble clic en un error para saltar a su línea.
 
 ### Resultados
-- Grilla con número de fila y `NULL` visibles, pestaña de mensajes, y resultados en texto plano con `Ctrl+T`.
+- Grilla con número de fila y `NULL` visibles, pestaña de mensajes, resultados en texto plano con `Ctrl+T`, y un visor para ver el valor de una celda con el XML o JSON formateado.
 - Exportar a **CSV, Excel o JSON**, copiar con encabezados para pegar en una hoja de cálculo, o copiar las filas como sentencias `INSERT`.
 - Historial de consultas con buscador.
 

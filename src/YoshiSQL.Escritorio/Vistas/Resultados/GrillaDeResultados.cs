@@ -5,6 +5,7 @@ using Avalonia.Data;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Escritorio.Convertidores;
 using YoshiSQL.Escritorio.ModelosDeVista.Resultados;
+using YoshiSQL.Escritorio.Vistas.Comunes;
 
 namespace YoshiSQL.Escritorio.Vistas.Resultados;
 
@@ -75,24 +76,53 @@ public sealed class GrillaDeResultados : UserControl
         _grilla.ContextMenu = CrearMenuContextual(modelo);
     }
 
-    private static ContextMenu CrearMenuContextual(ConjuntoDeResultadosModeloDeVista modelo) => new()
+    private ContextMenu CrearMenuContextual(ConjuntoDeResultadosModeloDeVista modelo)
     {
-        ItemsSource = new object[]
+        var verValor = new MenuItem { Header = "Ver valor de la celda..." };
+        verValor.Click += (_, _) => MostrarValorDeLaCeldaActual();
+
+        return new ContextMenu
         {
-            CrearOpcion("Copiar todo con encabezados", modelo.CopiarTodoCommand),
-            CrearOpcion("Copiar como INSERT", modelo.CopiarComoInsertCommand),
-            new Separator(),
-            CrearOpcion("Exportar a CSV...", modelo.ExportarACsvCommand),
-            CrearOpcion("Exportar a Excel...", modelo.ExportarAExcelCommand),
-            CrearOpcion("Exportar a JSON...", modelo.ExportarAJsonCommand)
+            ItemsSource = new object[]
+            {
+                verValor,
+                new Separator(),
+                CrearOpcion("Copiar todo con encabezados", modelo.CopiarTodoCommand),
+                CrearOpcion("Copiar como INSERT", modelo.CopiarComoInsertCommand),
+                new Separator(),
+                CrearOpcion("Exportar a CSV...", modelo.ExportarACsvCommand),
+                CrearOpcion("Exportar a Excel...", modelo.ExportarAExcelCommand),
+                CrearOpcion("Exportar a JSON...", modelo.ExportarAJsonCommand)
+            }
+        };
+    }
+
+    // Abre el valor de la celda activa en una ventana, con XML y JSON formateados
+    private void MostrarValorDeLaCeldaActual()
+    {
+        if (_grilla.CurrentColumn?.Tag is not int posicion
+            || _grilla.SelectedItem is not object?[] fila
+            || posicion >= fila.Length)
+        {
+            return;
         }
-    };
+
+        var columna = Conjunto?.Conjunto.Columnas.ElementAtOrDefault(posicion)?.Nombre ?? "Valor";
+        var texto = FormateadorDeValorDeCelda.Formatear(fila[posicion]);
+
+        if (TopLevel.GetTopLevel(this) is Window ventana)
+        {
+            _ = new DialogoDeTexto(columna, texto).ShowDialog(ventana);
+        }
+    }
 
     private static MenuItem CrearOpcion(string texto, ICommand comando) => new() { Header = texto, Command = comando };
 
     private static DataGridTextColumn CrearColumna(ColumnaDeResultado columna, int posicion) => new()
     {
         Header = columna.Nombre,
+        // El Tag guarda la posición del valor en la fila; lo usa "Ver valor de la celda"
+        Tag = posicion,
         // Cada fila es un arreglo de valores; la columna lee la posición que le corresponde
         Binding = new Binding($"[{posicion}]") { Converter = ValorDeCeldaATexto.Instancia, Mode = BindingMode.OneTime },
         IsReadOnly = true,

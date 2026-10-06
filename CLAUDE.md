@@ -129,9 +129,11 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 - ✅ HECHO (sin commit) Copiar filas de resultados como INSERT (menú del grid). `ExportadorDeInsert` (formato
   `FormatoDeExportacion.Insert`) con tabla de ejemplo `[dbo].[TablaDestino]` que el usuario reemplaza;
   copia al portapapeles vía `CopiarComoInsertAsync`.
-- PENDIENTE Sumas / promedios / conteo de las celdas numéricas seleccionadas.
-- PENDIENTE Abrir una celda XML/JSON formateada en su propia pestaña.
-- PENDIENTE Marcadores de línea.
+- ✅ HECHO (sin commit) Abrir el valor de una celda en una ventana (XML/JSON formateados): menú
+  "Ver valor de la celda..." en el grid → `DialogoDeTexto` + `FormateadorDeValorDeCelda` (usa el Tag de la columna).
+- PENDIENTE (fiddly, bajo valor) Sumas / promedios / conteo de selección: el DataGrid de Avalonia selecciona
+  por fila, no por celda; mostrar agregados de celdas elegidas es poco fiable. Recomendado dejarlo para después.
+- PENDIENTE (fiddly) Marcadores de línea: AvaloniaEdit no trae marcadores; requiere un margen propio. Bajo valor.
 
 ### Prioridad 3 — Información de objetos y servidor
 - ⭐🟡 Propiedades de la tabla (filas, tamaño en disco, fecha, espacio de índices).

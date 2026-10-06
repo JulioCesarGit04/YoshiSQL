@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="YoshiSQL.Escritorio.Vistas.Comunes.DialogoDeTexto"
+        Width="680" Height="460"
+        CanResize="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cerrar" MinWidth="96" IsDefault="True" IsCancel="True" Click="AlCerrar" />
+        </StackPanel>
+
+        <TextBox x:Name="CajaDeTexto"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 FontFamily="{StaticResource FuenteMonoespaciada}"
+                 FontSize="12.5"
+                 VerticalAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+    </DockPanel>
+</Window>
