@@ -126,7 +126,9 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 - ✅ HECHO (sin commit) ⭐ Resultados en texto plano (Ctrl+T). `ResultadosModeloDeVista.MostrarComoTexto`
   arma una tabla monoespaciada con `ConstruirTexto` (reusa `ValorDeCeldaATexto`); la vista alterna
   grillas/texto con `MostrarGrillaUnica`/`MostrarVariasGrillas`/`MostrarTexto`.
-- PENDIENTE Copiar filas de resultados como sentencias INSERT (ojo: una grilla de resultados no tiene tabla destino; requiere pedir el nombre).
+- ✅ HECHO (sin commit) Copiar filas de resultados como INSERT (menú del grid). `ExportadorDeInsert` (formato
+  `FormatoDeExportacion.Insert`) con tabla de ejemplo `[dbo].[TablaDestino]` que el usuario reemplaza;
+  copia al portapapeles vía `CopiarComoInsertAsync`.
 - PENDIENTE Sumas / promedios / conteo de las celdas numéricas seleccionadas.
 - PENDIENTE Abrir una celda XML/JSON formateada en su propia pestaña.
 - PENDIENTE Marcadores de línea.

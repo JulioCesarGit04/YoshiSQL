@@ -23,6 +23,9 @@ public sealed partial class ConjuntoDeResultadosModeloDeVista : ModeloDeVistaBas
     private Task CopiarTodoAsync() => _servicioDeExportacion.CopiarAlPortapapelesAsync(Conjunto);
 
     [RelayCommand]
+    private Task CopiarComoInsertAsync() => _servicioDeExportacion.CopiarComoInsertAsync(Conjunto);
+
+    [RelayCommand]
     private Task ExportarACsvAsync() => _servicioDeExportacion.ExportarAsync(Conjunto, FormatoDeExportacion.Csv);
 
     [RelayCommand]

@@ -74,6 +74,16 @@ public class ExportadoresPruebas
         Assert.Equal(esperado, ExportadorExcel.ObtenerLetrasDeColumna(indice));
     }
 
+    [Fact]
+    public async Task ExportadorDeInsert_GeneraUnInsertPorFilaConLiterales()
+    {
+        var texto = await ExportarComoTextoAsync(new ExportadorDeInsert());
+        var lineas = texto.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.Equal("INSERT INTO [dbo].[TablaDestino] ([Id], [Nombre], [Activo]) VALUES (1, N'Peña, José', 1);", lineas[1]);
+        Assert.Equal("INSERT INTO [dbo].[TablaDestino] ([Id], [Nombre], [Activo]) VALUES (2, N'Dice \"hola\"\ny adiós', NULL);", lineas[2]);
+    }
+
     private static async Task<string> ExportarComoTextoAsync(Dominio.Contratos.IExportadorDeResultados exportador)
     {
         using var memoria = new MemoryStream();

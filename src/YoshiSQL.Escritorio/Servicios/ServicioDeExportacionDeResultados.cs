@@ -56,6 +56,19 @@ public sealed class ServicioDeExportacionDeResultados : IServicioDeExportacionDe
         }
     }
 
+    public async Task CopiarComoInsertAsync(ConjuntoDeResultados conjunto)
+    {
+        try
+        {
+            var texto = await _servicioDeExportacion.CrearTextoAsync(conjunto, FormatoDeExportacion.Insert, CancellationToken.None);
+            await _sistemaOperativo.CopiarAlPortapapelesAsync(texto);
+        }
+        catch (Exception error)
+        {
+            await _servicioDeErrores.RegistrarYMostrarAsync(error, new ContextoDeError("Copiar resultados como INSERT"));
+        }
+    }
+
     private static string DescribirFormato(FormatoDeExportacion formato) => formato switch
     {
         FormatoDeExportacion.Csv => "CSV",

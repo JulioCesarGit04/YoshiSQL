@@ -80,6 +80,7 @@ public sealed class GrillaDeResultados : UserControl
         ItemsSource = new object[]
         {
             CrearOpcion("Copiar todo con encabezados", modelo.CopiarTodoCommand),
+            CrearOpcion("Copiar como INSERT", modelo.CopiarComoInsertCommand),
             new Separator(),
             CrearOpcion("Exportar a CSV...", modelo.ExportarACsvCommand),
             CrearOpcion("Exportar a Excel...", modelo.ExportarAExcelCommand),

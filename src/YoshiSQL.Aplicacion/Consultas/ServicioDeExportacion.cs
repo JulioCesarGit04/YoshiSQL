@@ -27,10 +27,14 @@ public sealed class ServicioDeExportacion
     /// <summary>
     /// Texto con columnas separadas por tabulaciones, listo para pegar en una hoja de cálculo.
     /// </summary>
-    public async Task<string> CrearTextoParaCopiarAsync(ConjuntoDeResultados conjunto, CancellationToken tokenDeCancelacion)
+    public Task<string> CrearTextoParaCopiarAsync(ConjuntoDeResultados conjunto, CancellationToken tokenDeCancelacion) =>
+        CrearTextoAsync(conjunto, FormatoDeExportacion.TextoTabulado, tokenDeCancelacion);
+
+    /// <summary>Genera el contenido de un formato como texto, para copiarlo al portapapeles.</summary>
+    public async Task<string> CrearTextoAsync(ConjuntoDeResultados conjunto, FormatoDeExportacion formato, CancellationToken tokenDeCancelacion)
     {
         using var memoria = new MemoryStream();
-        await ObtenerExportador(FormatoDeExportacion.TextoTabulado).ExportarAsync(conjunto, memoria, tokenDeCancelacion);
+        await ObtenerExportador(formato).ExportarAsync(conjunto, memoria, tokenDeCancelacion);
         return System.Text.Encoding.UTF8.GetString(memoria.ToArray());
     }
 

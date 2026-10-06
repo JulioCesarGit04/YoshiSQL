@@ -24,6 +24,7 @@ public static class RegistroDeInfraestructura
         servicios.AddSingleton<IExportadorDeResultados, ExportadorJson>();
         servicios.AddSingleton<IExportadorDeResultados, ExportadorExcel>();
         servicios.AddSingleton<IExportadorDeResultados, ExportadorDeTextoTabulado>();
+        servicios.AddSingleton<IExportadorDeResultados, ExportadorDeInsert>();
 
         servicios.AgregarProveedorSqlServer();
 

@@ -5,5 +5,6 @@ public enum FormatoDeExportacion
     Csv,
     Json,
     Excel,
-    TextoTabulado
+    TextoTabulado,
+    Insert
 }

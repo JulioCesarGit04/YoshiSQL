@@ -13,4 +13,9 @@ public interface IServicioDeExportacionDeResultados
     /// Copia todas las filas con encabezados, listas para pegar en una hoja de cálculo.
     /// </summary>
     Task CopiarAlPortapapelesAsync(ConjuntoDeResultados conjunto);
+
+    /// <summary>
+    /// Copia las filas como sentencias INSERT (con una tabla de ejemplo que el usuario reemplaza).
+    /// </summary>
+    Task CopiarComoInsertAsync(ConjuntoDeResultados conjunto);
 }
