@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Avalonia;
+using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
@@ -38,18 +39,29 @@ public sealed class GrillaDeEdicion : UserControl
     };
 
     private PestanaDeEdicionDeFilasModeloDeVista? _modelo;
+    private DataGridCollectionView? _vista;
 
     public GrillaDeEdicion()
     {
         Content = _grilla;
-        _grilla.SelectionChanged += (_, _) =>
-        {
-            if (_modelo is not null)
-            {
-                _modelo.FilaSeleccionada = _grilla.SelectedItem as FilaEditableModeloDeVista;
-            }
-        };
+        _grilla.SelectionChanged += AlCambiarLaSeleccion;
         _grilla.KeyDown += AlPresionarTecla;
+    }
+
+    private void AlCambiarLaSeleccion(object? remitente, SelectionChangedEventArgs argumentos)
+    {
+        if (_modelo is null)
+        {
+            return;
+        }
+
+        // Al salir de una fila modificada, guardarla si el usuario activó esa opción
+        if (argumentos.RemovedItems.OfType<FilaEditableModeloDeVista>().FirstOrDefault() is { } filaAnterior)
+        {
+            _ = _modelo.GuardarFilaModificadaAsync(filaAnterior);
+        }
+
+        _modelo.FilaSeleccionada = _grilla.SelectedItem as FilaEditableModeloDeVista;
     }
 
     // Ctrl+0 pone NULL en la celda activa, como en SSMS
@@ -96,6 +108,37 @@ public sealed class GrillaDeEdicion : UserControl
         {
             ConstruirColumnas();
         }
+        else if (argumentos.PropertyName == nameof(PestanaDeEdicionDeFilasModeloDeVista.FiltroDeFilas))
+        {
+            _vista?.Refresh();
+        }
+    }
+
+    // Filtro rápido del lado del cliente: oculta las filas que no contienen el texto en ninguna celda.
+    // Las filas nuevas siempre se ven para poder completarlas.
+    private bool FilaCoincideConElFiltro(object? elemento)
+    {
+        if (_modelo is null || string.IsNullOrWhiteSpace(_modelo.FiltroDeFilas) || elemento is not FilaEditableModeloDeVista fila)
+        {
+            return true;
+        }
+
+        if (fila.Estado == EstadoDeFila.Nueva)
+        {
+            return true;
+        }
+
+        var termino = _modelo.FiltroDeFilas;
+
+        for (var posicion = 0; posicion < _modelo.Columnas.Count; posicion++)
+        {
+            if (fila[posicion] is { } texto && texto.Contains(termino, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void ConstruirColumnas()
@@ -115,7 +158,8 @@ public sealed class GrillaDeEdicion : UserControl
             _grilla.Columns.Add(CrearColumnaDeDatos(_modelo.Columnas[posicion], posicion));
         }
 
-        _grilla.ItemsSource = _modelo.Filas;
+        _vista = new DataGridCollectionView(_modelo.Filas) { Filter = FilaCoincideConElFiltro };
+        _grilla.ItemsSource = _vista;
     }
 
     private static DataGridTemplateColumn CrearColumnaDeEstado() => new()

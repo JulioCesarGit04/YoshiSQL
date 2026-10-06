@@ -50,6 +50,14 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
     [ObservableProperty]
     public partial FilaEditableModeloDeVista? FilaSeleccionada { get; set; }
 
+    /// <summary>Filtro rápido del lado del cliente sobre las filas ya cargadas (no vuelve a consultar).</summary>
+    [ObservableProperty]
+    public partial string? FiltroDeFilas { get; set; }
+
+    /// <summary>Si está activo, al salir de una fila modificada se guarda sola (como en SSMS).</summary>
+    [ObservableProperty]
+    public partial bool GuardarAlCambiarDeFila { get; set; }
+
     /// <summary>Condición del WHERE (sin la palabra WHERE) para filtrar las filas que se editan.</summary>
     [ObservableProperty]
     public partial string? FiltroWhere { get; set; }
@@ -155,6 +163,41 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
     }
 
     private bool PuedeGuardar() => PuedeEditarse && !EstaTrabajando;
+
+    /// <summary>
+    /// Guarda una sola fila modificada al salir de ella. No actúa sobre filas nuevas ni eliminadas
+    /// (esas se guardan con el botón, porque una fila nueva con identidad hay que volver a leerla).
+    /// </summary>
+    public async Task GuardarFilaModificadaAsync(FilaEditableModeloDeVista fila)
+    {
+        if (!GuardarAlCambiarDeFila || !PuedeEditarse || EstaTrabajando || fila.Estado != EstadoDeFila.Modificada)
+        {
+            return;
+        }
+
+        EstaTrabajando = true;
+
+        try
+        {
+            var filasAfectadas = await _servicioDeEdicion.GuardarCambiosAsync(
+                Servidor, BaseDeDatos, Tabla, Columnas, [fila.CrearCambio()], CancellationToken.None);
+            fila.ConfirmarGuardado();
+            TextoDeEstado = $"Fila guardada ({filasAfectadas} filas afectadas).";
+        }
+        catch (Exception error)
+        {
+            // La fila queda marcada como modificada para reintentar con "Guardar cambios"
+            var mensaje = _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Guardar fila al cambiar de fila"));
+            await _servicioDeDialogos.MostrarInformacionAsync("No se guardó la fila", mensaje);
+            TextoDeEstado = "No se guardó la fila.";
+        }
+        finally
+        {
+            EstaTrabajando = false;
+        }
+
+        ActualizarTitulo();
+    }
 
     private void MostrarDatos(DatosParaEditar datos)
     {

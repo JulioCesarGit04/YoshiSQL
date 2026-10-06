@@ -28,7 +28,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 
 ### Diseño y datos
 - **Diseñador de tablas**: crea tablas y modifica columnas. Los cambios se aplican en una transacción y puedes ver el script antes.
-- **Editar las primeras N filas** directamente en la grilla, con comandos parametrizados en una transacción. Puedes filtrar con `WHERE` y `ORDER BY`, y poner una celda en `NULL` con `Ctrl+0`.
+- **Editar las primeras N filas** directamente en la grilla, con comandos parametrizados en una transacción. Puedes filtrar con `WHERE` y `ORDER BY`, un filtro rápido sobre las filas cargadas, poner una celda en `NULL` con `Ctrl+0`, y guardar cada fila al salir de ella o todas juntas con un botón.
 - **Diagramas de base de datos** con tablas que se pueden mover y relaciones dibujadas automáticamente.
 
 ### Administración

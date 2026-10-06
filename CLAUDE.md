@@ -102,9 +102,15 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 - ✅ HECHO (sin commit) ⭐🟢 Cantidad de filas configurable en Preferencias (`FilasAlSeleccionar`/`FilasAlEditar`
   en `PreferenciasDelUsuario`; leídas por `ServicioDeGeneracionDeScripts` y `ServicioDeEdicionDeFilas`).
 - ✅ HECHO (sin commit) ⭐🟢 Ctrl+0 pone NULL en la celda activa (`GrillaDeEdicion.AlPresionarTecla`).
-- 🟡 PENDIENTE: Guardar al cambiar de fila (opcional frente al botón "Guardar cambios" actual).
-- 🟡 PENDIENTE: Ordenar y filtrar columnas en la grilla de edición (hoy `CanUserSortColumns=false`).
-- 🔴 PENDIENTE: Editar filas a través de una vista actualizable.
+- ✅ HECHO (sin commit) 🟡 Guardar al cambiar de fila: interruptor opcional en la barra de edición.
+  Solo auto-guarda filas MODIFICADAS al salir de ellas (`GuardarFilaModificadaAsync` + `FilaEditableModeloDeVista.ConfirmarGuardado`);
+  las nuevas (con identidad) y las eliminadas siguen con el botón, para no tener que re-leer la clave.
+- ✅ HECHO (sin commit) 🟡 Filtrar: filtro rápido del lado del cliente en la grilla de edición
+  (`DataGridCollectionView` + `FiltroDeFilas`), instantáneo sobre lo cargado. El ORDER BY/WHERE del panel
+  ya cubre el ordenar/filtrar en el servidor; no se agregó orden por encabezado (poco fiable con valores mixtos editados).
+- 🔴 EVALUADO — no recomendado: Editar filas a través de una vista. La grilla de edición exige llave primaria
+  y las columnas de una vista no la reportan, así que quedaría de solo lectura; hacerlo fiable requiere
+  detectar la tabla/clave subyacente (frágil). Se deja para después salvo que el usuario insista.
 
 ### Prioridad 2 — Funciones rápidas de alto impacto (todas 🟢 salvo nota)
 - ✅ HECHO (sin commit) ⭐ Comentar / descomentar líneas con Ctrl+/ (Ctrl+OemQuestion). Avalonia no soporta

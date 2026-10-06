@@ -11,18 +11,26 @@
                 BorderBrush="{DynamicResource PincelDeBorde}"
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,220,*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="2">
                     <Button Classes="Herramienta" Content="Agregar fila" Command="{Binding AgregarFilaCommand}" />
                     <Button Classes="Herramienta" Content="Eliminar fila" Command="{Binding EliminarFilaCommand}" />
                     <Button Classes="Herramienta" Content="Recargar" Command="{Binding CargarCommand}" />
                 </StackPanel>
 
-                <TextBlock Grid.Column="1" Margin="16,0" VerticalAlignment="Center" FontSize="11.5"
+                <TextBox Grid.Column="1" Margin="8,0,0,0" Text="{Binding FiltroDeFilas}"
+                         PlaceholderText="Filtrar filas cargadas..."
+                         ToolTip.Tip="Oculta al instante las filas que no contengan este texto (no vuelve a consultar)" />
+
+                <TextBlock Grid.Column="2" Margin="16,0" VerticalAlignment="Center" FontSize="11.5"
                            Foreground="{DynamicResource PincelDeTextoSecundario}" TextTrimming="CharacterEllipsis"
                            Text="Amarillo: modificada · Verde: nueva · Rojo: se eliminará" />
 
-                <Button Grid.Column="2" Classes="Primario" Content="Guardar cambios" Command="{Binding GuardarCambiosCommand}" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10">
+                    <CheckBox Content="Guardar al cambiar de fila" IsChecked="{Binding GuardarAlCambiarDeFila}" VerticalAlignment="Center"
+                              ToolTip.Tip="Guarda cada fila modificada al salir de ella (las filas nuevas se guardan con el botón)" />
+                    <Button Classes="Primario" Content="Guardar cambios" Command="{Binding GuardarCambiosCommand}" />
+                </StackPanel>
             </Grid>
         </Border>
 

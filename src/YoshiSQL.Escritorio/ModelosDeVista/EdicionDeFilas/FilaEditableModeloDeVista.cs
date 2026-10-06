@@ -58,4 +58,14 @@ public sealed partial class FilaEditableModeloDeVista : ModeloDeVistaBase
 
     public CambioDeFila CrearCambio() =>
         new(Estado, Estado == EstadoDeFila.Nueva ? [] : ValoresOriginales, _valores);
+
+    /// <summary>
+    /// Tras guardar la fila, los valores actuales pasan a ser los originales y la fila queda sin cambios,
+    /// para que una edición posterior ubique bien la fila.
+    /// </summary>
+    public void ConfirmarGuardado()
+    {
+        Array.Copy(_valores, ValoresOriginales, _valores.Length);
+        Estado = EstadoDeFila.SinCambios;
+    }
 }
