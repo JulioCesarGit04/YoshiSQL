@@ -26,6 +26,8 @@ public interface IAccionesDelExplorador
 
     Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto);
 
+    Task AbrirSaludAsync(ContextoDelNodo contexto);
+
     Task MostrarRespaldoAsync(ContextoDelNodo contexto);
 
     Task ExportarBaseDeDatosAsync(ContextoDelNodo contexto);

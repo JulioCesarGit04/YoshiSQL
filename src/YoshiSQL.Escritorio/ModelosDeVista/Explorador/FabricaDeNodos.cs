@@ -120,6 +120,7 @@ public sealed class FabricaDeNodos
             new AccionDelNodo("Respaldar...", ComandoSeguro("Respaldar base de datos", contexto, () => _acciones.MostrarRespaldoAsync(contexto))),
             AccionDeRestaurar(contexto),
             new AccionDelNodo("Exportar todo a script...", ComandoSeguro("Exportar base de datos", contexto, () => _acciones.ExportarBaseDeDatosAsync(contexto))),
+            new AccionDelNodo("Salud de la base de datos", ComandoSeguro("Abrir salud de la base de datos", contexto, () => _acciones.AbrirSaludAsync(contexto))),
             AccionQueAbreScript("Generar script DROP DATABASE", contexto with { BaseDeDatos = null },
                 () => _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(baseDeDatos.Nombre)),
             new AccionDelNodo("Propiedades", ComandoSeguro("Ver propiedades de la base de datos", contexto, () => _acciones.MostrarPropiedadesDeBaseDeDatosAsync(contexto))),

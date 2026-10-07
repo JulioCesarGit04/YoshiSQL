@@ -175,8 +175,11 @@ El usuario destacó estas como "espectaculares". No son copiar a SSMS; son el mo
   PENDIENTE (idea): exportar una sola tabla desde su menú.
 - ⭐🔴 **Comparar dos bases (esquema + datos)**: muestra tablas/columnas nuevas, distintas o borradas y
   genera el script de sincronización. SSMS no lo trae gratis → función estrella diferenciadora.
-- ⭐🟡 **Panel "salud de la base"**: una sola pantalla con tablas más pesadas, índices fragmentados,
-  índices que faltan (ya se analizan en los planes) y consultas más lentas.
+- ✅ HECHO (sin commit) ⭐🟡 **Panel "salud de la base"** (v1): pestaña (botón derecho en la base → "Salud de la
+  base de datos") con resumen (tablas, filas, tamaño, espacio usado), tablas más pesadas e índices más fragmentados.
+  `SaludResumen.sql`/`SaludTablasPesadas.sql`/`SaludIndicesFragmentados.sql` + records en `Dominio.Salud` +
+  `IExploradorDeEsquema.ObtenerSaludAsync` + `PestanaDeSaludModeloDeVista`/`PestanaDeSalud`. PENDIENTE (v2):
+  índices que faltan (de los planes) y consultas más lentas.
 - ✅ HECHO (sin commit) 🟢 **Favoritos / fragmentos de consultas**: pestaña "Favoritos" en la barra lateral.
   "Editar → Guardar como favorito..." guarda el texto de la consulta con un nombre; doble clic lo abre en una
   consulta nueva. `ConsultaFavorita` + `IRepositorioDeFavoritos`/`RepositorioDeFavoritosJson` (favoritos.json en

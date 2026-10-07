@@ -373,6 +373,15 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         await AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: true);
     }
 
+    public async Task AbrirSaludAsync(ContextoDelNodo contexto)
+    {
+        var salud = new Salud.PestanaDeSaludModeloDeVista(
+            contexto.Servidor, contexto.BaseDeDatosOPredeterminada, _servicioDelExplorador, _servicioDeErrores);
+
+        AgregarDocumento(salud);
+        await salud.CargarCommand.ExecuteAsync(null);
+    }
+
     public async Task AbrirMonitorDeActividadAsync(ContextoDelNodo contexto)
     {
         var monitorAbierto = Documentos

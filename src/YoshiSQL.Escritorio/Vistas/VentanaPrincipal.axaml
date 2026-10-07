@@ -14,6 +14,8 @@
         xmlns:vistasEdicion="using:YoshiSQL.Escritorio.Vistas.EdicionDeFilas"
         xmlns:administracion="using:YoshiSQL.Escritorio.ModelosDeVista.Administracion"
         xmlns:vistasAdministracion="using:YoshiSQL.Escritorio.Vistas.Administracion"
+        xmlns:modeloSalud="using:YoshiSQL.Escritorio.ModelosDeVista.Salud"
+        xmlns:vistasSalud="using:YoshiSQL.Escritorio.Vistas.Salud"
         xmlns:conv="using:YoshiSQL.Escritorio.Convertidores"
         x:Class="YoshiSQL.Escritorio.Vistas.VentanaPrincipal"
         x:DataType="vm:VentanaPrincipalModeloDeVista"
@@ -39,6 +41,9 @@
         </DataTemplate>
         <DataTemplate DataType="administracion:PestanaDeMonitorModeloDeVista">
             <vistasAdministracion:PestanaDeMonitor />
+        </DataTemplate>
+        <DataTemplate DataType="modeloSalud:PestanaDeSaludModeloDeVista">
+            <vistasSalud:PestanaDeSalud />
         </DataTemplate>
     </Window.DataTemplates>
 

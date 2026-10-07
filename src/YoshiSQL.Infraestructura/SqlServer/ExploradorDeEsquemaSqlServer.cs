@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Salud;
 using YoshiSQL.Dominio.Seguridad;
 
 namespace YoshiSQL.Infraestructura.SqlServer;
@@ -245,6 +246,32 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             CrearParametrosDelObjeto(tabla),
             lector => new Disparador(lector.GetString(0), lector.GetBoolean(1)),
             tokenDeCancelacion);
+
+    public async Task<SaludDeLaBaseDeDatos> ObtenerSaludAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion)
+    {
+        var resumen = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "SaludResumen", parametros: [],
+            lector => new ResumenDeSalud(lector.GetInt32(0), lector.GetInt64(1), lector.GetInt64(2), lector.GetInt64(3)),
+            tokenDeCancelacion);
+
+        var tablasPesadas = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "SaludTablasPesadas", parametros: [],
+            lector => new TablaPesada(lector.GetString(0), lector.GetInt64(1), lector.GetInt64(2)),
+            tokenDeCancelacion);
+
+        var indicesFragmentados = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "SaludIndicesFragmentados", parametros: [],
+            lector => new IndiceFragmentado(lector.GetString(0), lector.GetString(1), lector.GetDouble(2), lector.GetInt64(3)),
+            tokenDeCancelacion);
+
+        return new SaludDeLaBaseDeDatos(
+            resumen.Count > 0 ? resumen[0] : new ResumenDeSalud(0, 0, 0, 0),
+            tablasPesadas,
+            indicesFragmentados);
+    }
 
     public Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,

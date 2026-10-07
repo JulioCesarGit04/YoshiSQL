@@ -1,6 +1,7 @@
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Salud;
 using YoshiSQL.Dominio.Seguridad;
 
 namespace YoshiSQL.Aplicacion.Explorador;
@@ -79,6 +80,12 @@ public sealed class ServicioDelExplorador
         Tabla tabla,
         CancellationToken tokenDeCancelacion) =>
         _exploradorDeEsquema.ObtenerDisparadoresAsync(servidor.DatosDeAcceso, baseDeDatos, tabla, tokenDeCancelacion);
+
+    public Task<SaludDeLaBaseDeDatos> ObtenerSaludAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        _exploradorDeEsquema.ObtenerSaludAsync(servidor.DatosDeAcceso, baseDeDatos, tokenDeCancelacion);
 
     public Task<IReadOnlyList<Indice>> ObtenerIndicesAsync(
         ServidorConectado servidor,

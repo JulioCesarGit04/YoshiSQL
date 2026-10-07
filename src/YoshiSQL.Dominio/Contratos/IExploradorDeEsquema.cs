@@ -1,5 +1,6 @@
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Salud;
 using YoshiSQL.Dominio.Seguridad;
 
 namespace YoshiSQL.Dominio.Contratos;
@@ -94,6 +95,11 @@ public interface IExploradorDeEsquema
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
         Tabla tabla,
+        CancellationToken tokenDeCancelacion);
+
+    Task<SaludDeLaBaseDeDatos> ObtenerSaludAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
         CancellationToken tokenDeCancelacion);
 
     Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(

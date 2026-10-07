@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Salud"
+             xmlns:salud="using:YoshiSQL.Dominio.Salud"
+             xmlns:conv="using:YoshiSQL.Escritorio.Convertidores"
+             x:Class="YoshiSQL.Escritorio.Vistas.Salud.PestanaDeSalud"
+             x:DataType="vm:PestanaDeSaludModeloDeVista">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{DynamicResource PincelDePanel}"
+                BorderBrush="{DynamicResource PincelDeBorde}" BorderThickness="0,0,0,1" Padding="12,6">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding BaseDeDatos, StringFormat='Salud de {0}'}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="Herramienta" Content="Actualizar" Command="{Binding CargarCommand}" />
+            </Grid>
+        </Border>
+
+        <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2" IsVisible="{Binding EstaCargando}" />
+
+        <ScrollViewer IsVisible="{Binding TieneDatos}">
+            <StackPanel Margin="16" Spacing="18" DataContext="{Binding Salud}" x:DataType="salud:SaludDeLaBaseDeDatos">
+
+                <!-- Resumen -->
+                <ItemsControl>
+                    <ItemsControl.Styles>
+                        <Style Selector="Border.Tarjeta">
+                            <Setter Property="Background" Value="{DynamicResource PincelDePanel}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource PincelDeBorde}" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="CornerRadius" Value="6" />
+                            <Setter Property="Padding" Value="16,12" />
+                            <Setter Property="MinWidth" Value="150" />
+                        </Style>
+                    </ItemsControl.Styles>
+                    <WrapPanel>
+                        <Border Classes="Tarjeta" Margin="0,0,10,10">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Resumen.Tablas}" FontSize="24" FontWeight="SemiBold" />
+                                <TextBlock Text="Tablas" Foreground="{DynamicResource PincelDeTextoSecundario}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="Tarjeta" Margin="0,0,10,10">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Resumen.Filas, StringFormat='{}{0:N0}'}" FontSize="24" FontWeight="SemiBold" />
+                                <TextBlock Text="Filas en total" Foreground="{DynamicResource PincelDeTextoSecundario}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="Tarjeta" Margin="0,0,10,10">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Resumen.TamanoKb, Converter={x:Static conv:KilobytesATexto.Instancia}}" FontSize="24" FontWeight="SemiBold" />
+                                <TextBlock Text="Tamaño en disco" Foreground="{DynamicResource PincelDeTextoSecundario}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="Tarjeta" Margin="0,0,10,10">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Resumen.EspacioUsadoKb, Converter={x:Static conv:KilobytesATexto.Instancia}}" FontSize="24" FontWeight="SemiBold" />
+                                <TextBlock Text="Espacio usado" Foreground="{DynamicResource PincelDeTextoSecundario}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ItemsControl>
+
+                <!-- Tablas más pesadas -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Tablas más pesadas" FontWeight="SemiBold" />
+                    <DataGrid ItemsSource="{Binding TablasPesadas}" IsReadOnly="True" MaxHeight="260"
+                              CanUserReorderColumns="False" CanUserSortColumns="False" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Tabla" Width="*" Binding="{Binding Nombre}" x:DataType="salud:TablaPesada" />
+                            <DataGridTextColumn Header="Filas" Width="120" Binding="{Binding Filas, StringFormat='{}{0:N0}'}" x:DataType="salud:TablaPesada" />
+                            <DataGridTextColumn Header="Espacio" Width="120"
+                                                Binding="{Binding EspacioKb, Converter={x:Static conv:KilobytesATexto.Instancia}}" x:DataType="salud:TablaPesada" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+
+                <!-- Índices fragmentados -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Índices más fragmentados" FontWeight="SemiBold" />
+                    <TextBlock Text="No hay índices con fragmentación importante. 👍" Foreground="{DynamicResource PincelDeTextoSecundario}"
+                               IsVisible="{Binding !IndicesFragmentados.Count}" />
+                    <DataGrid ItemsSource="{Binding IndicesFragmentados}" IsReadOnly="True" MaxHeight="260"
+                              IsVisible="{Binding IndicesFragmentados.Count}"
+                              CanUserReorderColumns="False" CanUserSortColumns="False" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Tabla" Width="*" Binding="{Binding Tabla}" x:DataType="salud:IndiceFragmentado" />
+                            <DataGridTextColumn Header="Índice" Width="*" Binding="{Binding Indice}" x:DataType="salud:IndiceFragmentado" />
+                            <DataGridTextColumn Header="Fragmentación" Width="130" Binding="{Binding Fragmentacion, StringFormat='{}{0:N1}%'}" x:DataType="salud:IndiceFragmentado" />
+                            <DataGridTextColumn Header="Páginas" Width="100" Binding="{Binding Paginas, StringFormat='{}{0:N0}'}" x:DataType="salud:IndiceFragmentado" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

@@ -160,6 +160,7 @@ public class ServicioDeAutocompletadoPruebas
         public Task<PropiedadesDeBaseDeDatos> ObtenerPropiedadesDeBaseDeDatosAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
         public Task<IReadOnlyList<DependenciaDeObjeto>> ObtenerDependenciasAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, ObjetoDeEsquema objeto, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
         public Task<IReadOnlyList<Disparador>> ObtenerDisparadoresAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, Tabla tabla, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
+        public Task<YoshiSQL.Dominio.Salud.SaludDeLaBaseDeDatos> ObtenerSaludAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
         public Task<IReadOnlyList<LlaveForanea>> ObtenerLlavesForaneasAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
         public Task<IReadOnlyList<YoshiSQL.Dominio.Seguridad.InicioDeSesion>> ObtenerIniciosDeSesionAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
         public Task<IReadOnlyList<YoshiSQL.Dominio.Seguridad.UsuarioDeBaseDeDatos>> ObtenerUsuariosAsync(DatosDeAcceso datosDeAcceso, string baseDeDatos, CancellationToken tokenDeCancelacion) => throw new NotSupportedException();
