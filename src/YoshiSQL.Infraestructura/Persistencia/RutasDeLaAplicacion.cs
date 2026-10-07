@@ -41,6 +41,8 @@ public sealed class RutasDeLaAplicacion
 
     public string ArchivoDeConexiones => Path.Combine(CarpetaDeConfiguracion, "conexiones.json");
 
+    public string ArchivoDeFavoritos => Path.Combine(CarpetaDeConfiguracion, "favoritos.json");
+
     public string ArchivoDeCredenciales => Path.Combine(CarpetaDeConfiguracion, "credenciales.json");
 
     public string ArchivoDeClave => Path.Combine(CarpetaDeConfiguracion, "clave.bin");

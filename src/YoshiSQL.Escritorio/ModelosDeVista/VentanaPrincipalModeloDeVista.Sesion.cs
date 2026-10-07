@@ -25,6 +25,7 @@ public sealed partial class VentanaPrincipalModeloDeVista
     public async Task IniciarAsync()
     {
         await CargarHistorialAsync();
+        await CargarFavoritosAsync();
 
         try
         {
@@ -37,6 +38,18 @@ public sealed partial class VentanaPrincipalModeloDeVista
         }
 
         _ = MantenerAutoguardadoAsync(_detencionDelAutoguardado.Token);
+    }
+
+    private async Task CargarFavoritosAsync()
+    {
+        try
+        {
+            await _servicioDeFavoritos.CargarAsync(CancellationToken.None);
+        }
+        catch (Exception error)
+        {
+            _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Cargar los favoritos"));
+        }
     }
 
     private async Task CargarHistorialAsync()

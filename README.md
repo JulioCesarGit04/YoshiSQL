@@ -24,7 +24,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 ### Resultados
 - Grilla con número de fila y `NULL` visibles, pestaña de mensajes, resultados en texto plano con `Ctrl+T`, y un visor para ver el valor de una celda con el XML o JSON formateado.
 - Exportar a **CSV, Excel o JSON**, copiar con encabezados para pegar en una hoja de cálculo, o copiar las filas como sentencias `INSERT`.
-- Historial de consultas con buscador.
+- Historial de consultas con buscador, y **favoritos** para guardar consultas con un nombre y reutilizarlas con un clic.
 
 ### Diseño y datos
 - **Diseñador de tablas**: crea tablas y modifica columnas. Los cambios se aplican en una transacción y puedes ver el script antes.

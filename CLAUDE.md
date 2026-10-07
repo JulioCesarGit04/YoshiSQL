@@ -177,7 +177,10 @@ El usuario destacó estas como "espectaculares". No son copiar a SSMS; son el mo
   genera el script de sincronización. SSMS no lo trae gratis → función estrella diferenciadora.
 - ⭐🟡 **Panel "salud de la base"**: una sola pantalla con tablas más pesadas, índices fragmentados,
   índices que faltan (ya se analizan en los planes) y consultas más lentas.
-- 🟢 **Favoritos / fragmentos de consultas personales**: guardar consultas con nombre y ejecutarlas con un clic o un atajo en el editor.
+- ✅ HECHO (sin commit) 🟢 **Favoritos / fragmentos de consultas**: pestaña "Favoritos" en la barra lateral.
+  "Editar → Guardar como favorito..." guarda el texto de la consulta con un nombre; doble clic lo abre en una
+  consulta nueva. `ConsultaFavorita` + `IRepositorioDeFavoritos`/`RepositorioDeFavoritosJson` (favoritos.json en
+  config) + `ServicioDeFavoritos` + `FavoritosModeloDeVista`/`PanelDeFavoritos` + `IAccionesDeFavoritos`.
 
 ### Imagen de la app (branding) — HECHO
 - Logo: imagen PNG generada en `Recursos/logo.png` (tile verde con cilindro de BD + rayo ámbar). El control

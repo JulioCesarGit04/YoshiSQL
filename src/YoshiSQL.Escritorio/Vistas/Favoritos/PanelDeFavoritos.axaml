@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YoshiSQL.Escritorio.ModelosDeVista.Favoritos"
+             x:Class="YoshiSQL.Escritorio.Vistas.Favoritos.PanelDeFavoritos"
+             x:DataType="vm:FavoritosModeloDeVista"
+             Background="{DynamicResource PincelDePanel}">
+
+    <DockPanel>
+        <TextBox DockPanel.Dock="Top" Margin="10,8" Text="{Binding Filtro}" PlaceholderText="Buscar en favoritos" />
+
+        <TextBlock DockPanel.Dock="Top" IsVisible="{Binding EstaVacio}" Margin="12,4" TextWrapping="Wrap"
+                   Foreground="{DynamicResource PincelDeTextoSecundario}"
+                   Text="Guarda una consulta como favorito desde el menú Editar para verla aquí." />
+
+        <ListBox ItemsSource="{Binding Favoritos}"
+                 SelectedItem="{Binding Seleccionado}"
+                 Background="Transparent"
+                 DoubleTapped="AlHacerDobleClicEnFavorito">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:FavoritoModeloDeVista">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Background="Transparent"
+                          ToolTip.Tip="{Binding VistaPrevia}">
+                        <Grid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Abrir en nueva consulta" Command="{Binding AbrirCommand}" />
+                                <Separator />
+                                <MenuItem Header="Eliminar favorito" Command="{Binding EliminarCommand}" />
+                            </ContextMenu>
+                        </Grid.ContextMenu>
+
+                        <Path Classes="Icono" VerticalAlignment="Center" Stroke="{DynamicResource PincelDeAcento}"
+                              Data="M8,1.5 L10,5.6 L14.5,6.2 L11.2,9.3 L12,13.8 L8,11.6 L4,13.8 L4.8,9.3 L1.5,6.2 L6,5.6 Z" />
+
+                        <TextBlock Grid.Column="1" Text="{Binding Nombre}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</UserControl>

@@ -4,6 +4,7 @@
         xmlns:editor="using:YoshiSQL.Escritorio.ModelosDeVista.Editor"
         xmlns:vistasExplorador="using:YoshiSQL.Escritorio.Vistas.Explorador"
         xmlns:vistasHistorial="using:YoshiSQL.Escritorio.Vistas.Historial"
+        xmlns:vistasFavoritos="using:YoshiSQL.Escritorio.Vistas.Favoritos"
         xmlns:vistasEditor="using:YoshiSQL.Escritorio.Vistas.Editor"
         xmlns:diagramas="using:YoshiSQL.Escritorio.ModelosDeVista.Diagramas"
         xmlns:vistasDiagramas="using:YoshiSQL.Escritorio.Vistas.Diagramas"
@@ -90,6 +91,9 @@
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
                 <Separator />
                 <MenuItem Header="Formatear SQL" InputGesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <Separator />
+                <MenuItem Header="Guardar como favorito..." Command="{Binding GuardarComoFavoritoCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
             </MenuItem>
             <MenuItem Header="_Consulta">
@@ -187,6 +191,9 @@
                 </TabItem>
                 <TabItem Header="Historial">
                     <vistasHistorial:PanelDelHistorial DataContext="{Binding Historial}" />
+                </TabItem>
+                <TabItem Header="Favoritos">
+                    <vistasFavoritos:PanelDeFavoritos DataContext="{Binding Favoritos}" />
                 </TabItem>
             </TabControl>
 

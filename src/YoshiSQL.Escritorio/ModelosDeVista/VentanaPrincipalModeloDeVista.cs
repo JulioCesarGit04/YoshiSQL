@@ -21,16 +21,18 @@ using YoshiSQL.Aplicacion.Autocompletado;
 using YoshiSQL.Escritorio.ModelosDeVista.Editor;
 using YoshiSQL.Escritorio.ModelosDeVista.Explorador;
 using YoshiSQL.Escritorio.ModelosDeVista.Historial;
+using YoshiSQL.Escritorio.ModelosDeVista.Favoritos;
 using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.ModelosDeVista;
 
-public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador, IAccionesDelHistorial, IAccionesDelDiseno
+public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, IAccionesDelExplorador, IAccionesDelHistorial, IAccionesDelDiseno, IAccionesDeFavoritos
 {
     private const string PrefijoDeConsultaNueva = "SQLQuery";
 
     private readonly ServiciosDeConsulta _serviciosDeConsulta;
     private readonly ServicioDelExplorador _servicioDelExplorador;
+    private readonly ServicioDeFavoritos _servicioDeFavoritos;
     private readonly ServicioDeGeneracionDeScripts _servicioDeGeneracionDeScripts;
     private readonly ServicioDeExportacionDeBaseDeDatos _servicioDeExportacionDeBaseDeDatos;
     private readonly ServicioDeArchivosSql _servicioDeArchivosSql;
@@ -56,6 +58,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         IServicioDelSistemaOperativo sistemaOperativo,
         ServicioDeSesion servicioDeSesion,
         HistorialDeConsultas historialDeConsultas,
+        ServicioDeFavoritos servicioDeFavoritos,
         ServiciosDeDiseno serviciosDeDiseno,
         ServicioDeMonitor servicioDeMonitor,
         ServicioDePreferencias servicioDePreferencias)
@@ -74,13 +77,17 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         _servicioDeDialogos = servicioDeDialogos;
 
         _servicioDeGeneracionDeScripts = servicioDeGeneracionDeScripts;
+        _servicioDeFavoritos = servicioDeFavoritos;
 
         var fabricaDeNodos = new FabricaDeNodos(servicioDelExplorador, servicioDeGeneracionDeScripts, this, servicioDeErrores, servicioDePreferencias);
         Explorador = new ExploradorModeloDeVista(fabricaDeNodos);
         Historial = new HistorialModeloDeVista(historialDeConsultas, this, servicioDeDialogos, sistemaOperativo, servicioDeErrores);
+        Favoritos = new FavoritosModeloDeVista(servicioDeFavoritos, this, servicioDeErrores);
     }
 
     public ExploradorModeloDeVista Explorador { get; }
+
+    public FavoritosModeloDeVista Favoritos { get; }
 
     public HistorialModeloDeVista Historial { get; }
 
@@ -268,6 +275,32 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     /// <summary>
     /// Usa el servidor donde se ejecutó la consulta si sigue conectado; si no, el servidor actual.
     /// </summary>
+    public async Task AbrirFavoritoAsync(Dominio.Consultas.ConsultaFavorita favorito)
+    {
+        var contexto = Explorador.ContextoActual ?? await ObtenerOSolicitarContextoAsync();
+
+        if (contexto is not null)
+        {
+            await AbrirNuevaConsultaAsync(contexto, favorito.Sql, ejecutarAlAbrir: false);
+        }
+    }
+
+    [RelayCommand]
+    private async Task GuardarComoFavoritoAsync()
+    {
+        if (ConsultaSeleccionada?.Documento.Text.Trim() is not { Length: > 0 } sql)
+        {
+            return;
+        }
+
+        var nombre = await _servicioDeDialogos.PedirTextoAsync("Guardar como favorito", "Nombre del favorito:", string.Empty);
+
+        if (!string.IsNullOrWhiteSpace(nombre))
+        {
+            await _servicioDeFavoritos.AgregarAsync(nombre.Trim(), sql);
+        }
+    }
+
     public async Task AbrirConsultaDelHistorialAsync(ConsultaEjecutada consulta)
     {
         var contexto = Explorador.BuscarContextoDelServidor(consulta.Servidor) ?? await ObtenerOSolicitarContextoAsync();
