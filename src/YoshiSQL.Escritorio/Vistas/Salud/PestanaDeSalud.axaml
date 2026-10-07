@@ -17,6 +17,11 @@
 
         <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2" IsVisible="{Binding EstaCargando}" />
 
+        <TextBlock DockPanel.Dock="Top" Margin="16" TextWrapping="Wrap"
+                   Foreground="{DynamicResource PincelDeTextoSecundario}"
+                   Text="{Binding TextoDeEstado}"
+                   IsVisible="{Binding !TieneDatos}" />
+
         <ScrollViewer IsVisible="{Binding TieneDatos}">
             <StackPanel Margin="16" Spacing="18" DataContext="{Binding Salud}" x:DataType="salud:SaludDeLaBaseDeDatos">
 
@@ -79,9 +84,9 @@
                 <StackPanel Spacing="6">
                     <TextBlock Text="Índices más fragmentados" FontWeight="SemiBold" />
                     <TextBlock Text="No hay índices con fragmentación importante. 👍" Foreground="{DynamicResource PincelDeTextoSecundario}"
-                               IsVisible="{Binding !IndicesFragmentados.Count}" />
+                               IsVisible="{Binding IndicesFragmentados, Converter={x:Static conv:HayElementos.Instancia}, ConverterParameter=vacio}" />
                     <DataGrid ItemsSource="{Binding IndicesFragmentados}" IsReadOnly="True" MaxHeight="260"
-                              IsVisible="{Binding IndicesFragmentados.Count}"
+                              IsVisible="{Binding IndicesFragmentados, Converter={x:Static conv:HayElementos.Instancia}}"
                               CanUserReorderColumns="False" CanUserSortColumns="False" HeadersVisibility="Column"
                               GridLinesVisibility="Horizontal">
                         <DataGrid.Columns>

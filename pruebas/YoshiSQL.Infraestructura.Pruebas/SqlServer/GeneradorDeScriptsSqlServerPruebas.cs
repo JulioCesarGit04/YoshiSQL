@@ -129,6 +129,36 @@ public class GeneradorDeScriptsSqlServerPruebas
     }
 
     [Fact]
+    public void GenerarInsertDeFilas_FormateaCadaTipoComoLiteralDeTSql()
+    {
+        var columnas = Enumerable.Range(1, 8)
+            .Select(posicion => new Columna($"c{posicion}", new TipoDeDato("sql_variant"), AdmiteNulos: true, EsLlavePrimaria: false, EsIdentidad: false, Posicion: posicion))
+            .ToArray();
+
+        var fila = new object?[]
+        {
+            new DateTime(2026, 1, 5, 10, 30, 0),
+            Guid.Parse("f47ac10b-58cc-4372-a567-0e02b2c3d479"),
+            new byte[] { 0xDE, 0xAD },
+            12.5m,
+            true,
+            "O'Hara",
+            1234567890L,
+            null
+        };
+
+        var script = _generador.GenerarInsertDeFilas(new Tabla("dbo", "Variado"), columnas, [fila]);
+
+        Assert.Contains("'2026-01-05 10:30:00.000'", script);
+        Assert.Contains("'f47ac10b-58cc-4372-a567-0e02b2c3d479'", script);
+        Assert.Contains("0xDEAD", script);
+        Assert.Contains("12.5", script);
+        Assert.Contains("N'O''Hara'", script);
+        Assert.Contains("1234567890", script);
+        Assert.Contains("NULL", script);
+    }
+
+    [Fact]
     public void GenerarInsertDeFilas_SinFilas_DevuelveVacio()
     {
         var columnas = new[] { new Columna("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: false, Posicion: 1) };

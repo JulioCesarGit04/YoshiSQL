@@ -209,6 +209,16 @@ no es una vía a implementar. La vía legítima y donde YoshiSQL aporta es **ext
 usuario sí puede leer (exportar tablas, generar el .sql de la base). Por eso "Exportar toda la base a .sql"
 es prioridad en P4.
 
+## Calidad / bugs revisados (2026-10-07)
+- Corregido antes: desconectar cerraba el nodo pero dejaba viva la conexión de la pestaña (ya cierra pestañas y
+  libera conexión); conectar al mismo servidor duplicaba el nodo (ahora se deduplica por servidor+usuario).
+- Panel de salud: visibilidad enlazada a `.Count` (int) → se cambió a convertidor `HayElementos`; ahora deduplica
+  la pestaña y muestra el mensaje de error en el cuerpo si falla.
+- Pruebas nuevas: `ServicioDeFavoritosPruebas` (5) y literales de `GenerarInsertDeFilas` (fechas, GUID, binarios,
+  texto con comillas). Total: 151 (Dominio 25, Aplicacion 37, Infraestructura 89, 1 omitida en Windows).
+- Nota: la sesión se RESTAURA al reabrir (reconecta con la contraseña guardada y reabre las pestañas). "Conectar"
+  siempre está en la barra de herramientas y en el menú; el botón grande del centro solo aparece sin pestañas.
+
 ## Notas para trabajar
 - Al terminar una función, actualizar la sección "ESTADO ACTUAL" de `ESTRUCTURA_YOSHISQL.txt`, el README y este archivo.
 - Agregar pruebas en la capa correspondiente y mantener `dotnet build` sin advertencias.

@@ -375,8 +375,20 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
 
     public async Task AbrirSaludAsync(ContextoDelNodo contexto)
     {
+        var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
+
+        var saludAbierta = Documentos
+            .OfType<Salud.PestanaDeSaludModeloDeVista>()
+            .FirstOrDefault(salud => salud.Servidor == contexto.Servidor && salud.BaseDeDatos == baseDeDatos);
+
+        if (saludAbierta is not null)
+        {
+            DocumentoSeleccionado = saludAbierta;
+            return;
+        }
+
         var salud = new Salud.PestanaDeSaludModeloDeVista(
-            contexto.Servidor, contexto.BaseDeDatosOPredeterminada, _servicioDelExplorador, _servicioDeErrores);
+            contexto.Servidor, baseDeDatos, _servicioDelExplorador, _servicioDeErrores);
 
         AgregarDocumento(salud);
         await salud.CargarCommand.ExecuteAsync(null);
