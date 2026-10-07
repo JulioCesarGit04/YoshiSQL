@@ -111,6 +111,44 @@ public class GeneradorDeScriptsSqlServerPruebas
     }
 
     [Fact]
+    public void GenerarInsertDeFilas_ConIdentidad_EnvuelveConIdentityInsert()
+    {
+        var columnas = new[]
+        {
+            new Columna("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: true, Posicion: 1),
+            new Columna("Nombre", new TipoDeDato("nvarchar", 50), AdmiteNulos: true, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 2)
+        };
+        var filas = new object?[][] { [1, "Ana"], [2, null] };
+
+        var script = _generador.GenerarInsertDeFilas(new Tabla("dbo", "Clientes"), columnas, filas);
+
+        Assert.Contains("SET IDENTITY_INSERT [dbo].[Clientes] ON;", script);
+        Assert.Contains("INSERT INTO [dbo].[Clientes] ([Id], [Nombre]) VALUES (1, N'Ana');", script);
+        Assert.Contains("VALUES (2, NULL);", script);
+        Assert.Contains("SET IDENTITY_INSERT [dbo].[Clientes] OFF;", script);
+    }
+
+    [Fact]
+    public void GenerarInsertDeFilas_SinFilas_DevuelveVacio()
+    {
+        var columnas = new[] { new Columna("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: false, Posicion: 1) };
+
+        Assert.Equal(string.Empty, _generador.GenerarInsertDeFilas(new Tabla("dbo", "Clientes"), columnas, []));
+    }
+
+    [Fact]
+    public void GenerarLlaveForanea_GeneraAlterTableAddConstraint()
+    {
+        var llave = new LlaveForanea("FK_Pedido_Cliente", new Tabla("dbo", "Pedido"), ["ClienteId"], new Tabla("dbo", "Cliente"), ["Id"]);
+
+        var script = _generador.GenerarLlaveForanea(llave);
+
+        Assert.Equal(
+            "ALTER TABLE [dbo].[Pedido] ADD CONSTRAINT [FK_Pedido_Cliente] FOREIGN KEY ([ClienteId]) REFERENCES [dbo].[Cliente] ([Id]);",
+            script);
+    }
+
+    [Fact]
     public void GenerarCreacionDeTabla_ConIdentidadYLlavePrimaria_GeneraDefinicionCompleta()
     {
         var columnas = new[]

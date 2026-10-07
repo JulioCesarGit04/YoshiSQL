@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
@@ -31,6 +32,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private readonly ServiciosDeConsulta _serviciosDeConsulta;
     private readonly ServicioDelExplorador _servicioDelExplorador;
     private readonly ServicioDeGeneracionDeScripts _servicioDeGeneracionDeScripts;
+    private readonly ServicioDeExportacionDeBaseDeDatos _servicioDeExportacionDeBaseDeDatos;
     private readonly ServicioDeArchivosSql _servicioDeArchivosSql;
     private readonly ServicioDeDiagramas _servicioDeDiagramas;
     private readonly IServicioDeDialogos _servicioDeDialogos;
@@ -46,6 +48,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         ServiciosDeConsulta serviciosDeConsulta,
         ServicioDelExplorador servicioDelExplorador,
         ServicioDeArchivosSql servicioDeArchivosSql,
+        ServicioDeExportacionDeBaseDeDatos servicioDeExportacionDeBaseDeDatos,
         ServicioDeGeneracionDeScripts servicioDeGeneracionDeScripts,
         ServicioDeDiagramas servicioDeDiagramas,
         IServicioDeDialogos servicioDeDialogos,
@@ -67,6 +70,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         _serviciosDeConsulta = serviciosDeConsulta;
         _servicioDelExplorador = servicioDelExplorador;
         _servicioDeArchivosSql = servicioDeArchivosSql;
+        _servicioDeExportacionDeBaseDeDatos = servicioDeExportacionDeBaseDeDatos;
         _servicioDeDialogos = servicioDeDialogos;
 
         _servicioDeGeneracionDeScripts = servicioDeGeneracionDeScripts;
@@ -355,6 +359,33 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
 
     public Task MostrarRespaldoAsync(ContextoDelNodo contexto) =>
         _servicioDeDialogos.MostrarRespaldoAsync(contexto.Servidor, contexto.BaseDeDatosOPredeterminada);
+
+    public async Task ExportarBaseDeDatosAsync(ContextoDelNodo contexto)
+    {
+        var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
+
+        var incluirDatos = await _servicioDeDialogos.ConfirmarAsync(
+            "Exportar base de datos",
+            $"¿Incluir los datos (INSERT) además de la estructura de \"{baseDeDatos}\"?",
+            "Estructura y datos",
+            "Solo estructura");
+
+        var ruta = await _servicioDeDialogos.SeleccionarArchivoParaGuardarAsync(baseDeDatos, TipoDeArchivo.ScriptSql);
+
+        if (ruta is null)
+        {
+            return;
+        }
+
+        var script = await _servicioDeExportacionDeBaseDeDatos.GenerarScriptCompletoAsync(
+            contexto.Servidor, baseDeDatos, incluirDatos, CancellationToken.None);
+
+        await File.WriteAllTextAsync(ruta, script);
+
+        await _servicioDeDialogos.MostrarInformacionAsync(
+            "Exportación completa",
+            $"La base de datos \"{baseDeDatos}\" se exportó a:\n{ruta}");
+    }
 
     public async Task MostrarRestauracionAsync(ContextoDelNodo contexto)
     {

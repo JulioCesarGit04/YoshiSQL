@@ -34,6 +34,7 @@ public static class RegistroDeServicios
         servicios.AddSingleton<ServicioDePreferencias>();
         servicios.AddSingleton<ServicioDeArchivosSql>();
         servicios.AddSingleton<ServicioDeGeneracionDeScripts>();
+        servicios.AddSingleton<ServicioDeExportacionDeBaseDeDatos>();
         servicios.AddSingleton<ServicioDeDiagramas>();
         servicios.AddSingleton<ServicioDeSesion>();
 

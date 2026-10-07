@@ -22,6 +22,21 @@ public interface IGeneradorDeScripts
 
     string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas);
 
+    /// <summary>CREATE TABLE sin el USE/GO, para armar el script completo de una base de datos.</summary>
+    string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas);
+
+    /// <summary>ALTER TABLE ADD CONSTRAINT FOREIGN KEY para una llave foránea.</summary>
+    string GenerarLlaveForanea(LlaveForanea llave);
+
+    /// <summary>Un INSERT por fila con los valores reales; envuelve con SET IDENTITY_INSERT si hay identidad.</summary>
+    string GenerarInsertDeFilas(Tabla tabla, IReadOnlyList<Columna> columnas, IReadOnlyList<object?[]> filas);
+
+    /// <summary>Instrucción USE para fijar la base de datos.</summary>
+    string GenerarUso(string baseDeDatos);
+
+    /// <summary>SELECT de todas las filas de una tabla (sin TOP).</summary>
+    string GenerarSeleccionCompleta(Tabla tabla);
+
     /// <summary>
     /// Plantilla SELECT, INSERT, UPDATE o DELETE para una tabla o vista, lista para editar en el editor.
     /// </summary>

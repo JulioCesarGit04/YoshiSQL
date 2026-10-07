@@ -165,10 +165,11 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
 
 ### Prioridad 4 — Funciones que DIFERENCIAN de SSMS (el valor real de YoshiSQL)
 El usuario destacó estas como "espectaculares". No son copiar a SSMS; son el motivo de existir de la app.
-- ⭐🔴 **Exportar toda la base a un .sql** (estructura + datos como INSERT): botón derecho en la base →
-  "Exportar todo a script". Formato abierto, versionable en git, recreable en cualquier SQL Server; no
-  depende de un .bak ni de un proveedor. REAPROVECHA mucho de lo ya hecho: generación de CREATE TABLE,
-  generación de SELECT, exportadores e `IDivisorDeLotes`. **Empezar por esta.**
+- ✅ HECHO (sin commit) ⭐🔴 **Exportar toda la base a un .sql**: botón derecho en la base → "Exportar todo a
+  script...". Pregunta si incluir datos; genera CREATE TABLE de todas las tablas, INSERT de sus filas (con
+  SET IDENTITY_INSERT) y las llaves foráneas como ALTER al final. `ServicioDeExportacionDeBaseDeDatos` (Aplicacion)
+  orquesta; generador: `GenerarCreacionDeTablaSinEnvolver`, `GenerarInsertDeFilas`, `GenerarLlaveForanea`,
+  `GenerarUso`, `GenerarSeleccionCompleta`. LIMITACIÓN v1: no incluye vistas/procs/funcs ni columnas calculadas.
 - ⭐🔴 **Comparar dos bases (esquema + datos)**: muestra tablas/columnas nuevas, distintas o borradas y
   genera el script de sincronización. SSMS no lo trae gratis → función estrella diferenciadora.
 - ⭐🟡 **Panel "salud de la base"**: una sola pantalla con tablas más pesadas, índices fragmentados,

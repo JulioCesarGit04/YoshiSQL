@@ -106,6 +106,73 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             baseDeDatos,
             $"EXEC sys.sp_rename {EscribirTexto(Delimitar(objeto.Esquema, objeto.Nombre))}, {EscribirTexto(nuevoNombre)};");
 
+    public string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas)
+    {
+        var definicionesDeColumnas = columnas
+            .OrderBy(columna => columna.Posicion)
+            .Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos))
+            .ToList();
+
+        var columnasDeLaLlave = columnas.Where(columna => columna.EsLlavePrimaria).Select(columna => columna.Nombre).ToList();
+
+        return CrearInstruccionCreateTable(tabla, definicionesDeColumnas, columnasDeLaLlave);
+    }
+
+    public string GenerarLlaveForanea(LlaveForanea llave) =>
+        $"ALTER TABLE {Delimitar(llave.TablaOrigen.Esquema, llave.TablaOrigen.Nombre)} "
+        + $"ADD CONSTRAINT {Delimitar(llave.Nombre)} FOREIGN KEY ({UnirNombres(llave.ColumnasOrigen)}) "
+        + $"REFERENCES {Delimitar(llave.TablaDestino.Esquema, llave.TablaDestino.Nombre)} ({UnirNombres(llave.ColumnasDestino)});";
+
+    public string GenerarInsertDeFilas(Tabla tabla, IReadOnlyList<Columna> columnas, IReadOnlyList<object?[]> filas)
+    {
+        if (filas.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var ordenadas = columnas.OrderBy(columna => columna.Posicion).ToList();
+        var nombreDeLaTabla = Delimitar(tabla.Esquema, tabla.Nombre);
+        var listaDeColumnas = UnirNombres(ordenadas.Select(columna => columna.Nombre));
+        var tieneIdentidad = ordenadas.Any(columna => columna.EsIdentidad);
+
+        var texto = new StringBuilder();
+
+        if (tieneIdentidad)
+        {
+            texto.AppendLine($"SET IDENTITY_INSERT {nombreDeLaTabla} ON;");
+        }
+
+        foreach (var fila in filas)
+        {
+            var valores = string.Join(", ", fila.Select(EscribirLiteralSql));
+            texto.AppendLine($"INSERT INTO {nombreDeLaTabla} ({listaDeColumnas}) VALUES ({valores});");
+        }
+
+        if (tieneIdentidad)
+        {
+            texto.Append($"SET IDENTITY_INSERT {nombreDeLaTabla} OFF;");
+        }
+
+        return texto.ToString();
+    }
+
+    public string GenerarUso(string baseDeDatos) => $"USE {Delimitar(baseDeDatos)};";
+
+    public string GenerarSeleccionCompleta(Tabla tabla) => $"SELECT * FROM {Delimitar(tabla.Esquema, tabla.Nombre)};";
+
+    private static string EscribirLiteralSql(object? valor) => valor switch
+    {
+        null => "NULL",
+        bool booleano => booleano ? "1" : "0",
+        byte[] bytes => $"0x{Convert.ToHexString(bytes)}",
+        DateTime fecha => $"'{fecha.ToString("yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture)}'",
+        DateTimeOffset fecha => $"'{fecha.ToString("yyyy-MM-dd HH:mm:ss.fff zzz", System.Globalization.CultureInfo.InvariantCulture)}'",
+        TimeSpan hora => $"'{hora.ToString("c", System.Globalization.CultureInfo.InvariantCulture)}'",
+        Guid identificador => $"'{identificador}'",
+        byte or short or int or long or decimal or double or float => Convert.ToString(valor, System.Globalization.CultureInfo.InvariantCulture) ?? "NULL",
+        _ => $"N'{valor.ToString()!.Replace("'", "''", StringComparison.Ordinal)}'"
+    };
+
     public string GenerarConsultaDeFragmentacion(string baseDeDatos, Tabla tabla) =>
         EnvolverEnBaseDeDatos(
             baseDeDatos,

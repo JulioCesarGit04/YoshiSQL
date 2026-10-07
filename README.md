@@ -30,6 +30,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 - **Diseñador de tablas**: crea tablas y modifica columnas. Los cambios se aplican en una transacción y puedes ver el script antes.
 - **Editar las primeras N filas** directamente en la grilla, con comandos parametrizados en una transacción. Puedes filtrar con `WHERE` y `ORDER BY`, un filtro rápido sobre las filas cargadas, poner una celda en `NULL` con `Ctrl+0`, y guardar cada fila al salir de ella o todas juntas con un botón.
 - **Diagramas de base de datos** con tablas que se pueden mover y relaciones dibujadas automáticamente.
+- **Exportar toda la base a un `.sql`** (estructura y datos), para recrearla en cualquier SQL Server o versionarla, sin depender de un `.bak`.
 
 ### Administración
 - **Monitor de actividad**: sesiones conectadas, consultas en ejecución, bloqueos y opción de terminar un proceso.

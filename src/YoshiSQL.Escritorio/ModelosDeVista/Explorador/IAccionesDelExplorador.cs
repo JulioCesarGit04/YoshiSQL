@@ -28,6 +28,8 @@ public interface IAccionesDelExplorador
 
     Task MostrarRespaldoAsync(ContextoDelNodo contexto);
 
+    Task ExportarBaseDeDatosAsync(ContextoDelNodo contexto);
+
     Task MostrarRestauracionAsync(ContextoDelNodo contexto);
 
     Task DesconectarServidorAsync(ContextoDelNodo contexto);
