@@ -1,4 +1,5 @@
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Aplicacion.Scripts;
 using YoshiSQL.Dominio.Conexiones;
 
 namespace YoshiSQL.Escritorio.Servicios;
@@ -20,6 +21,9 @@ public interface IServicioDeDialogos
 
     /// <summary>Pide un texto al usuario; devuelve lo escrito o null si cancela.</summary>
     Task<string?> PedirTextoAsync(string titulo, string etiqueta, string valorInicial);
+
+    /// <summary>Pide qué exportar de una base de datos; devuelve las opciones o null si cancela.</summary>
+    Task<OpcionesDeExportacion?> PedirOpcionesDeExportacionAsync(string baseDeDatos);
 
     Task<string?> SeleccionarArchivoParaAbrirAsync();
 

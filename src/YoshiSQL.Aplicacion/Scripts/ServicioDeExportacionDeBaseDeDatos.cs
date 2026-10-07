@@ -29,17 +29,10 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
     public async Task<string> GenerarScriptCompletoAsync(
         ServidorConectado servidor,
         string baseDeDatos,
-        bool incluirDatos,
+        OpcionesDeExportacion opciones,
         CancellationToken tokenDeCancelacion)
     {
         var acceso = servidor.DatosDeAcceso;
-        var tablas = await _explorador.ObtenerTablasAsync(acceso, baseDeDatos, tokenDeCancelacion);
-
-        var columnasPorTabla = new Dictionary<Tabla, IReadOnlyList<Columna>>();
-        foreach (var tabla in tablas)
-        {
-            columnasPorTabla[tabla] = await _explorador.ObtenerColumnasAsync(acceso, baseDeDatos, tabla, tokenDeCancelacion);
-        }
 
         var script = new StringBuilder();
         script.AppendLine($"-- Script de la base de datos {baseDeDatos}");
@@ -47,21 +40,89 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
         script.AppendLine();
         AgregarLote(script, _generador.GenerarUso(baseDeDatos));
 
-        script.AppendLine("-- Estructura de las tablas");
-        script.AppendLine();
-        foreach (var tabla in tablas)
+        var tablas = await _explorador.ObtenerTablasAsync(acceso, baseDeDatos, tokenDeCancelacion);
+
+        var columnasPorTabla = new Dictionary<Tabla, IReadOnlyList<Columna>>();
+        if (opciones.EstructuraDeTablas || opciones.DatosDeTablas)
         {
-            AgregarLote(script, _generador.GenerarCreacionDeTablaSinEnvolver(tabla, columnasPorTabla[tabla]));
+            foreach (var tabla in tablas)
+            {
+                columnasPorTabla[tabla] = await _explorador.ObtenerColumnasAsync(acceso, baseDeDatos, tabla, tokenDeCancelacion);
+            }
         }
 
-        if (incluirDatos)
+        if (opciones.EstructuraDeTablas)
+        {
+            script.AppendLine("-- Estructura de las tablas");
+            script.AppendLine();
+            foreach (var tabla in tablas)
+            {
+                AgregarLote(script, _generador.GenerarCreacionDeTablaSinEnvolver(tabla, columnasPorTabla[tabla]));
+            }
+        }
+
+        if (opciones.DatosDeTablas)
         {
             await AgregarDatosAsync(script, servidor, baseDeDatos, tablas, columnasPorTabla, tokenDeCancelacion);
         }
 
-        await AgregarLlavesForaneasAsync(script, acceso, baseDeDatos, tokenDeCancelacion);
+        if (opciones.EstructuraDeTablas)
+        {
+            await AgregarLlavesForaneasAsync(script, acceso, baseDeDatos, tokenDeCancelacion);
+        }
+
+        // Funciones antes que vistas: una vista puede referenciar funciones
+        if (opciones.Funciones)
+        {
+            var funciones = await _explorador.ObtenerFuncionesAsync(acceso, baseDeDatos, tokenDeCancelacion);
+            await AgregarDefinicionesAsync(script, acceso, baseDeDatos, "Funciones", funciones, tokenDeCancelacion);
+        }
+
+        if (opciones.Vistas)
+        {
+            var vistas = await _explorador.ObtenerVistasAsync(acceso, baseDeDatos, tokenDeCancelacion);
+            await AgregarDefinicionesAsync(script, acceso, baseDeDatos, "Vistas", vistas, tokenDeCancelacion);
+        }
+
+        if (opciones.Procedimientos)
+        {
+            var procedimientos = await _explorador.ObtenerProcedimientosAsync(acceso, baseDeDatos, tokenDeCancelacion);
+            await AgregarDefinicionesAsync(script, acceso, baseDeDatos, "Procedimientos almacenados", procedimientos, tokenDeCancelacion);
+        }
 
         return script.ToString();
+    }
+
+    private async Task AgregarDefinicionesAsync(
+        StringBuilder script,
+        Dominio.Conexiones.DatosDeAcceso acceso,
+        string baseDeDatos,
+        string titulo,
+        IReadOnlyList<ObjetoDeEsquema> objetos,
+        CancellationToken tokenDeCancelacion)
+    {
+        if (objetos.Count == 0)
+        {
+            return;
+        }
+
+        script.AppendLine($"-- {titulo}");
+        script.AppendLine();
+
+        foreach (var objeto in objetos)
+        {
+            var definicion = await _explorador.ObtenerDefinicionAsync(acceso, baseDeDatos, objeto, tokenDeCancelacion);
+
+            if (string.IsNullOrWhiteSpace(definicion))
+            {
+                script.AppendLine($"-- {objeto.NombreCompleto}: cifrado o sin permiso para ver su definición; se omite.");
+                script.AppendLine();
+            }
+            else
+            {
+                AgregarLote(script, definicion.Trim());
+            }
+        }
     }
 
     private async Task AgregarDatosAsync(

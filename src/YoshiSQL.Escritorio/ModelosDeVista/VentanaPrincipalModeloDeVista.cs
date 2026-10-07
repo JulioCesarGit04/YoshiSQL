@@ -364,11 +364,12 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     {
         var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
 
-        var incluirDatos = await _servicioDeDialogos.ConfirmarAsync(
-            "Exportar base de datos",
-            $"¿Incluir los datos (INSERT) además de la estructura de \"{baseDeDatos}\"?",
-            "Estructura y datos",
-            "Solo estructura");
+        var opciones = await _servicioDeDialogos.PedirOpcionesDeExportacionAsync(baseDeDatos);
+
+        if (opciones is null)
+        {
+            return;
+        }
 
         var ruta = await _servicioDeDialogos.SeleccionarArchivoParaGuardarAsync(baseDeDatos, TipoDeArchivo.ScriptSql);
 
@@ -378,7 +379,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         }
 
         var script = await _servicioDeExportacionDeBaseDeDatos.GenerarScriptCompletoAsync(
-            contexto.Servidor, baseDeDatos, incluirDatos, CancellationToken.None);
+            contexto.Servidor, baseDeDatos, opciones, CancellationToken.None);
 
         await File.WriteAllTextAsync(ruta, script);
 

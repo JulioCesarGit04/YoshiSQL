@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="YoshiSQL.Escritorio.Vistas.Comunes.DialogoDeExportacion"
+        Title="Exportar a script"
+        Width="440" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="24,20" Spacing="14">
+        <TextBlock x:Name="Encabezado" TextWrapping="Wrap" />
+
+        <StackPanel Spacing="8">
+            <CheckBox x:Name="EstructuraDeTablas" Content="Estructura de las tablas (CREATE TABLE y llaves)" IsChecked="True" />
+            <CheckBox x:Name="DatosDeTablas" Content="Datos de las tablas (INSERT)" IsChecked="True" />
+            <CheckBox x:Name="Vistas" Content="Vistas" IsChecked="True" />
+            <CheckBox x:Name="Procedimientos" Content="Procedimientos almacenados" IsChecked="True" />
+            <CheckBox x:Name="Funciones" Content="Funciones" IsChecked="True" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Classes="Primario" Content="Exportar" MinWidth="100" IsDefault="True" Click="AlAceptar" />
+            <Button Content="Cancelar" MinWidth="100" IsCancel="True" Click="AlCancelar" />
+        </StackPanel>
+    </StackPanel>
+</Window>
