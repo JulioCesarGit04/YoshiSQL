@@ -42,12 +42,25 @@ public sealed partial class ExploradorModeloDeVista : ModeloDeVistaBase
 
     public void AgregarServidor(ServidorConectado servidor)
     {
+        // Si ya hay un nodo para el mismo servidor y usuario, se selecciona en vez de duplicarlo
+        if (BuscarNodoDelMismoServidor(servidor) is { } existente)
+        {
+            NodoSeleccionado = existente;
+            return;
+        }
+
         var nodo = _fabricaDeNodos.CrearNodoDeServidor(servidor);
         Servidores.Add(nodo);
         nodo.EstaExpandido = true;
         NodoSeleccionado = nodo;
         OnPropertyChanged(nameof(TieneServidores));
     }
+
+    private NodoDelArbolModeloDeVista? BuscarNodoDelMismoServidor(ServidorConectado servidor) =>
+        Servidores.FirstOrDefault(nodo =>
+            nodo.Contexto is { } contexto
+            && string.Equals(contexto.Servidor.Perfil.NombreVisible, servidor.Perfil.NombreVisible, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(contexto.Servidor.Perfil.Usuario, servidor.Perfil.Usuario, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Recarga el nodo seleccionado; si no hay ninguno, recarga todos los servidores.

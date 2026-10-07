@@ -373,7 +373,30 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         await Explorador.ActualizarTablasAsync(servidor, baseDeDatos);
     }
 
-    public void DesconectarServidor(ContextoDelNodo contexto) => Explorador.QuitarServidor(contexto.Servidor);
+    public async Task DesconectarServidorAsync(ContextoDelNodo contexto)
+    {
+        var servidor = contexto.Servidor;
+        var documentosDelServidor = Documentos.Where(documento => documento.Servidor == servidor).ToList();
+
+        // Primero se confirma cada pestaña; si el usuario cancela alguna, no se desconecta
+        foreach (var documento in documentosDelServidor)
+        {
+            DocumentoSeleccionado = documento;
+
+            if (!await ConfirmarCierreAsync(documento))
+            {
+                return;
+            }
+        }
+
+        // Cerrar las pestañas libera su conexión (cada consulta tiene su propia sesión abierta)
+        foreach (var documento in documentosDelServidor)
+        {
+            await QuitarDocumentoAsync(documento);
+        }
+
+        Explorador.QuitarServidor(servidor);
+    }
 
     /// <param name="nombreDelArchivo">Nombre a usar; si es nulo se genera uno nuevo (SQLQuery1.sql, SQLQuery2.sql...).</param>
     private async Task<PestanaDeConsultaModeloDeVista> AgregarPestanaAsync(

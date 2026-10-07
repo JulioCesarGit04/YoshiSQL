@@ -30,5 +30,5 @@ public interface IAccionesDelExplorador
 
     Task MostrarRestauracionAsync(ContextoDelNodo contexto);
 
-    void DesconectarServidor(ContextoDelNodo contexto);
+    Task DesconectarServidorAsync(ContextoDelNodo contexto);
 }

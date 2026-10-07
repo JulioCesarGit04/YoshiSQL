@@ -51,11 +51,7 @@ public sealed class FabricaDeNodos
             new AccionDelNodo("Monitor de actividad", ComandoSeguro("Abrir monitor de actividad", contexto, () => _acciones.AbrirMonitorDeActividadAsync(contexto))),
             new AccionDelNodo("Ver log de errores del servidor", ComandoSeguro("Ver log del servidor", contexto,
                 () => _acciones.AbrirNuevaConsultaAsync(contexto, "EXEC sys.sp_readerrorlog;", ejecutarAlAbrir: true))),
-            new AccionDelNodo("Desconectar", ComandoSeguro("Desconectar", contexto, () =>
-            {
-                _acciones.DesconectarServidor(contexto);
-                return Task.CompletedTask;
-            })),
+            new AccionDelNodo("Desconectar", ComandoSeguro("Desconectar", contexto, () => _acciones.DesconectarServidorAsync(contexto))),
             AccionDeActualizar(nodo));
 
         return nodo;
