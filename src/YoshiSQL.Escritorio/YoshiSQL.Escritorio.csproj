@@ -6,6 +6,7 @@
     <RootNamespace>YoshiSQL.Escritorio</RootNamespace>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>Recursos\yoshisql.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +32,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Controles\ResaltadoTSql.xshd" LogicalName="ResaltadoTSql.xshd" />
     <EmbeddedResource Include="Controles\ResaltadoTSqlClaro.xshd" LogicalName="ResaltadoTSqlClaro.xshd" />
+    <AvaloniaResource Include="Recursos\logo.png" />
   </ItemGroup>
 
 </Project>

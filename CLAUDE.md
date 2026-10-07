@@ -175,13 +175,14 @@ El usuario destacó estas como "espectaculares". No son copiar a SSMS; son el mo
   índices que faltan (ya se analizan en los planes) y consultas más lentas.
 - 🟢 **Favoritos / fragmentos de consultas personales**: guardar consultas con nombre y ejecutarlas con un clic o un atajo en el editor.
 
-### Imagen de la app (branding)
-- ✅ HECHO (sin commit) Logo vectorial reutilizable `Controles/LogoDeYoshiSql` (cilindro de BD sobre tile verde).
-  Se usa en el splash y en "Acerca de". El ícono de la ventana se genera dibujando el logo a un `RenderTargetBitmap`
-  en `App.CrearIconoSeguro` (mejor esfuerzo: si falla, la ventana queda sin ícono, no rompe el arranque).
-- ✅ HECHO (sin commit) Splash: `Vistas/Comunes/PantallaDeBienvenida` (ventana sin bordes, Topmost) que se muestra
-  ~1.6 s al iniciar y se cierra sola; la ventana principal ya queda debajo.
-- PENDIENTE: ícono a nivel de SO para el ejecutable publicado (`ApplicationIcon` .ico) — necesita un archivo de imagen.
+### Imagen de la app (branding) — HECHO
+- Logo: imagen PNG generada en `Recursos/logo.png` (tile verde con cilindro de BD + rayo ámbar). El control
+  `Controles/LogoDeYoshiSql` ahora solo muestra ese PNG; se usa en el splash y en "Acerca de".
+- Ícono de la ventana: `VentanaPrincipal.axaml` usa `Icon="/Recursos/logo.png"`.
+- Ícono del ejecutable: `Recursos/yoshisql.ico` (multi-tamaño) vía `<ApplicationIcon>` en el csproj.
+- Splash: `Vistas/Comunes/PantallaDeBienvenida` (sin bordes, Topmost, ~1.6 s) con el logo, versión y barra.
+- Las imágenes se generaron con una herramienta Avalonia+Skia headless (en scratchpad, no versionada) que
+  dibuja el logo y lo exporta a PNG/ICO. Para rehacerlas, re-renderizar con esa técnica (`RenderTargetBitmap.Save`).
 
 ### Prioridad 5 — Grandes / a futuro
 - 🔴 Importar / exportar datos desde CSV o Excel a una tabla.

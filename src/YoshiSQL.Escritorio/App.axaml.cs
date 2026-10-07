@@ -2,8 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Media.Imaging;
-using Avalonia.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using YoshiSQL.Aplicacion.Errores;
@@ -36,7 +34,7 @@ public partial class App : Application
             AplicarPreferenciasGuardadas(proveedorDeServicios);
 
             var modeloPrincipal = proveedorDeServicios.GetRequiredService<VentanaPrincipalModeloDeVista>();
-            var ventana = new VentanaPrincipal { DataContext = modeloPrincipal, Icon = CrearIconoSeguro() };
+            var ventana = new VentanaPrincipal { DataContext = modeloPrincipal };
             escritorio.MainWindow = ventana;
             escritorio.Exit += (_, _) => proveedorDeServicios.Dispose();
 
@@ -61,29 +59,6 @@ public partial class App : Application
         temporizador.Start();
     }
 
-    /// <summary>
-    /// Genera el ícono de la ventana dibujando el logo vectorial en un mapa de bits.
-    /// Si el dibujo fallara, la ventana simplemente queda sin ícono en vez de impedir el arranque.
-    /// </summary>
-    private static WindowIcon? CrearIconoSeguro()
-    {
-        try
-        {
-            const int tamano = 64;
-            var logo = new LogoDeYoshiSql { Width = tamano, Height = tamano };
-            logo.Measure(new Size(tamano, tamano));
-            logo.Arrange(new Rect(0, 0, tamano, tamano));
-
-            var mapaDeBits = new RenderTargetBitmap(new PixelSize(tamano, tamano), new Vector(96, 96));
-            mapaDeBits.Render(logo);
-
-            return new WindowIcon(mapaDeBits);
-        }
-        catch
-        {
-            return null;
-        }
-    }
 
     /// <summary>
     /// Las preferencias (tema, letra del editor) se aplican antes de mostrar la ventana

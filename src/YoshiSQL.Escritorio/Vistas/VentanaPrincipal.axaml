@@ -17,6 +17,7 @@
         x:Class="YoshiSQL.Escritorio.Vistas.VentanaPrincipal"
         x:DataType="vm:VentanaPrincipalModeloDeVista"
         Title="YoshiSQL"
+        Icon="/Recursos/logo.png"
         Width="1360" Height="820"
         MinWidth="900" MinHeight="560"
         WindowStartupLocation="CenterScreen">
