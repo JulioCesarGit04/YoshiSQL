@@ -65,6 +65,18 @@
         <Setter Property="Stretch" Value="None" />
     </Style>
 
+    <!-- Icono de la barra de herramientas: trazo con el color del texto secundario -->
+    <Style Selector="Path.IconoBarra">
+        <Setter Property="Stroke" Value="{DynamicResource PincelDeTextoSecundario}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- Triángulo de "Ejecutar": relleno verde -->
+    <Style Selector="Path.IconoEjecutar">
+        <Setter Property="Fill" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="Stroke" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
     <!-- Mensajes de la ejecución: color normal del tema, rojo para errores y amarillo para advertencias -->
     <Style Selector="SelectableTextBlock.Mensaje">
         <Setter Property="Foreground" Value="{DynamicResource PincelDeTexto}" />

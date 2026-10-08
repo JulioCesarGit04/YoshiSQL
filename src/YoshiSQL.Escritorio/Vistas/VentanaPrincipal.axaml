@@ -126,11 +126,25 @@
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
             <StackPanel Orientation="Horizontal" Spacing="2">
-                <Button Classes="Herramienta" Content="Conectar" Command="{Binding ConectarCommand}" />
-                <Button Classes="Herramienta" Content="Nueva consulta" Command="{Binding NuevaConsultaCommand}" />
-                <Button Classes="Herramienta" Content="Abrir" Command="{Binding AbrirArchivoCommand}" />
-                <Button Classes="Herramienta" Content="Guardar" Command="{Binding GuardarCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <Button Classes="Herramienta" Command="{Binding ConectarCommand}" ToolTip.Tip="Conectar al servidor">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <Path Classes="Icono IconoBarra" Data="{StaticResource IconoConectar}" />
+                        <TextBlock Text="Conectar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="Herramienta" Command="{Binding NuevaConsultaCommand}" ToolTip.Tip="Nueva consulta (Ctrl+N)">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <Path Classes="Icono IconoBarra" Data="{StaticResource IconoNuevaConsulta}" />
+                        <TextBlock Text="Nueva" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="Herramienta" Command="{Binding AbrirArchivoCommand}" ToolTip.Tip="Abrir archivo (Ctrl+O)">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoAbrir}" />
+                </Button>
+                <Button Classes="Herramienta" Command="{Binding GuardarCommand}" IsEnabled="{Binding HayConsultaSeleccionada}"
+                        ToolTip.Tip="Guardar (Ctrl+S)">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoGuardar}" />
+                </Button>
 
                 <Rectangle Width="1" Margin="8,4" Fill="{DynamicResource PincelDeBorde}" />
 
@@ -141,23 +155,36 @@
                           SelectedItem="{Binding ConsultaSeleccionada.BaseDeDatosSeleccionada}"
                           ToolTip.Tip="Base de datos de la pestaña actual" />
 
-                <Button Classes="Herramienta Ejecutar" Content="Ejecutar (F5)"
-                        Command="{Binding ConsultaSeleccionada.EjecutarCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" />
-                <Button Classes="Herramienta" Content="Cancelar"
-                        Command="{Binding ConsultaSeleccionada.CancelarCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <Button Classes="Herramienta Ejecutar" Command="{Binding ConsultaSeleccionada.EjecutarCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Ejecutar (F5)">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <Path Classes="Icono IconoEjecutar" Data="{StaticResource IconoEjecutar}" />
+                        <TextBlock Text="Ejecutar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.CancelarCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Cancelar ejecución (Alt+Pause)">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoCancelar}" />
+                </Button>
 
                 <Rectangle Width="1" Margin="8,4" Fill="{DynamicResource PincelDeBorde}" />
 
-                <Button Classes="Herramienta" Content="Plan estimado"
-                        Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}"
+                <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}"
                         IsEnabled="{Binding HayConsultaSeleccionada}"
-                        ToolTip.Tip="Ver cómo ejecutaría el servidor la consulta, sin ejecutarla (Ctrl+L)" />
+                        ToolTip.Tip="Ver el plan estimado sin ejecutar (Ctrl+L)">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <Path Classes="Icono IconoBarra" Data="{StaticResource IconoPlan}" />
+                        <TextBlock Text="Plan" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
                 <ToggleButton Classes="Herramienta" Content="Plan real"
                               IsChecked="{Binding ConsultaSeleccionada.IncluirPlanReal, FallbackValue=False}"
                               IsEnabled="{Binding HayConsultaSeleccionada}"
                               ToolTip.Tip="Incluir el plan real al ejecutar (Ctrl+M)" />
+                <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.FormatearCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Formatear SQL (Ctrl+Shift+F)">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoFormatear}" />
+                </Button>
             </StackPanel>
         </Border>
 
