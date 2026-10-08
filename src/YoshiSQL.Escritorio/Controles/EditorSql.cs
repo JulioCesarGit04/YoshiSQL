@@ -87,11 +87,23 @@ public sealed class EditorSql : TextEditor
         _panelDeBusqueda.Open();
     }
 
+    /// <summary>Comenta con "-- " las líneas de la selección.</summary>
+    public void Comentar() => AplicarComentario(comentar: true);
+
+    /// <summary>Quita el "--" del comienzo de las líneas comentadas de la selección.</summary>
+    public void Descomentar() => AplicarComentario(comentar: false);
+
     /// <summary>
-    /// Comenta con "-- " las líneas de la selección, o las descomenta si ya lo estaban todas.
-    /// Un solo paso de deshacer (Ctrl+Z).
+    /// Comenta las líneas de la selección, o las descomenta si ya lo estaban todas (Ctrl+/).
     /// </summary>
     public void AlternarComentario()
+    {
+        var (lineaInicial, lineaFinal) = LineasDeLaSeleccion();
+        AplicarComentario(comentar: !TodasLasLineasEstanComentadas(lineaInicial, lineaFinal));
+    }
+
+    // Un solo paso de deshacer (Ctrl+Z); se recorre de la última línea a la primera para no correr los offsets
+    private void AplicarComentario(bool comentar)
     {
         if (Document is null)
         {
@@ -99,21 +111,19 @@ public sealed class EditorSql : TextEditor
         }
 
         var (lineaInicial, lineaFinal) = LineasDeLaSeleccion();
-        var todasComentadas = TodasLasLineasEstanComentadas(lineaInicial, lineaFinal);
 
         Document.BeginUpdate();
         try
         {
-            // De la última línea a la primera para que los offsets de las anteriores no se corran
             for (var numero = lineaFinal; numero >= lineaInicial; numero--)
             {
-                if (todasComentadas)
+                if (comentar)
                 {
-                    QuitarComentarioDeLinea(numero);
+                    AgregarComentarioALinea(numero);
                 }
                 else
                 {
-                    AgregarComentarioALinea(numero);
+                    QuitarComentarioDeLinea(numero);
                 }
             }
         }

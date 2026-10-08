@@ -31,7 +31,7 @@ public partial class PestanaDeConsulta : UserControl
         if (_pestanaObservada is not null)
         {
             _pestanaObservada.BusquedaSolicitada -= AbrirBusqueda;
-            _pestanaObservada.ComentarioSolicitado -= AlternarComentario;
+            _pestanaObservada.ComentarioSolicitado -= AlComentario;
             _pestanaObservada.CambioDeCapitalizacionSolicitado -= ConvertirSeleccion;
         }
 
@@ -41,7 +41,7 @@ public partial class PestanaDeConsulta : UserControl
         if (_pestanaObservada is not null)
         {
             _pestanaObservada.BusquedaSolicitada += AbrirBusqueda;
-            _pestanaObservada.ComentarioSolicitado += AlternarComentario;
+            _pestanaObservada.ComentarioSolicitado += AlComentario;
             _pestanaObservada.CambioDeCapitalizacionSolicitado += ConvertirSeleccion;
         }
 
@@ -56,7 +56,21 @@ public partial class PestanaDeConsulta : UserControl
 
     private void AbrirBusqueda(object? remitente, bool conReemplazo) => Editor.AbrirBusqueda(conReemplazo);
 
-    private void AlternarComentario(object? remitente, EventArgs argumentos) => Editor.AlternarComentario();
+    private void AlComentario(object? remitente, AccionDeComentario accion)
+    {
+        switch (accion)
+        {
+            case AccionDeComentario.Comentar:
+                Editor.Comentar();
+                break;
+            case AccionDeComentario.Descomentar:
+                Editor.Descomentar();
+                break;
+            default:
+                Editor.AlternarComentario();
+                break;
+        }
+    }
 
     private void ConvertirSeleccion(object? remitente, bool aMayusculas) => Editor.ConvertirSeleccion(aMayusculas);
 }

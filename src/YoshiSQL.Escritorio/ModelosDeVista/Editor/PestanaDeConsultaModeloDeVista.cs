@@ -73,8 +73,8 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     /// </summary>
     public event EventHandler<bool>? BusquedaSolicitada;
 
-    /// <summary>Pide al editor comentar o descomentar las líneas de la selección.</summary>
-    public event EventHandler? ComentarioSolicitado;
+    /// <summary>Pide al editor comentar, descomentar o alternar el comentario de la selección.</summary>
+    public event EventHandler<AccionDeComentario>? ComentarioSolicitado;
 
     /// <summary>Pide al editor convertir la selección a mayúsculas (true) o minúsculas (false).</summary>
     public event EventHandler<bool>? CambioDeCapitalizacionSolicitado;
@@ -331,7 +331,13 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     private void Reemplazar() => BusquedaSolicitada?.Invoke(this, true);
 
     [RelayCommand]
-    private void Comentar() => ComentarioSolicitado?.Invoke(this, EventArgs.Empty);
+    private void AlternarComentario() => ComentarioSolicitado?.Invoke(this, AccionDeComentario.Alternar);
+
+    [RelayCommand]
+    private void Comentar() => ComentarioSolicitado?.Invoke(this, AccionDeComentario.Comentar);
+
+    [RelayCommand]
+    private void Descomentar() => ComentarioSolicitado?.Invoke(this, AccionDeComentario.Descomentar);
 
     [RelayCommand]
     private void ConvertirAMayusculas() => CambioDeCapitalizacionSolicitado?.Invoke(this, true);

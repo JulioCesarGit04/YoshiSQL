@@ -61,7 +61,7 @@
         <KeyBinding Gesture="Ctrl+W" Command="{Binding CerrarPestanaCommand}" />
         <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding MostrarPreferenciasCommand}" />
         <KeyBinding Gesture="Ctrl+H" Command="{Binding ConsultaSeleccionada.ReemplazarCommand}" />
-        <KeyBinding Gesture="Ctrl+OemQuestion" Command="{Binding ConsultaSeleccionada.ComentarCommand}" />
+        <KeyBinding Gesture="Ctrl+OemQuestion" Command="{Binding ConsultaSeleccionada.AlternarComentarioCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+U" Command="{Binding ConsultaSeleccionada.ConvertirAMayusculasCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+L" Command="{Binding ConsultaSeleccionada.ConvertirAMinusculasCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}" />
@@ -93,7 +93,11 @@
                 <MenuItem Header="Reemplazar..." InputGesture="Ctrl+H" Command="{Binding ConsultaSeleccionada.ReemplazarCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
                 <Separator />
-                <MenuItem Header="Comentar o descomentar" InputGesture="Ctrl+OemQuestion" Command="{Binding ConsultaSeleccionada.ComentarCommand}"
+                <MenuItem Header="Comentar selección" Command="{Binding ConsultaSeleccionada.ComentarCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <MenuItem Header="Descomentar selección" Command="{Binding ConsultaSeleccionada.DescomentarCommand}"
+                          IsEnabled="{Binding HayConsultaSeleccionada}" />
+                <MenuItem Header="Comentar o descomentar" InputGesture="Ctrl+OemQuestion" Command="{Binding ConsultaSeleccionada.AlternarComentarioCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
                 <MenuItem Header="Pasar a MAYÚSCULAS" InputGesture="Ctrl+Shift+U" Command="{Binding ConsultaSeleccionada.ConvertirAMayusculasCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
@@ -189,6 +193,14 @@
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.FormatearCommand}"
                         IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Formatear SQL (Ctrl+Shift+F)">
                     <Path Classes="Icono IconoBarra" Data="{StaticResource IconoFormatear}" />
+                </Button>
+                <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.ComentarCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Comentar la selección">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoComentar}" />
+                </Button>
+                <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.DescomentarCommand}"
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Descomentar la selección">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoDescomentar}" />
                 </Button>
             </StackPanel>
         </Border>
