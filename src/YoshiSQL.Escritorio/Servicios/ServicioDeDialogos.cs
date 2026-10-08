@@ -110,6 +110,12 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     public Task<Aplicacion.Scripts.OpcionesDeExportacion?> PedirOpcionesDeExportacionAsync(string baseDeDatos) =>
         new DialogoDeExportacion(baseDeDatos).ShowDialog<Aplicacion.Scripts.OpcionesDeExportacion?>(ObtenerVentanaActiva());
 
+    public Task<ModelosDeVista.Paleta.ComandoDePaleta?> MostrarPaletaDeComandosAsync(IReadOnlyList<ModelosDeVista.Paleta.ComandoDePaleta> comandos)
+    {
+        var modelo = new ModelosDeVista.Paleta.PaletaDeComandosModeloDeVista(comandos);
+        return new DialogoDePaleta(modelo).ShowDialog<ModelosDeVista.Paleta.ComandoDePaleta?>(ObtenerVentanaActiva());
+    }
+
     public Task MostrarPreferenciasAsync()
     {
         var fuentesInstaladas = FontManager.Current.SystemFonts

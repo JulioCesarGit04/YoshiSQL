@@ -49,6 +49,8 @@
     </Window.DataTemplates>
 
     <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding AbrirPaletaDeComandosCommand}" />
+        <KeyBinding Gesture="Ctrl+P" Command="{Binding AbrirPaletaDeComandosCommand}" />
         <KeyBinding Gesture="F5" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
         <KeyBinding Gesture="Ctrl+E" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
         <KeyBinding Gesture="Alt+Pause" Command="{Binding ConsultaSeleccionada.CancelarCommand}" />
@@ -72,6 +74,8 @@
         <!-- Menú -->
         <Menu DockPanel.Dock="Top" Background="{DynamicResource PincelDePanel}" Padding="4,0">
             <MenuItem Header="_Archivo">
+                <MenuItem Header="Paleta de comandos..." InputGesture="Ctrl+Shift+P" Command="{Binding AbrirPaletaDeComandosCommand}" />
+                <Separator />
                 <MenuItem Header="Conectar al servidor..." Command="{Binding ConectarCommand}" />
                 <Separator />
                 <MenuItem Header="Nueva consulta" InputGesture="Ctrl+N" Command="{Binding NuevaConsultaCommand}" />
@@ -260,7 +264,7 @@
                                Foreground="{DynamicResource PincelDeTextoSecundario}" HorizontalAlignment="Center" />
                     <Button Classes="Primario" Content="Conectar al servidor" HorizontalAlignment="Center"
                             Margin="0,8,0,0" Command="{Binding ConectarCommand}" />
-                    <TextBlock Text="Ctrl+N nueva consulta  ·  F5 ejecutar  ·  Ctrl+S guardar"
+                    <TextBlock Text="Ctrl+N nueva consulta  ·  F5 ejecutar  ·  Ctrl+Shift+P paleta de comandos"
                                FontSize="11.5" Margin="0,12,0,0"
                                Foreground="{DynamicResource PincelDeTextoSecundario}" HorizontalAlignment="Center" />
                 </StackPanel>

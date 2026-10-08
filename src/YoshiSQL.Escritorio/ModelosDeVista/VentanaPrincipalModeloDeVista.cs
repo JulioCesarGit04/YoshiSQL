@@ -110,6 +110,54 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     public bool HayConsultaSeleccionada => ConsultaSeleccionada is not null;
 
     [RelayCommand]
+    private async Task AbrirPaletaDeComandosAsync()
+    {
+        var elegido = await _servicioDeDialogos.MostrarPaletaDeComandosAsync(ConstruirComandosDePaleta());
+
+        if (elegido is not null && elegido.Comando.CanExecute(null))
+        {
+            elegido.Comando.Execute(null);
+        }
+    }
+
+    private IReadOnlyList<Paleta.ComandoDePaleta> ConstruirComandosDePaleta()
+    {
+        var comandos = new List<Paleta.ComandoDePaleta>
+        {
+            new("Nueva consulta", "Ctrl+N", NuevaConsultaCommand),
+            new("Abrir archivo...", "Ctrl+O", AbrirArchivoCommand),
+            new("Guardar", "Ctrl+S", GuardarCommand),
+            new("Guardar como...", "Ctrl+Shift+S", GuardarComoCommand),
+            new("Conectar al servidor...", string.Empty, ConectarCommand),
+            new("Cerrar pestaña", "Ctrl+W", CerrarPestanaCommand),
+            new("Guardar consulta como favorito...", string.Empty, GuardarComoFavoritoCommand),
+            new("Preferencias...", "Ctrl+,", MostrarPreferenciasCommand),
+            new("Abrir carpeta de registros", string.Empty, AbrirCarpetaDeRegistrosCommand),
+            new("Acerca de YoshiSQL", string.Empty, MostrarAcercaDeCommand)
+        };
+
+        if (ConsultaSeleccionada is { } consulta)
+        {
+            comandos.InsertRange(0,
+            [
+                new Paleta.ComandoDePaleta("Ejecutar", "F5", consulta.EjecutarCommand),
+                new Paleta.ComandoDePaleta("Cancelar ejecución", "Alt+Pause", consulta.CancelarCommand),
+                new Paleta.ComandoDePaleta("Formatear SQL", "Ctrl+Shift+F", consulta.FormatearCommand),
+                new Paleta.ComandoDePaleta("Comentar o descomentar", "Ctrl+/", consulta.ComentarCommand),
+                new Paleta.ComandoDePaleta("Pasar a MAYÚSCULAS", "Ctrl+Shift+U", consulta.ConvertirAMayusculasCommand),
+                new Paleta.ComandoDePaleta("Pasar a minúsculas", "Ctrl+Shift+L", consulta.ConvertirAMinusculasCommand),
+                new Paleta.ComandoDePaleta("Buscar...", "Ctrl+F", consulta.BuscarCommand),
+                new Paleta.ComandoDePaleta("Reemplazar...", "Ctrl+H", consulta.ReemplazarCommand),
+                new Paleta.ComandoDePaleta("Mostrar plan estimado", "Ctrl+L", consulta.MostrarPlanEstimadoCommand),
+                new Paleta.ComandoDePaleta("Incluir plan real", "Ctrl+M", consulta.ConmutarPlanRealCommand),
+                new Paleta.ComandoDePaleta("Resultados en texto", "Ctrl+T", consulta.ConmutarResultadosEnTextoCommand)
+            ]);
+        }
+
+        return comandos;
+    }
+
+    [RelayCommand]
     private async Task ConectarAsync()
     {
         var servidor = await _servicioDeDialogos.MostrarDialogoDeConexionAsync();
