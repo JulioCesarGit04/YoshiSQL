@@ -268,10 +268,7 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
 
         while (await lector.ReadAsync(tokenDeCancelacion))
         {
-            var valores = new object?[lector.FieldCount];
-            lector.GetValues(valores!);
-            ConvertirNulosDeBaseDeDatos(valores);
-            filas.Add(valores);
+            filas.Add(LeerValoresDeLaFila(lector));
         }
 
         return new ConjuntoDeResultados(columnas, filas);
@@ -280,13 +277,40 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     private static string ObtenerNombreVisibleDeColumna(string nombre) =>
         string.IsNullOrEmpty(nombre) ? "(Sin nombre de columna)" : nombre;
 
-    private static void ConvertirNulosDeBaseDeDatos(object?[] valores)
+    private static object?[] LeerValoresDeLaFila(SqlDataReader lector)
     {
+        var valores = new object?[lector.FieldCount];
+
         for (var posicion = 0; posicion < valores.Length; posicion++)
         {
-            if (valores[posicion] is DBNull)
+            valores[posicion] = LeerValorDeCelda(lector, posicion);
+        }
+
+        return valores;
+    }
+
+    private static object? LeerValorDeCelda(SqlDataReader lector, int posicion)
+    {
+        if (lector.IsDBNull(posicion))
+        {
+            return null;
+        }
+
+        try
+        {
+            return lector.GetValue(posicion);
+        }
+        // Los tipos CLR (geography, geometry, hierarchyid, UDT) necesitan el ensamblado
+        // Microsoft.SqlServer.Types; si no está, se leen como sus bytes serializados en vez de romper.
+        catch (Exception error) when (error is FileNotFoundException or FileLoadException or TypeLoadException)
+        {
+            try
             {
-                valores[posicion] = null;
+                return lector.GetSqlBytes(posicion).Value;
+            }
+            catch
+            {
+                return $"(valor {lector.GetDataTypeName(posicion)} no legible sin Microsoft.SqlServer.Types)";
             }
         }
     }

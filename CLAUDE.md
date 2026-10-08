@@ -220,6 +220,13 @@ es prioridad en P4.
   la baja descubribilidad (muchas acciones solo estaban en el clic derecho).
 - PENDIENTE de pulido: iconos en menús contextuales, estados hover/selección más marcados en árbol/listas.
 
+## Bug corregido (2026-10-08): tipos CLR (geography/geometry/hierarchyid/UDT)
+Leer tablas con columnas de tipos CLR (ej. AdventureWorks: `SpatialLocation` geography, `OrganizationNode`
+hierarchyid) lanzaba `FileNotFoundException` de `Microsoft.SqlServer.Types` (ensamblado no instalado), tanto al
+exportar como al "Seleccionar filas". `SesionDeConsultaSqlServer.LeerValorDeCelda` ahora lee cada celda con
+`GetValue`; si falla por no cargar ese ensamblado, cae a `GetSqlBytes` (bytes serializados) → se ven como 0x... en
+la grilla y en el INSERT del export. No necesita la dependencia Microsoft.SqlServer.Types.
+
 ## Calidad / bugs revisados (2026-10-07)
 - Corregido antes: desconectar cerraba el nodo pero dejaba viva la conexión de la pestaña (ya cierra pestañas y
   libera conexión); conectar al mismo servidor duplicaba el nodo (ahora se deduplica por servidor+usuario).
