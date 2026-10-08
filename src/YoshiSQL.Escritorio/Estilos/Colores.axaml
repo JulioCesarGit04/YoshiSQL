@@ -22,6 +22,9 @@
             <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#3C4148" />
             <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#C08B93A0" />
             <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#5C6370" />
+            <SolidColorBrush x:Key="PincelDeHover" Color="#FFFFFF" Opacity="0.055" />
+            <SolidColorBrush x:Key="PincelDeAcentoSuave" Color="#6CC24A" Opacity="0.20" />
+            <SolidColorBrush x:Key="PincelDeSeleccion" Color="#6CC24A" Opacity="0.28" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Light">
@@ -39,6 +42,9 @@
             <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#C9CED6" />
             <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#B05F6672" />
             <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#9AA0A6" />
+            <SolidColorBrush x:Key="PincelDeHover" Color="#000000" Opacity="0.05" />
+            <SolidColorBrush x:Key="PincelDeAcentoSuave" Color="#3E8E2A" Opacity="0.14" />
+            <SolidColorBrush x:Key="PincelDeSeleccion" Color="#3E8E2A" Opacity="0.20" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 

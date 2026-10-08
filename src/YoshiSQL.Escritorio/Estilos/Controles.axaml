@@ -128,4 +128,29 @@
         <Setter Property="MinHeight" Value="26" />
         <Setter Property="FontSize" Value="12.5" />
     </Style>
+    <!-- Selección y hover tintados del acento, en vez del gris por defecto -->
+    <Style Selector="TreeViewItem:pointerover /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource PincelDeHover}" />
+    </Style>
+    <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource PincelDeSeleccion}" />
+    </Style>
+    <Style Selector="TreeViewItem:selected:pointerover /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource PincelDeSeleccion}" />
+    </Style>
+
+    <Style Selector="ListBoxItem">
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Margin" Value="4,1" />
+        <Setter Property="CornerRadius" Value="5" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeHover}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeSeleccion}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeSeleccion}" />
+    </Style>
 </Styles>
