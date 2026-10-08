@@ -156,6 +156,44 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         return texto.ToString();
     }
 
+    public string GenerarEjecucionDeProcedimiento(string baseDeDatos, ObjetoDeEsquema procedimiento, IReadOnlyList<ParametroDeProcedimiento> parametros)
+    {
+        var salidas = parametros.Where(parametro => parametro.EsSalida).ToList();
+        var cuerpo = new StringBuilder();
+
+        // Las variables para los parámetros OUTPUT se declaran antes del EXEC
+        foreach (var salida in salidas)
+        {
+            cuerpo.AppendLine($"DECLARE {salida.Nombre} {salida.TipoDeDato.Describir()};");
+        }
+
+        if (salidas.Count > 0)
+        {
+            cuerpo.AppendLine();
+        }
+
+        cuerpo.Append($"EXEC {Delimitar(procedimiento.Esquema, procedimiento.Nombre)}");
+
+        if (parametros.Count > 0)
+        {
+            var lineas = parametros.Select(parametro => parametro.EsSalida
+                ? $"    {parametro.Nombre} = {parametro.Nombre} OUTPUT"
+                : $"    {parametro.Nombre} = <{parametro.Nombre.TrimStart('@')}, {parametro.TipoDeDato.Describir()},>");
+
+            cuerpo.Append(Environment.NewLine).Append(string.Join($",{Environment.NewLine}", lineas));
+        }
+
+        cuerpo.Append(';');
+
+        // Al final se muestran los valores de salida para poder verlos
+        foreach (var salida in salidas)
+        {
+            cuerpo.Append(Environment.NewLine).Append($"SELECT {salida.Nombre} AS {Delimitar(salida.Nombre.TrimStart('@'))};");
+        }
+
+        return EnvolverEnBaseDeDatos(baseDeDatos, cuerpo.ToString());
+    }
+
     public string GenerarUso(string baseDeDatos) => $"USE {Delimitar(baseDeDatos)};";
 
     public string GenerarSeleccionCompleta(Tabla tabla) => $"SELECT * FROM {Delimitar(tabla.Esquema, tabla.Nombre)};";

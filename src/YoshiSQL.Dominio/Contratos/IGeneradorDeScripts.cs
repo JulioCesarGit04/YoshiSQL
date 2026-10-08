@@ -53,6 +53,9 @@ public interface IGeneradorDeScripts
     /// <summary>Script ALTER INDEX para reconstruir (REBUILD) o reorganizar (REORGANIZE) un índice.</summary>
     string GenerarMantenimientoDeIndice(string baseDeDatos, Tabla tabla, string nombreDelIndice, bool reconstruir);
 
+    /// <summary>Plantilla EXEC de un procedimiento con sus parámetros, lista para completar y ejecutar.</summary>
+    string GenerarEjecucionDeProcedimiento(string baseDeDatos, ObjetoDeEsquema procedimiento, IReadOnlyList<ParametroDeProcedimiento> parametros);
+
     /// <summary>
     /// Script para crear el objeto tal como existe hoy, a partir de su definición.
     /// </summary>

@@ -83,6 +83,24 @@ public class GeneradorDeScriptsSqlServerPruebas
     }
 
     [Fact]
+    public void GenerarEjecucionDeProcedimiento_ConEntradaYSalida_DeclaraLaSalidaYMarcaOutput()
+    {
+        var parametros = new[]
+        {
+            new ParametroDeProcedimiento("@ClienteId", new TipoDeDato("int"), EsSalida: false),
+            new ParametroDeProcedimiento("@Total", new TipoDeDato("decimal", null, 18, 2), EsSalida: true)
+        };
+
+        var script = _generador.GenerarEjecucionDeProcedimiento("Ventas", new ProcedimientoAlmacenado("dbo", "CalcularTotal"), parametros);
+
+        Assert.Contains("DECLARE @Total decimal(18,2);", script);
+        Assert.Contains("EXEC [dbo].[CalcularTotal]", script);
+        Assert.Contains("@ClienteId = <ClienteId, int,>", script);
+        Assert.Contains("@Total = @Total OUTPUT", script);
+        Assert.Contains("SELECT @Total AS [Total];", script);
+    }
+
+    [Fact]
     public void GenerarRenombrado_UsaSpRenameConElNombreCalificadoYElNuevo()
     {
         var script = _generador.GenerarRenombrado("Ventas", new Tabla("dbo", "Clientes"), "ClientesNuevo");

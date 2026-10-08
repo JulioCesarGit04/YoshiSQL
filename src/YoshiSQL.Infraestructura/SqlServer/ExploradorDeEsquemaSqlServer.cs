@@ -273,6 +273,24 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             indicesFragmentados);
     }
 
+    public Task<IReadOnlyList<ParametroDeProcedimiento>> ObtenerParametrosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        ObjetoDeEsquema procedimiento,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarParametros",
+            CrearParametrosDelObjeto(procedimiento),
+            lector => new ParametroDeProcedimiento(
+                Nombre: lector.GetString(0),
+                TipoDeDato: new TipoDeDato(
+                    lector.GetString(1),
+                    LeerEnteroOpcional(lector, 2),
+                    LeerEnteroOpcional(lector, 3),
+                    LeerEnteroOpcional(lector, 4)),
+                EsSalida: lector.GetBoolean(5)),
+            tokenDeCancelacion);
+
     public Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion) =>

@@ -102,6 +102,12 @@ public interface IExploradorDeEsquema
         string baseDeDatos,
         CancellationToken tokenDeCancelacion);
 
+    Task<IReadOnlyList<ParametroDeProcedimiento>> ObtenerParametrosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        ObjetoDeEsquema procedimiento,
+        CancellationToken tokenDeCancelacion);
+
     Task<IReadOnlyList<InicioDeSesion>> ObtenerIniciosDeSesionAsync(
         DatosDeAcceso datosDeAcceso,
         CancellationToken tokenDeCancelacion);

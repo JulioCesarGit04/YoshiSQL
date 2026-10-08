@@ -91,6 +91,17 @@ public sealed class ServicioDeGeneracionDeScripts
             $"No se puede ver el código de {objeto.NombreCompleto}: el objeto está cifrado o tu usuario no tiene permiso VIEW DEFINITION.");
     }
 
+    /// <summary>Plantilla EXEC de un procedimiento con sus parámetros, para abrir en el editor.</summary>
+    public async Task<string> GenerarEjecucionDeProcedimientoAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        ObjetoDeEsquema procedimiento,
+        CancellationToken tokenDeCancelacion)
+    {
+        var parametros = await _exploradorDeEsquema.ObtenerParametrosAsync(servidor.DatosDeAcceso, baseDeDatos, procedimiento, tokenDeCancelacion);
+        return _generadorDeScripts.GenerarEjecucionDeProcedimiento(baseDeDatos, procedimiento, parametros);
+    }
+
     /// <summary>Plantilla SELECT/INSERT/UPDATE/DELETE de una tabla o vista para abrir en el editor.</summary>
     public async Task<string> GenerarInstruccionDmlAsync(
         ServidorConectado servidor,

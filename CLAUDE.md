@@ -153,7 +153,10 @@ Leyenda: ⭐ muy útil · 🟢 fácil · 🟡 media · 🔴 difícil
   (tablas: los 4; vistas: SELECT). `IGeneradorDeScripts.GenerarInstruccionDml` + `TipoDeScriptDml`,
   servicio `GenerarInstruccionDmlAsync`, acciones en `FabricaDeNodos`. EXEC de procedimientos queda PENDIENTE
   (necesita leer los parámetros del procedimiento del catálogo).
-- 🟡 Ejecutar procedimiento… (diálogo que pide parámetros y genera el EXEC).
+- ✅ HECHO (sin commit) 🟢 Ejecutar procedimiento (EXEC con parámetros): acción "Generar EXEC..." en los nodos de
+  procedimiento. Lee `sys.parameters` (`ListarParametros.sql` + `ParametroDeProcedimiento`), genera la plantilla
+  EXEC con placeholders para la entrada y DECLARE/OUTPUT/SELECT para la salida, y la abre en el editor para
+  completarla y ejecutarla. `GenerarEjecucionDeProcedimiento` + `GenerarEjecucionDeProcedimientoAsync`.
 - 🟡 Más carpetas en el explorador: ✅ HECHO (sin commit) Disparadores (triggers) bajo cada tabla
   (`ListarDisparadores.sql` + `Disparador` + `TipoDeNodo.Disparador`). PENDIENTE: restricciones (CHECK/DEFAULT),
   sinónimos, tipos de usuario, esquemas, secuencias.

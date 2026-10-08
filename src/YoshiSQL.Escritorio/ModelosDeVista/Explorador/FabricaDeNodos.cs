@@ -298,13 +298,26 @@ public sealed class FabricaDeNodos
 
         var accionDeModificar = AccionDeModificar(contexto, objeto);
 
-        nodo.EstablecerAcciones(
-            accionDeModificar,
-            AccionDeGenerarCreacion(contexto, objeto),
-            AccionQueAbreScript("Generar script DROP", contexto,
-                () => _generadorDeScripts.GenerarEliminacion(contexto.BaseDeDatosOPredeterminada, objeto)),
-            AccionDeVerDependencias(contexto, objeto),
-            AccionDeRenombrar(contexto, objeto));
+        var acciones = new List<AccionDelNodo> { accionDeModificar };
+
+        // Solo los procedimientos se ejecutan con EXEC; las funciones no
+        if (tipo == TipoDeNodo.ProcedimientoAlmacenado)
+        {
+            acciones.Add(new AccionDelNodo("Generar EXEC...", ComandoSeguro("Generar EXEC del procedimiento", contexto, async () =>
+            {
+                var script = await _generadorDeScripts.GenerarEjecucionDeProcedimientoAsync(
+                    contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, CancellationToken.None);
+                await _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: false);
+            })));
+        }
+
+        acciones.Add(AccionDeGenerarCreacion(contexto, objeto));
+        acciones.Add(AccionQueAbreScript("Generar script DROP", contexto,
+            () => _generadorDeScripts.GenerarEliminacion(contexto.BaseDeDatosOPredeterminada, objeto)));
+        acciones.Add(AccionDeVerDependencias(contexto, objeto));
+        acciones.Add(AccionDeRenombrar(contexto, objeto));
+
+        nodo.EstablecerAcciones(acciones.ToArray());
         nodo.EstablecerComandoAlHacerDobleClic(accionDeModificar.Comando);
 
         return nodo;
