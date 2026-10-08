@@ -212,6 +212,14 @@ no es una vía a implementar. La vía legítima y donde YoshiSQL aporta es **ext
 usuario sí puede leer (exportar tablas, generar el .sql de la base). Por eso "Exportar toda la base a .sql"
 es prioridad en P4.
 
+## Rediseño UX/UI (2026-10-08) — en progreso
+- Barra de herramientas con iconos (`Estilos/Iconos.axaml` = StreamGeometry 16px; estilos `Path.IconoBarra`/`Path.IconoEjecutar`).
+- Pestañas laterales con icono (acento en la seleccionada) y logo en la pantalla inicial.
+- ⭐ Paleta de comandos (Ctrl+Shift+P / Ctrl+P): `DialogoDePaleta` + `PaletaDeComandosModeloDeVista` + `ComandoDePaleta`;
+  la ventana principal arma la lista en `ConstruirComandosDePaleta` (globales + de la consulta activa). Resuelve
+  la baja descubribilidad (muchas acciones solo estaban en el clic derecho).
+- PENDIENTE de pulido: iconos en menús contextuales, estados hover/selección más marcados en árbol/listas.
+
 ## Calidad / bugs revisados (2026-10-07)
 - Corregido antes: desconectar cerraba el nodo pero dejaba viva la conexión de la pestaña (ya cierra pestañas y
   libera conexión); conectar al mismo servidor duplicaba el nodo (ahora se deduplica por servidor+usuario).
