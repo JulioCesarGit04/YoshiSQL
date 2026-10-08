@@ -106,8 +106,15 @@
 
     <Style Selector="TabControl.Laterales > TabItem">
         <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="MinHeight" Value="34" />
         <Setter Property="Padding" Value="12,0" />
+    </Style>
+    <!-- Pestaña lateral seleccionada: el icono toma el color de acento -->
+    <Style Selector="TabControl.Laterales TabItem:selected Path.IconoBarra">
+        <Setter Property="Stroke" Value="{DynamicResource PincelDeAcento}" />
+    </Style>
+    <Style Selector="TabControl.Laterales TabItem:not(:selected) TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSecundario}" />
     </Style>
 
     <Style Selector="DataGrid">

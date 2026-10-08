@@ -17,6 +17,7 @@
         xmlns:modeloSalud="using:YoshiSQL.Escritorio.ModelosDeVista.Salud"
         xmlns:vistasSalud="using:YoshiSQL.Escritorio.Vistas.Salud"
         xmlns:conv="using:YoshiSQL.Escritorio.Convertidores"
+        xmlns:controles="using:YoshiSQL.Escritorio.Controles"
         x:Class="YoshiSQL.Escritorio.Vistas.VentanaPrincipal"
         x:DataType="vm:VentanaPrincipalModeloDeVista"
         Title="YoshiSQL"
@@ -218,13 +219,31 @@
         <!-- Explorador a la izquierda, documentos a la derecha -->
         <Grid ColumnDefinitions="300,1,*">
             <TabControl Grid.Column="0" Classes="Laterales" Padding="0" Background="{DynamicResource PincelDePanel}">
-                <TabItem Header="Explorador">
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Path Classes="Icono IconoBarra" Data="{StaticResource IconoExplorador}" />
+                            <TextBlock Text="Explorador" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </TabItem.Header>
                     <vistasExplorador:PanelDelExplorador DataContext="{Binding Explorador}" />
                 </TabItem>
-                <TabItem Header="Historial">
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Path Classes="Icono IconoBarra" Data="{StaticResource IconoHistorial}" />
+                            <TextBlock Text="Historial" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </TabItem.Header>
                     <vistasHistorial:PanelDelHistorial DataContext="{Binding Historial}" />
                 </TabItem>
-                <TabItem Header="Favoritos">
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Path Classes="Icono IconoBarra" Data="{StaticResource IconoFavoritos}" />
+                            <TextBlock Text="Favoritos" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </TabItem.Header>
                     <vistasFavoritos:PanelDeFavoritos DataContext="{Binding Favoritos}" />
                 </TabItem>
             </TabControl>
@@ -233,9 +252,10 @@
 
             <Panel Grid.Column="2">
                 <StackPanel IsVisible="{Binding NoHayDocumentosAbiertos}"
-                            HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
-                    <TextBlock Text="YoshiSQL" FontSize="34" FontWeight="Light"
-                               Foreground="{DynamicResource PincelDeAcento}" HorizontalAlignment="Center" />
+                            HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                    <controles:LogoDeYoshiSql Width="88" Height="88" HorizontalAlignment="Center" />
+                    <TextBlock Text="YoshiSQL" FontSize="32" FontWeight="Light"
+                               Foreground="{DynamicResource PincelDeTexto}" HorizontalAlignment="Center" Margin="0,4,0,0" />
                     <TextBlock Text="Conéctate a un servidor para empezar"
                                Foreground="{DynamicResource PincelDeTextoSecundario}" HorizontalAlignment="Center" />
                     <Button Classes="Primario" Content="Conectar al servidor" HorizontalAlignment="Center"
