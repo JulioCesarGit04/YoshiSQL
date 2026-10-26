@@ -68,6 +68,61 @@ public class DivisorDeLotesTSqlPruebas
 
         Assert.Single(lotes);
     }
+
+    [Theory]
+    [InlineData("SELECT `columna`;")]
+    [InlineData("SELECT ?;")]
+    [InlineData("SELECT 'it''s', [col]]x], N'año';")]
+    public void DividirEnLotes_ProcedimientosConUnErrorLexico_SeparaCadaProcedimiento(string cuerpoConError)
+    {
+        var script = $"CREATE PROCEDURE dbo.A AS {cuerpoConError}\nGO\nCREATE PROCEDURE dbo.B AS SELECT 2;\nGO\nCREATE PROCEDURE dbo.C AS SELECT 3;\nGO\n";
+
+        var lotes = _divisor.DividirEnLotes(script);
+
+        Assert.Equal(3, lotes.Count);
+        Assert.All(lotes, lote => Assert.StartsWith("CREATE PROCEDURE", lote.Texto, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void DividirEnLotes_ComentarioSinCerrarAlFinal_SeparaLosLotesAnteriores()
+    {
+        var lotes = _divisor.DividirEnLotes("SELECT 1;\nGO\nSELECT 2;\n/* pendiente\nGO\n");
+
+        Assert.Equal(2, lotes.Count);
+    }
+
+    [Fact]
+    public void DividirEnLotes_ComentariosAnidadosConGo_NoSepara()
+    {
+        var lotes = _divisor.DividirEnLotes("/* a /* b */\nGO\n*/\nSELECT 1;");
+
+        Assert.Single(lotes);
+    }
+
+    [Fact]
+    public void DividirEnLotes_GoDentroDeIdentificadorConEscapes_NoSepara()
+    {
+        var lotes = _divisor.DividirEnLotes("SELECT 1 AS [a]]\nGO\nb], 'it''s\nGO\n' AS x;");
+
+        Assert.Single(lotes);
+    }
+
+    [Theory]
+    [InlineData("SELECT 1;\n   go   \nSELECT 2;")]
+    [InlineData("SELECT 1;\nGO;\nSELECT 2;")]
+    [InlineData("SELECT 1;\nGO--fin\nSELECT 2;")]
+    public void DividirEnLotes_VariantesDeGo_Separa(string script)
+    {
+        Assert.Equal(2, _divisor.DividirEnLotes(script).Count);
+    }
+
+    [Theory]
+    [InlineData("SELECT 1; GO\nSELECT 2;")]
+    [InlineData("GOTO Fin;\nFin: SELECT 1;")]
+    public void DividirEnLotes_GoQueNoEstaSoloEnSuLinea_NoSepara(string script)
+    {
+        Assert.Single(_divisor.DividirEnLotes(script));
+    }
 }
 
 public class DivisorDeLotesConSaltosDeWindowsPruebas
@@ -81,5 +136,14 @@ public class DivisorDeLotesConSaltosDeWindowsPruebas
         Assert.Equal([1, 3, 5], lotes.Select(lote => lote.LineaInicial));
         Assert.Equal(3, lotes[1].Repeticiones);
         Assert.DoesNotContain("GO", lotes[1].Texto);
+    }
+
+    [Fact]
+    public void DividirEnLotes_SaltosDeLineaSoloRetornoDeCarro_SeparaSinFallar()
+    {
+        var lotes = new DivisorDeLotesTSql().DividirEnLotes("SELECT 1;\rGO\rSELECT 2;\rGO\r");
+
+        Assert.Equal(2, lotes.Count);
+        Assert.Equal([1, 3], lotes.Select(lote => lote.LineaInicial));
     }
 }

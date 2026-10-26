@@ -44,6 +44,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private readonly HistorialDeConsultas _historialDeConsultas;
     private readonly ServiciosDeDiseno _serviciosDeDiseno;
     private readonly ServicioDeMonitor _servicioDeMonitor;
+    private readonly ServicioDeEliminacionDeBaseDeDatos _servicioDeEliminacionDeBaseDeDatos;
     private int _contadorDeConsultasNuevas;
 
     public VentanaPrincipalModeloDeVista(
@@ -61,8 +62,10 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         ServicioDeFavoritos servicioDeFavoritos,
         ServiciosDeDiseno serviciosDeDiseno,
         ServicioDeMonitor servicioDeMonitor,
+        ServicioDeEliminacionDeBaseDeDatos servicioDeEliminacionDeBaseDeDatos,
         ServicioDePreferencias servicioDePreferencias)
     {
+        _servicioDeEliminacionDeBaseDeDatos = servicioDeEliminacionDeBaseDeDatos;
         _servicioDeMonitor = servicioDeMonitor;
         _serviciosDeDiseno = serviciosDeDiseno;
         _historialDeConsultas = historialDeConsultas;
@@ -283,9 +286,17 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
 
         await CerrarSesionCorrectamenteAsync();
 
+        // Un fallo al liberar una conexión no debe impedir cerrar la aplicación
         foreach (var documento in Documentos)
         {
-            await documento.DisposeAsync();
+            try
+            {
+                await documento.DisposeAsync();
+            }
+            catch (Exception error)
+            {
+                _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Cerrar pestaña al salir"));
+            }
         }
 
         return true;
@@ -482,14 +493,67 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             return;
         }
 
-        var script = await _servicioDeExportacionDeBaseDeDatos.GenerarScriptCompletoAsync(
+        var resultado = await _servicioDeExportacionDeBaseDeDatos.GenerarScriptCompletoAsync(
             contexto.Servidor, baseDeDatos, opciones, CancellationToken.None);
 
-        await File.WriteAllTextAsync(ruta, script);
+        // Con BOM: sin él, sqlcmd y SSMS (según su configuración) leen el archivo como ANSI y las tildes y eñes
+        // de los datos llegan corruptas a la base de destino (N'año' -> N'aÃ±o')
+        await File.WriteAllTextAsync(ruta, resultado.Script, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+
+        var mensaje = $"La base de datos \"{baseDeDatos}\" se exportó a:\n{ruta}";
+
+        if (resultado.Advertencias.Count > 0)
+        {
+            mensaje += $"\n\nAtención: {resultado.Advertencias.Count} elemento(s) no se exportaron completos "
+                + "(también quedó anotado en el script):\n- " + string.Join("\n- ", resultado.Advertencias);
+        }
 
         await _servicioDeDialogos.MostrarInformacionAsync(
-            "Exportación completa",
-            $"La base de datos \"{baseDeDatos}\" se exportó a:\n{ruta}");
+            resultado.Advertencias.Count > 0 ? "Exportación con advertencias" : "Exportación completa",
+            mensaje);
+    }
+
+    public async Task EliminarBaseDeDatosAsync(ContextoDelNodo contexto)
+    {
+        const string Titulo = "Eliminar base de datos";
+        var servidor = contexto.Servidor;
+        var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
+
+        if (ServicioDeEliminacionDeBaseDeDatos.EsBaseDelSistema(baseDeDatos))
+        {
+            await _servicioDeDialogos.MostrarInformacionAsync(Titulo, $"\"{baseDeDatos}\" es una base de datos del sistema y no se puede eliminar.");
+            return;
+        }
+
+        if (await _servicioDeDialogos.PedirOpcionesDeEliminacionAsync(baseDeDatos) is not { } opciones)
+        {
+            return;
+        }
+
+        // Las pestañas de consulta conservan su propia conexión en la base: se cierran antes del DROP para que
+        // no lo bloqueen y, después, abren una conexión nueva en master en lugar de fallar contra una base inexistente
+        var consultasEnLaBase = Documentos
+            .OfType<PestanaDeConsultaModeloDeVista>()
+            .Where(pestana => pestana.Servidor == servidor
+                && string.Equals(pestana.BaseDeDatosActual, baseDeDatos, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var pestana in consultasEnLaBase)
+        {
+            await pestana.SalirDeLaBaseDeDatosAsync();
+        }
+
+        await _servicioDeEliminacionDeBaseDeDatos.EliminarAsync(servidor, baseDeDatos, opciones, CancellationToken.None);
+
+        _serviciosDeConsulta.Autocompletado.InvalidarCatalogo(servidor, baseDeDatos);
+        await Explorador.ActualizarBasesDeDatosAsync(servidor);
+
+        foreach (var pestana in Documentos.OfType<PestanaDeConsultaModeloDeVista>().Where(pestana => pestana.Servidor == servidor))
+        {
+            await pestana.CargarBasesDeDatosAsync();
+        }
+
+        await _servicioDeDialogos.MostrarInformacionAsync(Titulo, $"La base de datos \"{baseDeDatos}\" se eliminó correctamente.");
     }
 
     public async Task MostrarRestauracionAsync(ContextoDelNodo contexto)

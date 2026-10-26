@@ -19,6 +19,13 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     public const int IndiceDePestanaDeMensajes = 1;
     public const int IndiceDePestanaDelPlan = 2;
 
+    // Cada conjunto se dibuja con su propia grilla (sin virtualizar): un script con un SELECT dentro de un bucle
+    // podía crear miles de grillas y congelar la aplicación. Los datos siguen completos en el resultado.
+    public const int MaximoDeConjuntosVisibles = 50;
+
+    // El modo texto arma una tabla alineada en memoria; con cientos de miles de filas congelaba la interfaz
+    public const int MaximoDeFilasEnTexto = 5000;
+
     private readonly IServicioDeExportacionDeResultados _servicioDeExportacion;
     private readonly IServicioDelSistemaOperativo _sistemaOperativo;
 
@@ -72,7 +79,11 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
 
     public bool MostrarTexto => MostrarComoTexto && !NoTieneConjuntos;
 
-    public string TextoDeResultados => ConstruirTexto();
+    /// <summary>
+    /// Solo se arma en modo texto: la vista lo enlaza siempre y, si no, cada ejecución
+    /// construía una tabla de texto con todas las filas aunque se estuviera viendo la grilla.
+    /// </summary>
+    public string TextoDeResultados => MostrarComoTexto ? ConstruirTexto() : string.Empty;
 
     partial void OnMostrarComoTextoChanged(bool value) => NotificarCambioDeConjuntos();
 
@@ -82,7 +93,7 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     {
         Limpiar();
 
-        foreach (var conjunto in resultado.ConjuntosDeResultados)
+        foreach (var conjunto in resultado.ConjuntosDeResultados.Take(MaximoDeConjuntosVisibles))
         {
             Conjuntos.Add(new ConjuntoDeResultadosModeloDeVista(conjunto, _servicioDeExportacion));
         }
@@ -90,6 +101,12 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
         foreach (var mensaje in resultado.Mensajes)
         {
             Mensajes.Add(mensaje);
+        }
+
+        if (resultado.ConjuntosDeResultados.Count > MaximoDeConjuntosVisibles)
+        {
+            Mensajes.Add(MensajeDeEjecucion.Advertencia(
+                $"La consulta devolvió {resultado.ConjuntosDeResultados.Count} conjuntos de resultados; se muestran los primeros {MaximoDeConjuntosVisibles}."));
         }
 
         Mensajes.Add(MensajeDeEjecucion.Informacion($"Hora de finalización: {DateTimeOffset.Now:yyyy-MM-ddTHH:mm:ss.fffzzz}"));
@@ -163,6 +180,7 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     {
         var columnas = conjunto.Columnas;
         var celdas = conjunto.Filas
+            .Take(MaximoDeFilasEnTexto)
             .Select(fila => fila.Select(TextoDeCelda).ToArray())
             .ToList();
 
@@ -182,6 +200,11 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
         foreach (var fila in celdas)
         {
             texto.AppendLine(string.Join(" ", fila.Select((valor, j) => valor.PadRight(anchos[j]))));
+        }
+
+        if (conjunto.CantidadDeFilas > MaximoDeFilasEnTexto)
+        {
+            texto.AppendLine(CultureInfo.InvariantCulture, $"... (se muestran las primeras {MaximoDeFilasEnTexto} filas; usa la grilla o exporta para verlas todas)");
         }
 
         texto.Append(CultureInfo.InvariantCulture, $"({conjunto.CantidadDeFilas} filas afectadas)");

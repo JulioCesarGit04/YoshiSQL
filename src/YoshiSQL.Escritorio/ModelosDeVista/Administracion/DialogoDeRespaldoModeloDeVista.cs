@@ -28,6 +28,7 @@ public sealed partial class DialogoDeRespaldoModeloDeVista : ModeloDeVistaBase
         BaseDeDatos = baseDeDatos;
         _servicioDeRespaldos = servicioDeRespaldos;
         _servicioDeErrores = servicioDeErrores;
+        Comprimir = ServicioDeRespaldos.AdmiteCompresion(servidor.Servidor.Edicion);
     }
 
     public string BaseDeDatos { get; }
@@ -47,7 +48,7 @@ public sealed partial class DialogoDeRespaldoModeloDeVista : ModeloDeVistaBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ScriptGenerado))]
-    public partial bool Comprimir { get; set; } = true;
+    public partial bool Comprimir { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ScriptGenerado))]

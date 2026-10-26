@@ -4,6 +4,7 @@ using System.Text;
 using System.Xml;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
+using YoshiSQL.Dominio.Errores;
 
 namespace YoshiSQL.Infraestructura.Exportacion;
 
@@ -18,12 +19,24 @@ public sealed class ExportadorExcel : IExportadorDeResultados
     private const int EstiloNormal = 0;
     private const int EstiloDeEncabezado = 1;
 
+    // Una hoja de Excel tiene como máximo 1.048.576 filas; la primera es el encabezado
+    private const int MaximoDeFilasDeDatos = 1_048_575;
+
+    // Excel guarda los números como double: más de 15 dígitos significativos se redondean (un ID bigint cambia)
+    private const int DigitosExactosEnExcel = 15;
+
     public FormatoDeExportacion Formato => FormatoDeExportacion.Excel;
 
     public string Extension => "xlsx";
 
     public async Task ExportarAsync(ConjuntoDeResultados conjunto, Stream destino, CancellationToken tokenDeCancelacion)
     {
+        if (conjunto.Filas.Count > MaximoDeFilasDeDatos)
+        {
+            throw new ErrorDeYoshiSql(
+                $"El resultado tiene {conjunto.Filas.Count:N0} filas y Excel admite como máximo {MaximoDeFilasDeDatos:N0}. Exporta a CSV para conservarlas todas.");
+        }
+
         await using var libro = new ZipArchive(destino, ZipArchiveMode.Create, leaveOpen: true);
 
         await EscribirParteAsync(libro, "[Content_Types].xml", TiposDeContenido);
@@ -88,7 +101,7 @@ public sealed class ExportadorExcel : IExportadorDeResultados
 
     private static void EscribirContenidoDeCelda(XmlWriter escritor, object valor)
     {
-        if (ConvertidorDeValoresATexto.EsNumero(valor))
+        if (ConvertidorDeValoresATexto.EsNumero(valor) && SeGuardaExactoEnExcel(valor))
         {
             escritor.WriteElementString("v", EspacioDeNombresDeLaHoja, ConvertidorDeValoresATexto.Convertir(valor));
             return;
@@ -108,6 +121,20 @@ public sealed class ExportadorExcel : IExportadorDeResultados
         escritor.WriteString(PrepararTexto(ConvertidorDeValoresATexto.Convertir(valor) ?? string.Empty));
         escritor.WriteEndElement();
         escritor.WriteEndElement();
+    }
+
+    /// <summary>
+    /// Los números con más de 15 dígitos significativos se escriben como texto para no perder ninguno.
+    /// </summary>
+    private static bool SeGuardaExactoEnExcel(object valor)
+    {
+        var digitos = ConvertidorDeValoresATexto.Convertir(valor)!
+            .TrimStart('-')
+            .Replace(".", string.Empty, StringComparison.Ordinal)
+            .TrimStart('0');
+
+        // double y float ya son aproximados: se dejan como número
+        return valor is double or float || digitos.TrimEnd('0').Length <= DigitosExactosEnExcel;
     }
 
     /// <summary>

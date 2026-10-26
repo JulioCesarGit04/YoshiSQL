@@ -1,10 +1,13 @@
+using System.Runtime.CompilerServices;
 using System.Xml;
 using Avalonia;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
+using AvaloniaEdit.Document;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using AvaloniaEdit.Search;
@@ -36,6 +39,12 @@ public sealed class EditorSql : TextEditor
     private static readonly Lazy<IHighlightingDefinition> ResaltadoClaro = new(() => CargarDefinicionDeResaltado(RecursoDeResaltadoClaro));
 
     private readonly SearchPanel _panelDeBusqueda;
+
+    // La misma vista se reutiliza para todas las pestañas de consulta: sin recordar el estado de cada documento,
+    // al volver a una pestaña el cursor y el desplazamiento quedaban al inicio y se perdía la selección
+    private readonly ConditionalWeakTable<TextDocument, EstadoDelDocumento> _estadosPorDocumento = new();
+    private TextDocument? _documentoMostrado;
+    private bool _estaRestaurando;
     private CompletionWindow? _ventanaDeSugerencias;
 
     public EditorSql()
@@ -49,7 +58,14 @@ public sealed class EditorSql : TextEditor
         Options.EnableHyperlinks = false;
         Options.EnableEmailHyperlinks = false;
 
-        TextArea.SelectionChanged += (_, _) => PublicarSeleccion();
+        TextArea.SelectionChanged += (_, _) =>
+        {
+            PublicarSeleccion();
+            RecordarEstadoDelDocumento();
+        };
+        TextArea.Caret.PositionChanged += (_, _) => RecordarEstadoDelDocumento();
+        TextArea.TextView.ScrollOffsetChanged += (_, _) => RecordarEstadoDelDocumento();
+        DocumentChanged += (_, _) => AlCambiarDeDocumento();
 
         // Panel de buscar y reemplazar incluido en AvaloniaEdit (Ctrl+F)
         _panelDeBusqueda = SearchPanel.Install(this);
@@ -317,8 +333,70 @@ public sealed class EditorSql : TextEditor
     private void PublicarSeleccion()
     {
         var segmento = TextArea.Selection.SurroundingSegment;
-        Seleccion = segmento is null ? RangoDeTexto.Vacio : new RangoDeTexto(segmento.Offset, segmento.Length);
+        Seleccion = segmento is null ? RangoDeTexto.Vacio : new RangoDeTexto(segmento.Offset, segmento.Length, Document);
     }
+
+    /// <summary>
+    /// Guarda cursor, selección y desplazamiento del documento visible. Mientras se cambia de documento
+    /// no se guarda nada: los eventos de ese momento traen el estado reiniciado, no el del usuario.
+    /// </summary>
+    private void RecordarEstadoDelDocumento()
+    {
+        if (_documentoMostrado is null || !ReferenceEquals(Document, _documentoMostrado) || _estaRestaurando)
+        {
+            return;
+        }
+
+        _estadosPorDocumento.AddOrUpdate(
+            _documentoMostrado,
+            new EstadoDelDocumento(CaretOffset, SelectionStart, SelectionLength, VerticalOffset, HorizontalOffset));
+    }
+
+    private void AlCambiarDeDocumento()
+    {
+        _documentoMostrado = Document;
+        PublicarSeleccion();
+
+        if (Document is not { } documento || !_estadosPorDocumento.TryGetValue(documento, out var estado))
+        {
+            return;
+        }
+
+        // Se restaura cuando la vista ya midió el nuevo documento; antes, el desplazamiento no tendría efecto
+        _estaRestaurando = true;
+        Dispatcher.UIThread.Post(() => RestaurarEstado(documento, estado), DispatcherPriority.Background);
+    }
+
+    private void RestaurarEstado(TextDocument documento, EstadoDelDocumento estado)
+    {
+        try
+        {
+            // El usuario pudo cambiar otra vez de pestaña antes de que llegara este momento
+            if (!ReferenceEquals(Document, documento))
+            {
+                return;
+            }
+
+            var largo = documento.TextLength;
+            var inicioDeSeleccion = Math.Min(estado.InicioDeSeleccion, largo);
+            Select(inicioDeSeleccion, Math.Min(estado.LargoDeSeleccion, largo - inicioDeSeleccion));
+            CaretOffset = Math.Min(estado.PosicionDelCursor, largo);
+            ScrollToVerticalOffset(estado.DesplazamientoVertical);
+            ScrollToHorizontalOffset(estado.DesplazamientoHorizontal);
+        }
+        finally
+        {
+            _estaRestaurando = false;
+            PublicarSeleccion();
+        }
+    }
+
+    private sealed record EstadoDelDocumento(
+        int PosicionDelCursor,
+        int InicioDeSeleccion,
+        int LargoDeSeleccion,
+        double DesplazamientoVertical,
+        double DesplazamientoHorizontal);
 
     // Los colores de sintaxis dependen del fondo: se cambian junto con el tema
     private void AplicarResaltadoDelTema() =>

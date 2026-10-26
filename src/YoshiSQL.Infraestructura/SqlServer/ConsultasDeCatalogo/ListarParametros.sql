@@ -5,6 +5,8 @@ SELECT
     CAST(CASE
         WHEN ty.name IN ('varchar', 'char', 'varbinary', 'binary') THEN p.max_length
         WHEN ty.name IN ('nvarchar', 'nchar') THEN IIF(p.max_length = -1, -1, p.max_length / 2)
+        -- Precisión de fracciones de segundo: datetime2(3), time(0)... sin ella se recreaban con la predeterminada (7)
+        WHEN ty.name IN ('datetime2', 'time', 'datetimeoffset') THEN p.scale
     END AS int) AS Longitud,
     CAST(IIF(ty.name IN ('decimal', 'numeric'), p.precision, NULL) AS int) AS Precision,
     CAST(IIF(ty.name IN ('decimal', 'numeric'), p.scale, NULL) AS int) AS Escala,

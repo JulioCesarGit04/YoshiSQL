@@ -20,8 +20,16 @@ public sealed class ServicioDeExportacion
         string rutaDelArchivo,
         CancellationToken tokenDeCancelacion)
     {
-        await using var archivo = File.Create(rutaDelArchivo);
-        await ObtenerExportador(formato).ExportarAsync(conjunto, archivo, tokenDeCancelacion);
+        var exportador = ObtenerExportador(formato);
+
+        // En otro hilo: con muchas filas, armar el archivo congelaba la interfaz (el conjunto ya no cambia)
+        await Task.Run(
+            async () =>
+            {
+                await using var archivo = File.Create(rutaDelArchivo);
+                await exportador.ExportarAsync(conjunto, archivo, tokenDeCancelacion);
+            },
+            tokenDeCancelacion);
     }
 
     /// <summary>

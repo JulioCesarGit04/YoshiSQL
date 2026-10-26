@@ -32,6 +32,8 @@ public interface IAccionesDelExplorador
 
     Task ExportarBaseDeDatosAsync(ContextoDelNodo contexto);
 
+    Task EliminarBaseDeDatosAsync(ContextoDelNodo contexto);
+
     Task MostrarRestauracionAsync(ContextoDelNodo contexto);
 
     Task DesconectarServidorAsync(ContextoDelNodo contexto);

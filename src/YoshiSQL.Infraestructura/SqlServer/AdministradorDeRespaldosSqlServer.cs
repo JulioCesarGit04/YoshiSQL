@@ -14,6 +14,9 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
     private const int PorcentajeDeAvance = 10;
     private const char TipoDeArchivoDeRegistro = 'L';
 
+    // Valor de la columna BackupType de RESTORE HEADERONLY para un respaldo completo de la base
+    private const int TipoDeRespaldoCompleto = 1;
+
     public async Task<CarpetasDelServidor> ObtenerCarpetasDelServidorAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion)
     {
         var carpetas = await ExploradorDeEsquemaSqlServer.LeerFilasAsync(
@@ -38,10 +41,10 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
                 ConstructorDeCadenaDeConexion.Construir(datosDeAcceso, PerfilDeConexion.BaseDeDatosDelSistema, usarPoolDeConexiones: true));
             await conexion.OpenAsync(tokenDeCancelacion);
 
-            var (baseDeDatos, fecha) = await LeerEncabezadoAsync(conexion, rutaDelArchivo, tokenDeCancelacion);
-            var archivos = await LeerArchivosAsync(conexion, rutaDelArchivo, tokenDeCancelacion);
+            var (encabezado, cantidadDeRespaldos) = await LeerEncabezadoAsync(conexion, rutaDelArchivo, tokenDeCancelacion);
+            var archivos = await LeerArchivosAsync(conexion, rutaDelArchivo, encabezado.Posicion, tokenDeCancelacion);
 
-            return new InformacionDelRespaldo(baseDeDatos, fecha, archivos);
+            return new InformacionDelRespaldo(encabezado.BaseDeDatos, encabezado.Fecha, archivos, encabezado.Posicion, cantidadDeRespaldos);
         }
         catch (SqlException excepcion)
         {
@@ -107,6 +110,8 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
             opcionesDelRestore.Add("REPLACE");
         }
 
+        // Sin FILE, RESTORE toma el primer respaldo del archivo, que es el más antiguo si se respaldó varias veces sin INIT
+        opcionesDelRestore.Insert(0, $"FILE = {opciones.PosicionEnElArchivo}");
         opcionesDelRestore.Add($"STATS = {PorcentajeDeAvance}");
 
         script.AppendLine($"RESTORE DATABASE {destino}")
@@ -153,28 +158,47 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
         return $"{carpeta.TrimEnd('/', '\\')}{separador}{nombreDelArchivo}";
     }
 
-    private static async Task<(string BaseDeDatos, DateTime Fecha)> LeerEncabezadoAsync(
+    /// <summary>
+    /// Un .bak puede tener varios respaldos (si se respaldó sin INIT). Se elige el respaldo completo más reciente;
+    /// si no hay ninguno completo, el último del archivo.
+    /// </summary>
+    private static async Task<(EncabezadoDeRespaldo Elegido, int Cantidad)> LeerEncabezadoAsync(
         SqlConnection conexion,
         string rutaDelArchivo,
         CancellationToken tokenDeCancelacion)
     {
         await using var comando = CrearComandoDeLectura(conexion, "RESTORE HEADERONLY FROM DISK = @ruta;", rutaDelArchivo);
         await using var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
+        var encabezados = new List<EncabezadoDeRespaldo>();
 
-        if (!await lector.ReadAsync(tokenDeCancelacion))
+        while (await lector.ReadAsync(tokenDeCancelacion))
+        {
+            encabezados.Add(new EncabezadoDeRespaldo(
+                Convert.ToInt32(lector.GetValue(lector.GetOrdinal("Position")), System.Globalization.CultureInfo.InvariantCulture),
+                Convert.ToInt32(lector.GetValue(lector.GetOrdinal("BackupType")), System.Globalization.CultureInfo.InvariantCulture),
+                lector.GetString(lector.GetOrdinal("DatabaseName")),
+                lector.GetDateTime(lector.GetOrdinal("BackupFinishDate"))));
+        }
+
+        if (encabezados.Count == 0)
         {
             throw new ErrorDeYoshiSql("El archivo no contiene ningún respaldo.");
         }
 
-        return (lector.GetString(lector.GetOrdinal("DatabaseName")), lector.GetDateTime(lector.GetOrdinal("BackupFinishDate")));
+        var elegido = encabezados.LastOrDefault(encabezado => encabezado.Tipo == TipoDeRespaldoCompleto) ?? encabezados[^1];
+        return (elegido, encabezados.Count);
     }
+
+    private sealed record EncabezadoDeRespaldo(int Posicion, int Tipo, string BaseDeDatos, DateTime Fecha);
 
     private static async Task<List<ArchivoDelRespaldo>> LeerArchivosAsync(
         SqlConnection conexion,
         string rutaDelArchivo,
+        int posicionEnElArchivo,
         CancellationToken tokenDeCancelacion)
     {
-        await using var comando = CrearComandoDeLectura(conexion, "RESTORE FILELISTONLY FROM DISK = @ruta;", rutaDelArchivo);
+        await using var comando = CrearComandoDeLectura(conexion, "RESTORE FILELISTONLY FROM DISK = @ruta WITH FILE = @posicion;", rutaDelArchivo);
+        comando.Parameters.AddWithValue("@posicion", posicionEnElArchivo);
         await using var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
         var archivos = new List<ArchivoDelRespaldo>();
 

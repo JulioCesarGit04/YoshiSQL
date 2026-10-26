@@ -24,9 +24,14 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     private int _lineaInicialDelLoteActual = 1;
     private int _ejecucionEnCurso;
 
+    // La base en uso (por USE o por la lista de bases). Si se cae la conexión, al reabrir se vuelve a ella:
+    // la cadena de conexión solo conoce la base inicial y el script se ejecutaría en otra base sin avisar.
+    private string _baseDeDatosEnUso;
+
     private SesionDeConsultaSqlServer(SqlConnection conexion)
     {
         _conexion = conexion;
+        _baseDeDatosEnUso = conexion.Database;
         // Así los errores leves llegan como mensajes y el lote sigue, como en SSMS
         _conexion.FireInfoMessageEventOnUserErrors = true;
         _conexion.InfoMessage += RegistrarMensajeDelServidor;
@@ -177,10 +182,17 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
 
     public async Task CambiarBaseDeDatosAsync(string baseDeDatos, CancellationToken tokenDeCancelacion)
     {
+        // La conexión está ocupada con la consulta; cambiarla ahora fallaría con un error confuso de SqlClient
+        if (EstaEjecutando)
+        {
+            throw new ErrorDeEjecucion("Espera a que termine la consulta para cambiar de base de datos.");
+        }
+
         try
         {
             await ReabrirSiSePerdioLaConexionAsync(tokenDeCancelacion);
             await _conexion.ChangeDatabaseAsync(baseDeDatos, tokenDeCancelacion);
+            _baseDeDatosEnUso = baseDeDatos;
         }
         catch (SqlException excepcion)
         {
@@ -363,6 +375,11 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
 
         var baseDeDatosAlTerminar = _conexion.State == ConnectionState.Open ? _conexion.Database : string.Empty;
 
+        if (!string.IsNullOrEmpty(baseDeDatosAlTerminar))
+        {
+            _baseDeDatosEnUso = baseDeDatosAlTerminar;
+        }
+
         return new ResultadoDeEjecucion(estadoFinal, conjuntosDeResultados, mensajes, duracion, baseDeDatosAlTerminar);
     }
 
@@ -377,6 +394,11 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
         {
             await _conexion.CloseAsync();
             await _conexion.OpenAsync(tokenDeCancelacion);
+
+            if (!string.Equals(_conexion.Database, _baseDeDatosEnUso, StringComparison.OrdinalIgnoreCase))
+            {
+                await _conexion.ChangeDatabaseAsync(_baseDeDatosEnUso, tokenDeCancelacion);
+            }
         }
         catch (SqlException excepcion)
         {

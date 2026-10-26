@@ -18,6 +18,13 @@ internal static class ConvertidorDeValoresDeEdicion
 
     private static readonly CultureInfo Invariante = CultureInfo.InvariantCulture;
 
+    // Sin separador de miles: con él, "10,5" (decimal escrito en español) se leía como 105 y se guardaba mal
+    private const NumberStyles EstiloDecimal =
+        NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint;
+
+    private const string SugerenciaDecimal = " Usa punto como separador decimal y sin separador de miles (ej. 1234.56).";
+    private const string SugerenciaDeFecha = " Usa el formato año-mes-día (ej. 2026-01-05 13:45).";
+
     /// <param name="valor">Texto escrito por el usuario, el valor original sin cambios, o nulo para NULL.</param>
     public static object? Convertir(object? valor, Columna columna)
     {
@@ -33,9 +40,9 @@ internal static class ConvertidorDeValoresDeEdicion
             return nombreDelTipo.ToLowerInvariant() switch
             {
                 var tipo when TiposEnteros.Contains(tipo) => long.Parse(texto, NumberStyles.Integer, Invariante),
-                var tipo when TiposDecimales.Contains(tipo) => decimal.Parse(texto, NumberStyles.Number, Invariante),
+                var tipo when TiposDecimales.Contains(tipo) => decimal.Parse(texto, EstiloDecimal, Invariante),
                 var tipo when TiposDeComaFlotante.Contains(tipo) => double.Parse(texto, NumberStyles.Float, Invariante),
-                var tipo when TiposDeFecha.Contains(tipo) => DateTime.Parse(texto, Invariante),
+                var tipo when TiposDeFecha.Contains(tipo) => ConvertirFecha(texto),
                 var tipo when TiposBinarios.Contains(tipo) => ConvertirBinario(texto),
                 "bit" => ConvertirBooleano(texto),
                 "datetimeoffset" => DateTimeOffset.Parse(texto, Invariante),
@@ -46,9 +53,23 @@ internal static class ConvertidorDeValoresDeEdicion
         }
         catch (Exception error) when (error is FormatException or OverflowException)
         {
-            throw new ErrorDeYoshiSql($"El valor \"{texto}\" no es válido para la columna {columna.Nombre} ({columna.TipoDeDato.Describir()}).", error);
+            throw new ErrorDeYoshiSql(
+                $"El valor \"{texto}\" no es válido para la columna {columna.Nombre} ({columna.TipoDeDato.Describir()}).{SugerirFormato(nombreDelTipo)}",
+                error);
         }
     }
+
+    private static string SugerirFormato(string nombreDelTipo) =>
+        TiposDecimales.Contains(nombreDelTipo) || TiposDeComaFlotante.Contains(nombreDelTipo) ? SugerenciaDecimal
+        : TiposDeFecha.Contains(nombreDelTipo) || nombreDelTipo.Equals("datetimeoffset", StringComparison.OrdinalIgnoreCase) ? SugerenciaDeFecha
+        : string.Empty;
+
+    /// <summary>
+    /// "05/01/2026" es el 5 de enero para quien escribe en español y el 1 de mayo para la cultura invariante:
+    /// en vez de adivinar (y guardar otra fecha sin avisar), se rechaza y se pide el formato año-mes-día.
+    /// </summary>
+    private static DateTime ConvertirFecha(string texto) =>
+        texto.Contains('/') ? throw new FormatException() : DateTime.Parse(texto, Invariante);
 
     private static bool ConvertirBooleano(string texto) => texto.Trim().ToLowerInvariant() switch
     {

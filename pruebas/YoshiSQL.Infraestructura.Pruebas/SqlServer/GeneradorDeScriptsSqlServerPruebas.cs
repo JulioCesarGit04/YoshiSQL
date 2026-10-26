@@ -167,7 +167,7 @@ public class GeneradorDeScriptsSqlServerPruebas
 
         var script = _generador.GenerarInsertDeFilas(new Tabla("dbo", "Variado"), columnas, [fila]);
 
-        Assert.Contains("'2026-01-05 10:30:00.000'", script);
+        Assert.Contains("'2026-01-05T10:30:00.000'", script);
         Assert.Contains("'f47ac10b-58cc-4372-a567-0e02b2c3d479'", script);
         Assert.Contains("0xDEAD", script);
         Assert.Contains("12.5", script);
@@ -249,5 +249,117 @@ public class GeneracionDeModificacionPruebas
         var script = _generador.GenerarModificacionDesdeDefinicion("Ventas", "CREATE OR ALTER VIEW dbo.V AS SELECT 1 AS Uno");
 
         Assert.Contains("CREATE OR ALTER VIEW", script);
+    }
+
+    [Fact]
+    public void GenerarEliminacionDeBaseDeDatos_CerrandoConexiones_VuelveAMultiUserSiElDropFalla()
+    {
+        var opciones = new OpcionesDeEliminacionDeBaseDeDatos(CerrarConexionesExistentes: true, EliminarHistorialDeRespaldos: false);
+
+        var script = _generador.GenerarEliminacionDeBaseDeDatos("Ventas", opciones);
+
+        Assert.Contains("USE [master];", script);
+        Assert.Contains("ALTER DATABASE [Ventas] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;", script);
+        Assert.Contains("DROP DATABASE [Ventas];", script);
+        Assert.Contains("ALTER DATABASE [Ventas] SET MULTI_USER;", script);
+        Assert.Contains("THROW;", script);
+        Assert.DoesNotContain("sp_delete_database_backuphistory", script);
+    }
+
+    [Fact]
+    public void GenerarEliminacionDeBaseDeDatos_SinCerrarConexiones_SoloHaceDrop()
+    {
+        var opciones = new OpcionesDeEliminacionDeBaseDeDatos(CerrarConexionesExistentes: false, EliminarHistorialDeRespaldos: false);
+
+        var script = _generador.GenerarEliminacionDeBaseDeDatos("Ventas", opciones);
+
+        Assert.Contains("DROP DATABASE [Ventas];", script);
+        Assert.DoesNotContain("SINGLE_USER", script);
+    }
+
+    [Fact]
+    public void GenerarEliminacionDeBaseDeDatos_ConHistorialYNombreConComilla_EscapaNombreYTexto()
+    {
+        var opciones = new OpcionesDeEliminacionDeBaseDeDatos(CerrarConexionesExistentes: true, EliminarHistorialDeRespaldos: true);
+
+        var script = _generador.GenerarEliminacionDeBaseDeDatos("O'Brien]DB", opciones);
+
+        Assert.Contains("@database_name = N'O''Brien]DB';", script);
+        Assert.Contains("DROP DATABASE [O'Brien]]DB];", script);
+        Assert.Contains("DB_ID(N'O''Brien]DB')", script);
+    }
+
+    [Fact]
+    public void GenerarEliminacionDeBaseDeDatos_SeDivideEnLotesQueEmpiezanEnMaster()
+    {
+        var opciones = new OpcionesDeEliminacionDeBaseDeDatos(CerrarConexionesExistentes: true, EliminarHistorialDeRespaldos: true);
+
+        var lotes = new DivisorDeLotesTSql().DividirEnLotes(_generador.GenerarEliminacionDeBaseDeDatos("Ventas", opciones));
+
+        Assert.Equal(3, lotes.Count);
+        Assert.StartsWith("USE [master];", lotes[0].Texto, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenerarInsertDeFilas_ColumnasCalculadasYRowversion_SeOmiten()
+    {
+        Columna[] columnas =
+        [
+            new("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: false, Posicion: 1),
+            new("Version", new TipoDeDato("rowversion"), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 2),
+            new("Total", new TipoDeDato("int"), AdmiteNulos: true, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 3, EsCalculada: true),
+            new("Nombre", new TipoDeDato("nvarchar", 50), AdmiteNulos: true, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 4)
+        ];
+
+        var script = _generador.GenerarInsertDeFilas(new Tabla("dbo", "T"), columnas, [[1, new byte[] { 0, 1 }, 10, "Ana"]]);
+
+        Assert.Contains("INSERT INTO [dbo].[T] ([Id], [Nombre]) VALUES (1, N'Ana');", script);
+    }
+
+    [Fact]
+    public void GenerarCreacionDeEsquema_EsCondicionalYEscapaElNombre()
+    {
+        var script = _generador.GenerarCreacionDeEsquema("Ven'tas");
+
+        Assert.Equal("IF SCHEMA_ID(N'Ven''tas') IS NULL EXEC(N'CREATE SCHEMA [Ven''tas]');", script);
+    }
+
+    [Fact]
+    public void GenerarCreacionDeTipo_AliasConLongitud()
+    {
+        var tipo = new TipoDeUsuario("dbo", "Name", new TipoDeDato("nvarchar", 50), AdmiteNulos: false);
+
+        var script = _generador.GenerarCreacionDeTipo(tipo);
+
+        Assert.Contains("IF TYPE_ID(N'[dbo].[Name]') IS NULL", script);
+        Assert.Contains("CREATE TYPE [dbo].[Name] FROM nvarchar(50) NOT NULL;", script);
+    }
+
+    [Fact]
+    public void GenerarCreacionDeTablaSinEnvolver_ConLlavePrimariaReal_UsaSuNombreOrdenYTipoDeIndice()
+    {
+        Columna[] columnas =
+        [
+            new("A", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: false, Posicion: 1),
+            new("B", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: false, Posicion: 2)
+        ];
+        var llave = new Indice("PK_Ventas_Detalle", EsUnico: true, EsLlavePrimaria: true, EsAgrupado: false, ["B", "A"]);
+
+        var script = _generador.GenerarCreacionDeTablaSinEnvolver(new Tabla("ventas", "Detalle"), columnas, llave);
+
+        Assert.Contains("CONSTRAINT [PK_Ventas_Detalle] PRIMARY KEY NONCLUSTERED ([B], [A])", script);
+    }
+
+    [Fact]
+    public void GenerarCreacionDeTablaSinEnvolver_SinLlaveConocida_LaDeduceDeLasColumnas()
+    {
+        Columna[] columnas =
+        [
+            new("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: true, Posicion: 1)
+        ];
+
+        var script = _generador.GenerarCreacionDeTablaSinEnvolver(new Tabla("dbo", "Clientes"), columnas);
+
+        Assert.Contains("CONSTRAINT [PK_Clientes] PRIMARY KEY ([Id])", script);
     }
 }

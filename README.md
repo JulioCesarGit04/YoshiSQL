@@ -35,6 +35,7 @@ Hecho con **C#, .NET 10 y Avalonia UI**. Todas sus dependencias son de código a
 ### Administración
 - **Monitor de actividad**: sesiones conectadas, consultas en ejecución, bloqueos y opción de terminar un proceso.
 - **Respaldo y restauración** de bases de datos con asistentes.
+- **Eliminar base de datos** (clic derecho → "Eliminar..."), como en SSMS: opción de cerrar las conexiones existentes y de borrar el historial de respaldos; pide escribir el nombre de la base para confirmar.
 - **Plan de ejecución** estimado y real, mostrado como un árbol con el costo de cada paso y advertencias como índices faltantes.
 - **Salud de la base**: una pantalla con el resumen (tablas, filas, tamaño), las tablas más pesadas y los índices más fragmentados.
 - **Estadísticas de IO y tiempo** (`SET STATISTICS`), **visor del log de errores del servidor** y **fragmentación de índices** con reconstruir/reorganizar.
@@ -170,5 +171,5 @@ Pendiente:
 - [.NET 10](https://dotnet.microsoft.com/) y C#
 - [Avalonia UI](https://avaloniaui.net/) y [AvaloniaEdit](https://github.com/AvaloniaUI/AvaloniaEdit) para la interfaz y el editor
 - [Microsoft.Data.SqlClient](https://github.com/dotnet/SqlClient) para conectarse a SQL Server
-- [ScriptDom](https://github.com/microsoft/SqlScriptDOM), el analizador oficial de T-SQL, para dividir lotes, formatear y autocompletar
+- [ScriptDom](https://github.com/microsoft/SqlScriptDOM), el analizador oficial de T-SQL, para formatear y autocompletar
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) y [Serilog](https://serilog.net/)

@@ -12,6 +12,8 @@ public sealed record MensajeDeEjecucion(TipoDeMensaje Tipo, string Texto, int? N
 
     public static MensajeDeEjecucion Informacion(string texto) => new(TipoDeMensaje.Informacion, texto);
 
+    public static MensajeDeEjecucion Advertencia(string texto) => new(TipoDeMensaje.Advertencia, texto);
+
     public static MensajeDeEjecucion Error(string texto, int? numeroDeLinea = null) =>
         new(TipoDeMensaje.Error, texto, numeroDeLinea);
 }

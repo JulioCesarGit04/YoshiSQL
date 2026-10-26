@@ -139,7 +139,9 @@ public sealed partial class VentanaPrincipalModeloDeVista
     }
 
     /// <summary>
-    /// Reconecta con la contraseña guardada; si no es posible, abre la ventana de conexión con ese servidor.
+    /// Abre la ventana de conexión con ese servidor ya elegido: nunca se conecta sin que el usuario pulse "Conectar".
+    /// Antes se reconectaba solo con la contraseña guardada, y al abrir YoshiSQL el servidor ya aparecía conectado
+    /// con todas sus acciones (incluida eliminar bases) sin que el usuario lo hubiera pedido.
     /// </summary>
     private async Task<ServidorConectado?> ReconectarParaRestaurarAsync(Guid idDelPerfil)
     {
@@ -150,18 +152,7 @@ public sealed partial class VentanaPrincipalModeloDeVista
             return null;
         }
 
-        ServidorConectado? servidor = null;
-
-        try
-        {
-            servidor = await _servicioDeSesion.ReconectarSinPreguntarAsync(perfil, CancellationToken.None);
-        }
-        catch (Exception error)
-        {
-            _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Reconectar al restaurar la sesión", perfil.NombreVisible));
-        }
-
-        servidor ??= await _servicioDeDialogos.MostrarDialogoDeConexionAsync(perfil);
+        var servidor = await _servicioDeDialogos.MostrarDialogoDeConexionAsync(perfil);
 
         if (servidor is not null)
         {

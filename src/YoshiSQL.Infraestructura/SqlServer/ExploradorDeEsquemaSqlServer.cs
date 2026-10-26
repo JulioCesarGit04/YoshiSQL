@@ -9,6 +9,10 @@ namespace YoshiSQL.Infraestructura.SqlServer;
 
 public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
 {
+    // El análisis de salud (sys.dm_db_index_physical_stats) recorre todos los índices y en bases grandes
+    // supera los 30 s predeterminados de SqlClient; el panel fallaba siempre con "tardó demasiado"
+    private const int SegundosParaAnalisisPesados = 600;
+
     public async Task<Servidor> ObtenerServidorAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion)
     {
         var servidores = await LeerFilasAsync(
@@ -255,17 +259,20 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
         var resumen = await LeerFilasAsync(
             datosDeAcceso, baseDeDatos, "SaludResumen", parametros: [],
             lector => new ResumenDeSalud(lector.GetInt32(0), lector.GetInt64(1), lector.GetInt64(2), lector.GetInt64(3)),
-            tokenDeCancelacion);
+            tokenDeCancelacion,
+            SegundosParaAnalisisPesados);
 
         var tablasPesadas = await LeerFilasAsync(
             datosDeAcceso, baseDeDatos, "SaludTablasPesadas", parametros: [],
             lector => new TablaPesada(lector.GetString(0), lector.GetInt64(1), lector.GetInt64(2)),
-            tokenDeCancelacion);
+            tokenDeCancelacion,
+            SegundosParaAnalisisPesados);
 
         var indicesFragmentados = await LeerFilasAsync(
             datosDeAcceso, baseDeDatos, "SaludIndicesFragmentados", parametros: [],
             lector => new IndiceFragmentado(lector.GetString(0), lector.GetString(1), lector.GetDouble(2), lector.GetInt64(3)),
-            tokenDeCancelacion);
+            tokenDeCancelacion,
+            SegundosParaAnalisisPesados);
 
         return new SaludDeLaBaseDeDatos(
             resumen.Count > 0 ? resumen[0] : new ResumenDeSalud(0, 0, 0, 0),
@@ -349,6 +356,32 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             .ToList();
     }
 
+    public Task<IReadOnlyList<string>> ObtenerEsquemasDeUsuarioAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarEsquemasDeUsuario", parametros: [],
+            lector => lector.GetString(0),
+            tokenDeCancelacion);
+
+    public Task<IReadOnlyList<TipoDeUsuario>> ObtenerTiposDeUsuarioAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarTiposDeUsuario", parametros: [],
+            lector => new TipoDeUsuario(
+                Esquema: lector.GetString(0),
+                Nombre: lector.GetString(1),
+                TipoBase: new TipoDeDato(
+                    lector.GetString(2),
+                    LeerEnteroOpcional(lector, 3),
+                    LeerEnteroOpcional(lector, 4),
+                    LeerEnteroOpcional(lector, 5)),
+                AdmiteNulos: lector.GetBoolean(6)),
+            tokenDeCancelacion);
+
     /// <param name="posicionInicial">Posición en la fila donde empiezan los datos de la columna.</param>
     private static Columna LeerColumna(SqlDataReader lector, int posicionInicial)
     {
@@ -364,7 +397,8 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             AdmiteNulos: lector.GetBoolean(posicionInicial + 5),
             EsLlavePrimaria: lector.GetBoolean(posicionInicial + 6),
             EsIdentidad: lector.GetBoolean(posicionInicial + 7),
-            Posicion: lector.GetInt32(posicionInicial + 8));
+            Posicion: lector.GetInt32(posicionInicial + 8),
+            EsCalculada: lector.GetBoolean(posicionInicial + 9));
     }
 
     private static int? LeerEnteroOpcional(SqlDataReader lector, int posicion) =>
@@ -382,7 +416,8 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
         string nombreDeLaConsulta,
         SqlParameter[] parametros,
         Func<SqlDataReader, T> convertirFila,
-        CancellationToken tokenDeCancelacion)
+        CancellationToken tokenDeCancelacion,
+        int? segundosDeEspera = null)
     {
         try
         {
@@ -392,6 +427,11 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
 
             await using var comando = new SqlCommand(LectorDeConsultasDeCatalogo.Leer(nombreDeLaConsulta), conexion);
             comando.Parameters.AddRange(parametros);
+
+            if (segundosDeEspera is int segundos)
+            {
+                comando.CommandTimeout = segundos;
+            }
 
             await using var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
             var filas = new List<T>();

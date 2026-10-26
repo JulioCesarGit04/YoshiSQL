@@ -38,7 +38,13 @@ public sealed partial class DialogoDeRestauracionModeloDeVista : ModeloDeVistaBa
 
     public string DescripcionDelRespaldo => InformacionDelRespaldo is { } informacion
         ? $"Contiene la base \"{informacion.BaseDeDatosOriginal}\" respaldada el {informacion.FechaDelRespaldo:dd/MM/yyyy HH:mm} ({informacion.Archivos.Count} archivos)."
+            + DescribirVariosRespaldos(informacion)
         : "Escribe la ruta del archivo .bak en el servidor y pulsa \"Leer respaldo\".";
+
+    private static string DescribirVariosRespaldos(InformacionDelRespaldo informacion) =>
+        informacion.CantidadDeRespaldosEnElArchivo > 1
+            ? $"\nEl archivo tiene {informacion.CantidadDeRespaldosEnElArchivo} respaldos; se restaurará el completo más reciente (número {informacion.PosicionEnElArchivo})."
+            : string.Empty;
 
     public string ScriptGenerado => CrearOpciones() is { } opciones ? _servicioDeRespaldos.GenerarScriptDeRestauracion(opciones) : string.Empty;
 
@@ -164,7 +170,8 @@ public sealed partial class DialogoDeRestauracionModeloDeVista : ModeloDeVistaBa
                 CerrarConexionesExistentes,
                 InformacionDelRespaldo.Archivos,
                 _carpetasDelServidor.Datos,
-                _carpetasDelServidor.Registros);
+                _carpetasDelServidor.Registros,
+                InformacionDelRespaldo.PosicionEnElArchivo);
 
     private ContextoDeError CrearContextoDeError(string accion) =>
         new(accion, _servidor.Perfil.NombreVisible, BaseDeDatosDestino);

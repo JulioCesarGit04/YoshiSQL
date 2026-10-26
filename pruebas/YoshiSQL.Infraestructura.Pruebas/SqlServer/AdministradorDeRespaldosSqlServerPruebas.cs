@@ -50,5 +50,24 @@ public class AdministradorDeRespaldosSqlServerPruebas
         Assert.Contains("MOVE N'Ventas_log' TO N'/var/opt/mssql/data/VentasCopia_log.ldf'", script);
         Assert.Contains("REPLACE", script);
         Assert.Contains("ALTER DATABASE [VentasCopia] SET MULTI_USER;", script);
+        Assert.Contains("FILE = 1", script);
+    }
+
+    [Fact]
+    public void GenerarScriptDeRestauracion_ArchivoConVariosRespaldos_RestauraElElegido()
+    {
+        var opciones = new OpcionesDeRestauracion(
+            "/var/opt/mssql/data/Ventas.bak",
+            "Ventas",
+            Reemplazar: false,
+            CerrarConexionesExistentes: false,
+            [new ArchivoDelRespaldo("Ventas", "/datos/Ventas.mdf", EsDeRegistro: false)],
+            CarpetaDeDatos: "/var/opt/mssql/data",
+            CarpetaDeRegistros: "/var/opt/mssql/data",
+            PosicionEnElArchivo: 3);
+
+        var script = _administrador.GenerarScriptDeRestauracion(opciones);
+
+        Assert.Contains("WITH FILE = 3,", script);
     }
 }

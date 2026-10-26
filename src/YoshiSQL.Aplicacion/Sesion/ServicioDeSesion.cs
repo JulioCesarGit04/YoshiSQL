@@ -1,4 +1,3 @@
-using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Sesion;
@@ -12,16 +11,13 @@ public sealed class ServicioDeSesion
 {
     private readonly IRepositorioDeSesion _repositorioDeSesion;
     private readonly IRepositorioDeConexiones _repositorioDeConexiones;
-    private readonly ServicioDeConexiones _servicioDeConexiones;
 
     public ServicioDeSesion(
         IRepositorioDeSesion repositorioDeSesion,
-        IRepositorioDeConexiones repositorioDeConexiones,
-        ServicioDeConexiones servicioDeConexiones)
+        IRepositorioDeConexiones repositorioDeConexiones)
     {
         _repositorioDeSesion = repositorioDeSesion;
         _repositorioDeConexiones = repositorioDeConexiones;
-        _servicioDeConexiones = servicioDeConexiones;
     }
 
     public async Task<SesionAnterior> IniciarAsync(CancellationToken tokenDeCancelacion)
@@ -44,22 +40,6 @@ public sealed class ServicioDeSesion
     {
         var perfiles = await _repositorioDeConexiones.ObtenerTodosAsync(tokenDeCancelacion);
         return perfiles.FirstOrDefault(perfil => perfil.Id == idDelPerfil);
-    }
-
-    /// <summary>
-    /// Intenta reconectar con la contraseña guardada, sin preguntarle nada al usuario.
-    /// </summary>
-    /// <returns>El servidor conectado, o nulo si no hay contraseña guardada o el servidor no responde.</returns>
-    public async Task<ServidorConectado?> ReconectarSinPreguntarAsync(PerfilDeConexion perfil, CancellationToken tokenDeCancelacion)
-    {
-        var contrasena = await _servicioDeConexiones.ObtenerContrasenaGuardadaAsync(perfil, tokenDeCancelacion);
-
-        if (contrasena is null && perfil.TipoDeAutenticacion == TipoDeAutenticacion.SqlServer)
-        {
-            return null;
-        }
-
-        return await _servicioDeConexiones.ConectarAsync(perfil, contrasena ?? string.Empty, tokenDeCancelacion);
     }
 
     public Task<string> GuardarScriptsRecuperadosAsync(IReadOnlyList<PestanaGuardada> pestanas, CancellationToken tokenDeCancelacion) =>

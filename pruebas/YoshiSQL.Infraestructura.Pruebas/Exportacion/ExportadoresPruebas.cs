@@ -63,6 +63,28 @@ public class ExportadoresPruebas
         Assert.False(celdas.ContainsKey("C3"));
     }
 
+    [Fact]
+    public async Task ExportadorExcel_NumerosDeMasDe15Digitos_SeGuardanComoTextoSinPerderDigitos()
+    {
+        var conjunto = new ConjuntoDeResultados(
+            [new ColumnaDeResultado("Id", "bigint"), new ColumnaDeResultado("Monto", "decimal"), new ColumnaDeResultado("Corto", "int")],
+            [[1234567890123456789L, 12345678901234.5678m, 42]]);
+        using var memoria = new MemoryStream();
+
+        await new ExportadorExcel().ExportarAsync(conjunto, memoria, CancellationToken.None);
+
+        memoria.Position = 0;
+        using var libro = new ZipArchive(memoria, ZipArchiveMode.Read);
+        using var flujoDeLaHoja = libro.GetEntry("xl/worksheets/sheet1.xml")!.Open();
+        XNamespace principal = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        var celdas = XDocument.Load(flujoDeLaHoja).Descendants(principal + "c").ToDictionary(celda => (string)celda.Attribute("r")!);
+
+        Assert.Equal("inlineStr", (string?)celdas["A2"].Attribute("t"));
+        Assert.Equal("1234567890123456789", celdas["A2"].Value);
+        Assert.Equal("12345678901234.5678", celdas["B2"].Value);
+        Assert.Null(celdas["C2"].Attribute("t"));
+    }
+
     [Theory]
     [InlineData(0, "A")]
     [InlineData(25, "Z")]

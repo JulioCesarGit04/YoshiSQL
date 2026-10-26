@@ -6,7 +6,8 @@ public sealed record Columna(
     bool AdmiteNulos,
     bool EsLlavePrimaria,
     bool EsIdentidad,
-    int Posicion)
+    int Posicion,
+    bool EsCalculada = false)
 {
     /// <summary>
     /// Texto como lo muestra el explorador: "Id (PK, int, not null)".

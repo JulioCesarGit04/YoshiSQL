@@ -8,6 +8,7 @@ using YoshiSQL.Aplicacion.Consultas;
 using YoshiSQL.Aplicacion.Errores;
 using YoshiSQL.Aplicacion.Explorador;
 using YoshiSQL.Dominio.Autocompletado;
+using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Sesion;
@@ -155,6 +156,24 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
             _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Cargar la lista de bases de datos"));
             ReemplazarBasesDeDatosDisponibles([BaseDeDatosActual]);
         }
+    }
+
+    /// <summary>
+    /// Cierra la conexión de la pestaña y la pasa a master (por ejemplo, antes de eliminar su base de datos).
+    /// La próxima ejecución abre una conexión nueva en vez de intentar volver a una base que ya no existe.
+    /// </summary>
+    public async Task SalirDeLaBaseDeDatosAsync()
+    {
+        _cancelacionDeLaEjecucion?.Cancel();
+
+        if (_sesion is not null)
+        {
+            await _sesion.DisposeAsync();
+            _sesion = null;
+        }
+
+        AgregarBaseDeDatosSiNoExiste(PerfilDeConexion.BaseDeDatosDelSistema);
+        BaseDeDatosActual = PerfilDeConexion.BaseDeDatosDelSistema;
     }
 
     public void CargarTexto(string texto)
@@ -379,6 +398,7 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     private (int Inicio, int Longitud) ObtenerRangoAProcesar()
     {
         var seleccionEsValida = !Seleccion.EstaVacio
+            && ReferenceEquals(Seleccion.Documento, Documento)
             && Seleccion.Inicio + Seleccion.Longitud <= Documento.TextLength;
 
         return seleccionEsValida ? (Seleccion.Inicio, Seleccion.Longitud) : (0, Documento.TextLength);

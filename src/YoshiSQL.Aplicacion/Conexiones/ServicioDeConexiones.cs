@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Contratos;
 
@@ -8,15 +9,18 @@ public sealed class ServicioDeConexiones
     private readonly IProveedorDeBaseDeDatos _proveedor;
     private readonly IRepositorioDeConexiones _repositorioDeConexiones;
     private readonly IAlmacenDeCredenciales _almacenDeCredenciales;
+    private readonly ILogger<ServicioDeConexiones> _registro;
 
     public ServicioDeConexiones(
         IProveedorDeBaseDeDatos proveedor,
         IRepositorioDeConexiones repositorioDeConexiones,
-        IAlmacenDeCredenciales almacenDeCredenciales)
+        IAlmacenDeCredenciales almacenDeCredenciales,
+        ILogger<ServicioDeConexiones> registro)
     {
         _proveedor = proveedor;
         _repositorioDeConexiones = repositorioDeConexiones;
         _almacenDeCredenciales = almacenDeCredenciales;
+        _registro = registro;
     }
 
     public Task<IReadOnlyList<PerfilDeConexion>> ObtenerPerfilesGuardadosAsync(CancellationToken tokenDeCancelacion) =>
@@ -38,10 +42,26 @@ public sealed class ServicioDeConexiones
         await _proveedor.ProbarConexionAsync(datosDeAcceso, tokenDeCancelacion);
         var servidor = await _proveedor.Explorador.ObtenerServidorAsync(datosDeAcceso, tokenDeCancelacion);
 
-        await _repositorioDeConexiones.GuardarAsync(perfil, tokenDeCancelacion);
-        await GuardarOEliminarContrasenaAsync(perfil, contrasena, tokenDeCancelacion);
+        await RecordarParaLaProximaVezAsync(perfil, contrasena, tokenDeCancelacion);
 
         return new ServidorConectado(datosDeAcceso, servidor);
+    }
+
+    /// <summary>
+    /// Guardar el perfil y la contraseña es una comodidad: si falla (disco lleno, archivo dañado, DPAPI),
+    /// se registra y la conexión sigue. Antes ese error hacía fallar una conexión que ya había funcionado.
+    /// </summary>
+    private async Task RecordarParaLaProximaVezAsync(PerfilDeConexion perfil, string contrasena, CancellationToken tokenDeCancelacion)
+    {
+        try
+        {
+            await _repositorioDeConexiones.GuardarAsync(perfil, tokenDeCancelacion);
+            await GuardarOEliminarContrasenaAsync(perfil, contrasena, tokenDeCancelacion);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            _registro.LogWarning(error, "Se conectó a {Servidor}, pero no se pudo guardar la conexión para la próxima vez", perfil.NombreVisible);
+        }
     }
 
     public async Task EliminarPerfilAsync(PerfilDeConexion perfil, CancellationToken tokenDeCancelacion)

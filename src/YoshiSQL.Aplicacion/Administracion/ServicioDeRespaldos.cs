@@ -8,6 +8,9 @@ namespace YoshiSQL.Aplicacion.Administracion;
 
 public sealed class ServicioDeRespaldos
 {
+    // Ediciones de SQL Server que no permiten BACKUP ... WITH COMPRESSION
+    private static readonly string[] EdicionesSinCompresion = ["Express", "Web"];
+
     private readonly IProveedorDeBaseDeDatos _proveedor;
     private readonly TimeProvider _reloj;
 
@@ -33,6 +36,13 @@ public sealed class ServicioDeRespaldos
         return $"{carpetaDeRespaldos.TrimEnd('/', '\\')}{separador}{baseDeDatos}_{marcaDeTiempo}.bak";
     }
 
+    /// <summary>
+    /// Express y Web rechazan el respaldo comprimido: con la compresión activada por defecto,
+    /// respaldar fallaba siempre en las instalaciones Express (muy comunes en equipos de desarrollo).
+    /// </summary>
+    public static bool AdmiteCompresion(string edicionDelServidor) =>
+        !EdicionesSinCompresion.Any(edicion => edicionDelServidor.Contains(edicion, StringComparison.OrdinalIgnoreCase));
+
     public string GenerarScriptDeRespaldo(OpcionesDeRespaldo opciones) =>
         _proveedor.Respaldos.GenerarScriptDeRespaldo(opciones);
 
@@ -49,6 +59,11 @@ public sealed class ServicioDeRespaldos
         CancellationToken tokenDeCancelacion)
     {
         var lotes = _proveedor.DivisorDeLotes.DividirEnLotes(script);
+
+        // Las conexiones que el explorador deja abiertas para reutilizar siguen dentro de la base:
+        // sin liberarlas, restaurar encima de ella fallaba por "acceso exclusivo" a causa de la propia aplicación
+        _proveedor.Ejecutor.LiberarConexionesInactivas();
+
         await using var sesion = await _proveedor.Ejecutor.AbrirSesionAsync(
             servidor.DatosDeAcceso, Dominio.Conexiones.PerfilDeConexion.BaseDeDatosDelSistema, tokenDeCancelacion);
         var resultado = await sesion.EjecutarLotesAsync(lotes, tokenDeCancelacion);

@@ -73,6 +73,43 @@ public sealed class AlmacenDeCredencialesCifradoPruebas : IDisposable
         Assert.Null(await _almacen.ObtenerContrasenaAsync(idDelPerfil, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task GuardarContrasena_ArchivoDeCredencialesDanado_GuardaIgual()
+    {
+        var idDelPerfil = Guid.NewGuid();
+        await _almacen.GuardarContrasenaAsync(Guid.NewGuid(), "anterior", CancellationToken.None);
+        await File.WriteAllTextAsync(_rutas.ArchivoDeCredenciales, "{ dañado");
+
+        await _almacen.GuardarContrasenaAsync(idDelPerfil, "Clave$Segura123", CancellationToken.None);
+
+        Assert.Equal("Clave$Segura123", await _almacen.ObtenerContrasenaAsync(idDelPerfil, CancellationToken.None));
+        Assert.True(File.Exists(_rutas.ArchivoDeCredenciales + ".danado"));
+    }
+
+    [Fact]
+    public async Task GuardarContrasena_ClaveQueYaNoSePuedeLeer_CreaUnaNuevaYGuarda()
+    {
+        var idDelPerfil = Guid.NewGuid();
+        await _almacen.GuardarContrasenaAsync(Guid.NewGuid(), "anterior", CancellationToken.None);
+
+        // Una clave que no se puede desproteger (DPAPI de otro equipo) o con un tamaño inválido
+        await File.WriteAllBytesAsync(_rutas.ArchivoDeClave, [1, 2, 3, 4, 5]);
+
+        await _almacen.GuardarContrasenaAsync(idDelPerfil, "Clave$Segura123", CancellationToken.None);
+
+        Assert.Equal("Clave$Segura123", await _almacen.ObtenerContrasenaAsync(idDelPerfil, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ObtenerContrasena_ContenidoCifradoDanado_DevuelveNulo()
+    {
+        var idDelPerfil = Guid.NewGuid();
+        await _almacen.GuardarContrasenaAsync(idDelPerfil, "x", CancellationToken.None);
+        await File.WriteAllTextAsync(_rutas.ArchivoDeCredenciales, $"{{ \"{idDelPerfil}\": \"no es base64!\" }}");
+
+        Assert.Null(await _almacen.ObtenerContrasenaAsync(idDelPerfil, CancellationToken.None));
+    }
+
     /// <summary>
     /// Imita a DPAPI: transforma la clave de forma reversible para comprobar que el almacén usa el protector.
     /// </summary>

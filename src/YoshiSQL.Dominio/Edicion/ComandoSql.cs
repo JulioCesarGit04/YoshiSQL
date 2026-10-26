@@ -9,4 +9,8 @@ namespace YoshiSQL.Dominio.Edicion;
 /// </param>
 public sealed record ComandoSql(string Texto, IReadOnlyList<ParametroSql> Parametros, int? FilasEsperadas = null);
 
-public sealed record ParametroSql(string Nombre, object? Valor);
+/// <param name="TipoEnElServidor">
+/// Tipo de la columna (ej. "datetime2"). Sin él, SqlClient manda toda fecha como datetime: redondea a 3 ms
+/// las columnas datetime2 y la fila ya no coincide con la llave al guardar.
+/// </param>
+public sealed record ParametroSql(string Nombre, object? Valor, string? TipoEnElServidor = null);

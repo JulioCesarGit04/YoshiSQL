@@ -32,6 +32,7 @@ public static class RegistroDeServicios
         servicios.AddSingleton<ServicioDeEdicionDeFilas>();
         servicios.AddSingleton<ServicioDeMonitor>();
         servicios.AddSingleton<ServicioDeRespaldos>();
+        servicios.AddSingleton<ServicioDeEliminacionDeBaseDeDatos>();
         servicios.AddSingleton<ServicioDePreferencias>();
         servicios.AddSingleton<ServicioDeArchivosSql>();
         servicios.AddSingleton<ServicioDeGeneracionDeScripts>();

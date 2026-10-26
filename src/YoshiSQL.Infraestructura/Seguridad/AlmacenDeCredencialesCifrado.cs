@@ -17,6 +17,7 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
     private const int TamanoDeLaClaveEnBytes = 32;
     private const int TamanoDelNonceEnBytes = 12;
     private const int TamanoDeLaEtiquetaEnBytes = 16;
+    private const string ExtensionDeArchivoDanado = ".danado";
 
     private readonly RutasDeLaAplicacion _rutas;
     private readonly IProtectorDeLaClave _protectorDeLaClave;
@@ -39,8 +40,10 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
 
         try
         {
-            var clave = await ObtenerOCrearClaveAsync(tokenDeCancelacion);
-            var credenciales = await LeerCredencialesAsync(tokenDeCancelacion);
+            var (clave, esClaveNueva) = await ObtenerOCrearClaveAsync(tokenDeCancelacion);
+
+            // Con una clave nueva, las contraseñas anteriores ya no se pueden descifrar: se empieza de cero
+            Dictionary<Guid, string> credenciales = esClaveNueva ? [] : await LeerCredencialesAsync(tokenDeCancelacion);
             credenciales[idDelPerfil] = Cifrar(contrasena, clave);
             await EscribirCredencialesAsync(credenciales, tokenDeCancelacion);
         }
@@ -66,9 +69,10 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
             var clave = await LeerClaveAsync(tokenDeCancelacion);
             return Descifrar(contrasenaCifrada, clave);
         }
-        catch (CryptographicException)
+        // La clave cambió (ej. perfil de Windows migrado) o el contenido está dañado:
+        // se trata como si no hubiera contraseña guardada y el usuario la vuelve a escribir
+        catch (Exception error) when (error is CryptographicException or FormatException or ArgumentException)
         {
-            // La clave cambió o el archivo está dañado: se trata como si no hubiera contraseña guardada
             return null;
         }
         finally
@@ -124,18 +128,34 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
         return Encoding.UTF8.GetString(bytesDelTexto);
     }
 
-    private async Task<byte[]> ObtenerOCrearClaveAsync(CancellationToken tokenDeCancelacion)
+    /// <summary>
+    /// Si la clave guardada ya no se puede leer (DPAPI de otro usuario o equipo, archivo dañado), se crea una nueva:
+    /// antes eso lanzaba un error en cada guardado y, como la conexión guarda la contraseña, no dejaba conectarse.
+    /// </summary>
+    private async Task<(byte[] Clave, bool EsNueva)> ObtenerOCrearClaveAsync(CancellationToken tokenDeCancelacion)
     {
         if (File.Exists(_rutas.ArchivoDeClave))
         {
-            return await LeerClaveAsync(tokenDeCancelacion);
+            try
+            {
+                var claveGuardada = await LeerClaveAsync(tokenDeCancelacion);
+
+                if (claveGuardada.Length == TamanoDeLaClaveEnBytes)
+                {
+                    return (claveGuardada, false);
+                }
+            }
+            catch (CryptographicException)
+            {
+                // Se reemplaza abajo por una clave nueva
+            }
         }
 
         _rutas.AsegurarQueExistaLaCarpeta();
         var claveNueva = RandomNumberGenerator.GetBytes(TamanoDeLaClaveEnBytes);
         await EscritorDeArchivosSeguro.EscribirAsync(_rutas.ArchivoDeClave, _protectorDeLaClave.Proteger(claveNueva), tokenDeCancelacion);
 
-        return claveNueva;
+        return (claveNueva, true);
     }
 
     private async Task<byte[]> LeerClaveAsync(CancellationToken tokenDeCancelacion) =>
@@ -151,12 +171,21 @@ public sealed class AlmacenDeCredencialesCifrado : IAlmacenDeCredenciales
             return [];
         }
 
-        await using var archivo = File.OpenRead(_rutas.ArchivoDeCredenciales);
-        var credenciales = await JsonSerializer.DeserializeAsync<Dictionary<Guid, string>>(
-            archivo,
-            cancellationToken: tokenDeCancelacion);
+        try
+        {
+            await using var archivo = File.OpenRead(_rutas.ArchivoDeCredenciales);
+            var credenciales = await JsonSerializer.DeserializeAsync<Dictionary<Guid, string>>(
+                archivo,
+                cancellationToken: tokenDeCancelacion);
 
-        return credenciales ?? [];
+            return credenciales ?? [];
+        }
+        // Un archivo dañado no debe impedir guardar ni conectar: se aparta una copia y se empieza de cero
+        catch (JsonException)
+        {
+            File.Copy(_rutas.ArchivoDeCredenciales, _rutas.ArchivoDeCredenciales + ExtensionDeArchivoDanado, overwrite: true);
+            return [];
+        }
     }
 
     private async Task EscribirCredencialesAsync(Dictionary<Guid, string> credenciales, CancellationToken tokenDeCancelacion)

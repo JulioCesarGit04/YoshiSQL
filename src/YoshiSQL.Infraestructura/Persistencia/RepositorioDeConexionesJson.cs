@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Contratos;
 
@@ -8,12 +9,16 @@ public sealed class RepositorioDeConexionesJson : IRepositorioDeConexiones
 {
     private static readonly JsonSerializerOptions OpcionesDeJson = new() { WriteIndented = true };
 
+    private const string ExtensionDeArchivoDanado = ".danado";
+
     private readonly RutasDeLaAplicacion _rutas;
+    private readonly ILogger<RepositorioDeConexionesJson> _registro;
     private readonly SemaphoreSlim _accesoExclusivo = new(1, 1);
 
-    public RepositorioDeConexionesJson(RutasDeLaAplicacion rutas)
+    public RepositorioDeConexionesJson(RutasDeLaAplicacion rutas, ILogger<RepositorioDeConexionesJson> registro)
     {
         _rutas = rutas;
+        _registro = registro;
     }
 
     public async Task<IReadOnlyList<PerfilDeConexion>> ObtenerTodosAsync(CancellationToken tokenDeCancelacion)
@@ -74,10 +79,22 @@ public sealed class RepositorioDeConexionesJson : IRepositorioDeConexiones
             return [];
         }
 
-        await using var archivo = File.OpenRead(_rutas.ArchivoDeConexiones);
-        var perfiles = await JsonSerializer.DeserializeAsync<List<PerfilDeConexion>>(archivo, OpcionesDeJson, tokenDeCancelacion);
+        try
+        {
+            await using var archivo = File.OpenRead(_rutas.ArchivoDeConexiones);
+            var perfiles = await JsonSerializer.DeserializeAsync<List<PerfilDeConexion>>(archivo, OpcionesDeJson, tokenDeCancelacion);
 
-        return perfiles ?? [];
+            return perfiles ?? [];
+        }
+        // Un archivo dañado (ej. por un corte de luz) impedía listar y guardar conexiones: no se podía conectar a nada.
+        // Se aparta una copia para no perder las conexiones y se empieza con la lista vacía.
+        catch (JsonException error)
+        {
+            var copiaDelArchivoDanado = _rutas.ArchivoDeConexiones + ExtensionDeArchivoDanado;
+            File.Copy(_rutas.ArchivoDeConexiones, copiaDelArchivoDanado, overwrite: true);
+            _registro.LogWarning(error, "Las conexiones guardadas están dañadas; se guardó una copia en {Copia}", copiaDelArchivoDanado);
+            return [];
+        }
     }
 
     private async Task EscribirPerfilesAsync(List<PerfilDeConexion> perfiles, CancellationToken tokenDeCancelacion)

@@ -26,6 +26,9 @@ public interface IServicioDeDialogos
     /// <summary>Pide qué exportar de una base de datos; devuelve las opciones o null si cancela.</summary>
     Task<OpcionesDeExportacion?> PedirOpcionesDeExportacionAsync(string baseDeDatos);
 
+    /// <summary>Confirma la eliminación de una base de datos; devuelve las opciones o null si cancela.</summary>
+    Task<Dominio.Esquema.OpcionesDeEliminacionDeBaseDeDatos?> PedirOpcionesDeEliminacionAsync(string baseDeDatos);
+
     /// <summary>Muestra la paleta de comandos; devuelve el comando elegido o null si se cancela.</summary>
     Task<ComandoDePaleta?> MostrarPaletaDeComandosAsync(IReadOnlyList<ComandoDePaleta> comandos);
 

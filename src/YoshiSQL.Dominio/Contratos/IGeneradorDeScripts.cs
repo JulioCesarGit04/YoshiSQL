@@ -20,10 +20,17 @@ public interface IGeneradorDeScripts
 
     string GenerarCreacionDeBaseDeDatos(string nombreDeLaBaseDeDatos);
 
-    string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas);
+    /// <param name="llavePrimaria">PK real de la tabla (nombre, orden de columnas, agrupada); si es nula se deduce de las columnas.</param>
+    string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria = null);
 
     /// <summary>CREATE TABLE sin el USE/GO, para armar el script completo de una base de datos.</summary>
-    string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas);
+    string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria = null);
+
+    /// <summary>Crea el esquema solo si no existe (se puede ejecutar varias veces).</summary>
+    string GenerarCreacionDeEsquema(string esquema);
+
+    /// <summary>CREATE TYPE ... FROM de un tipo alias, solo si no existe.</summary>
+    string GenerarCreacionDeTipo(TipoDeUsuario tipo);
 
     /// <summary>ALTER TABLE ADD CONSTRAINT FOREIGN KEY para una llave foránea.</summary>
     string GenerarLlaveForanea(LlaveForanea llave);
@@ -66,7 +73,7 @@ public interface IGeneradorDeScripts
     /// </summary>
     string GenerarModificacionDesdeDefinicion(string baseDeDatos, string definicion);
 
-    string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos);
+    string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos, OpcionesDeEliminacionDeBaseDeDatos opciones);
 
     string GenerarCreacionDeInicioDeSesion();
 

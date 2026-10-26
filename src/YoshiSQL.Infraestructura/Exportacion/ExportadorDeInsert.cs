@@ -37,13 +37,14 @@ public sealed class ExportadorDeInsert : IExportadorDeResultados
     }
 
     /// <summary>Escribe un valor como literal de T-SQL: números sin comillas, texto y fechas entre comillas, binarios en hexadecimal.</summary>
+    /// <remarks>Fechas en ISO 8601 con "T" para que no dependan del idioma de la sesión (DATEFORMAT dmy en español).</remarks>
     private static string EscribirLiteral(object? valor) => valor switch
     {
         null => "NULL",
         bool booleano => booleano ? "1" : "0",
         byte[] bytes => $"0x{Convert.ToHexString(bytes)}",
-        DateTime fecha => $"'{fecha.ToString("yyyy-MM-dd HH:mm:ss.fff", Invariante)}'",
-        DateTimeOffset fecha => $"'{fecha.ToString("yyyy-MM-dd HH:mm:ss.fff zzz", Invariante)}'",
+        DateTime fecha => $"'{fecha.ToString("yyyy-MM-dd'T'HH:mm:ss.fff", Invariante)}'",
+        DateTimeOffset fecha => $"'{fecha.ToString("yyyy-MM-dd'T'HH:mm:ss.fffzzz", Invariante)}'",
         TimeSpan hora => $"'{hora.ToString("c", Invariante)}'",
         Guid identificador => $"'{identificador}'",
         byte or short or int or long or decimal or double or float => Convert.ToString(valor, Invariante) ?? "NULL",

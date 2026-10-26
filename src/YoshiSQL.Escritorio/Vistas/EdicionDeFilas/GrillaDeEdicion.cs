@@ -192,8 +192,8 @@ public sealed class GrillaDeEdicion : UserControl
         // El Tag guarda la posición del valor en la fila; lo usa Ctrl+0 para poner NULL
         Tag = posicion,
         Binding = new Binding($"[{posicion}]") { Mode = BindingMode.TwoWay },
-        // Identidad, rowversion y binarios los maneja SQL Server o no se pueden escribir como texto
-        IsReadOnly = columna.EsIdentidad || columna.TipoDeDato.Nombre is "timestamp" or "rowversion" or "varbinary" or "binary" or "image",
+        // Identidad, calculadas, rowversion y binarios los maneja SQL Server o no se pueden escribir como texto
+        IsReadOnly = columna.EsIdentidad || columna.EsCalculada || columna.TipoDeDato.Nombre is "timestamp" or "rowversion" or "varbinary" or "binary" or "image",
         MaxWidth = AnchoMaximoDeColumna
     };
 }

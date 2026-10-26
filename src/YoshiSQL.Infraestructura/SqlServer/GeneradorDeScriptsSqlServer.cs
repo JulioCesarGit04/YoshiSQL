@@ -106,16 +106,42 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             baseDeDatos,
             $"EXEC sys.sp_rename {EscribirTexto(Delimitar(objeto.Esquema, objeto.Nombre))}, {EscribirTexto(nuevoNombre)};");
 
-    public string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas)
+    public string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria = null)
     {
         var definicionesDeColumnas = columnas
             .OrderBy(columna => columna.Posicion)
             .Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos))
             .ToList();
 
-        var columnasDeLaLlave = columnas.Where(columna => columna.EsLlavePrimaria).Select(columna => columna.Nombre).ToList();
+        return CrearInstruccionCreateTable(tabla, definicionesDeColumnas, DescribirLlavePrimaria(tabla, columnas, llavePrimaria));
+    }
 
-        return CrearInstruccionCreateTable(tabla, definicionesDeColumnas, columnasDeLaLlave);
+    // CREATE SCHEMA debe ser la única instrucción de su lote; dentro de EXEC se puede condicionar a que no exista
+    public string GenerarCreacionDeEsquema(string esquema) =>
+        $"IF SCHEMA_ID({EscribirTexto(esquema)}) IS NULL EXEC({EscribirTexto($"CREATE SCHEMA {Delimitar(esquema)}")});";
+
+    public string GenerarCreacionDeTipo(TipoDeUsuario tipo) =>
+        $"IF TYPE_ID({EscribirTexto($"{Delimitar(tipo.Esquema)}.{Delimitar(tipo.Nombre)}")}) IS NULL{Environment.NewLine}"
+        + $"    CREATE TYPE {Delimitar(tipo.Esquema, tipo.Nombre)} FROM {tipo.TipoBase.Describir()} {(tipo.AdmiteNulos ? "NULL" : "NOT NULL")};";
+
+    /// <summary>
+    /// Con la PK real se conservan su nombre (los nombres de restricción son únicos por base: "PK_Tabla" chocaba
+    /// entre dbo.Clientes y ventas.Clientes), el orden de sus columnas y si es agrupada.
+    /// </summary>
+    private static LlavePrimariaParaCrear? DescribirLlavePrimaria(Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria)
+    {
+        if (llavePrimaria is not null)
+        {
+            return new LlavePrimariaParaCrear(llavePrimaria.Nombre, llavePrimaria.Columnas, llavePrimaria.EsAgrupado);
+        }
+
+        var columnasDeLaLlave = columnas
+            .Where(columna => columna.EsLlavePrimaria)
+            .OrderBy(columna => columna.Posicion)
+            .Select(columna => columna.Nombre)
+            .ToList();
+
+        return columnasDeLaLlave.Count == 0 ? null : new LlavePrimariaParaCrear($"PK_{tabla.Nombre}", columnasDeLaLlave, EsAgrupada: null);
     }
 
     public string GenerarLlaveForanea(LlaveForanea llave) =>
@@ -131,8 +157,14 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         }
 
         var ordenadas = columnas.OrderBy(columna => columna.Posicion).ToList();
+
+        // SQL Server rechaza todo el INSERT si incluye una columna calculada o rowversion: se omiten
+        var posicionesInsertables = Enumerable.Range(0, ordenadas.Count)
+            .Where(posicion => !ordenadas[posicion].EsCalculada && !EsRowversion(ordenadas[posicion]))
+            .ToList();
+
         var nombreDeLaTabla = Delimitar(tabla.Esquema, tabla.Nombre);
-        var listaDeColumnas = UnirNombres(ordenadas.Select(columna => columna.Nombre));
+        var listaDeColumnas = UnirNombres(posicionesInsertables.Select(posicion => ordenadas[posicion].Nombre));
         var tieneIdentidad = ordenadas.Any(columna => columna.EsIdentidad);
 
         var texto = new StringBuilder();
@@ -144,7 +176,7 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
         foreach (var fila in filas)
         {
-            var valores = string.Join(", ", fila.Select(EscribirLiteralSql));
+            var valores = string.Join(", ", posicionesInsertables.Select(posicion => EscribirLiteralSql(fila[posicion])));
             texto.AppendLine($"INSERT INTO {nombreDeLaTabla} ({listaDeColumnas}) VALUES ({valores});");
         }
 
@@ -198,13 +230,15 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
     public string GenerarSeleccionCompleta(Tabla tabla) => $"SELECT * FROM {Delimitar(tabla.Esquema, tabla.Nombre)};";
 
+    // Fechas en ISO 8601 con "T": sin la T, una columna datetime con idioma español (DATEFORMAT dmy)
+    // lee "2026-01-05" como año-día-mes y guarda otra fecha o falla con "fuera de rango"
     private static string EscribirLiteralSql(object? valor) => valor switch
     {
         null => "NULL",
         bool booleano => booleano ? "1" : "0",
         byte[] bytes => $"0x{Convert.ToHexString(bytes)}",
-        DateTime fecha => $"'{fecha.ToString("yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture)}'",
-        DateTimeOffset fecha => $"'{fecha.ToString("yyyy-MM-dd HH:mm:ss.fff zzz", System.Globalization.CultureInfo.InvariantCulture)}'",
+        DateTime fecha => $"'{fecha.ToString("yyyy-MM-dd'T'HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture)}'",
+        DateTimeOffset fecha => $"'{fecha.ToString("yyyy-MM-dd'T'HH:mm:ss.fffzzz", System.Globalization.CultureInfo.InvariantCulture)}'",
         TimeSpan hora => $"'{hora.ToString("c", System.Globalization.CultureInfo.InvariantCulture)}'",
         Guid identificador => $"'{identificador}'",
         byte or short or int or long or decimal or double or float => Convert.ToString(valor, System.Globalization.CultureInfo.InvariantCulture) ?? "NULL",
@@ -237,23 +271,14 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         GO
         """;
 
-    public string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas)
-    {
-        var definicionesDeColumnas = columnas
-            .OrderBy(columna => columna.Posicion)
-            .Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos))
-            .ToList();
-
-        var columnasDeLaLlave = columnas.Where(columna => columna.EsLlavePrimaria).Select(columna => columna.Nombre).ToList();
-
-        return new StringBuilder()
+    public string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria = null) =>
+        new StringBuilder()
             .AppendLine($"USE {Delimitar(baseDeDatos)};")
             .AppendLine("GO")
             .AppendLine()
-            .AppendLine(CrearInstruccionCreateTable(tabla, definicionesDeColumnas, columnasDeLaLlave))
+            .AppendLine(GenerarCreacionDeTablaSinEnvolver(tabla, columnas, llavePrimaria))
             .Append("GO")
             .ToString();
-    }
 
     public string GenerarCambiosDeTabla(string baseDeDatos, DefinicionDeTabla? original, DefinicionDeTabla nueva)
     {
@@ -261,7 +286,9 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             ? [CrearInstruccionCreateTable(
                 nueva.Tabla,
                 nueva.Columnas.Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos)).ToList(),
-                nueva.ColumnasDeLaLlavePrimaria.Select(columna => columna.Nombre).ToList())]
+                nueva.ColumnasDeLaLlavePrimaria.Any()
+                    ? new LlavePrimariaParaCrear($"PK_{nueva.Nombre}", nueva.ColumnasDeLaLlavePrimaria.Select(columna => columna.Nombre).ToList(), EsAgrupada: null)
+                    : null)]
             : CrearInstruccionesDeModificacion(original, nueva);
 
         var script = new StringBuilder()
@@ -290,13 +317,18 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             throw new ErrorDeYoshiSql($"La tabla {tabla.NombreCompleto} no tiene llave primaria; no se puede identificar cada fila de forma segura.");
         }
 
-        return cambios.Select(cambio => cambio.Tipo switch
-        {
-            EstadoDeFila.Nueva => CrearInsert(tabla, columnas, cambio),
-            EstadoDeFila.Modificada => CrearUpdate(tabla, columnas, cambio, posicionesDeLaLlave),
-            EstadoDeFila.Eliminada => CrearDelete(tabla, columnas, cambio, posicionesDeLaLlave),
-            _ => throw new ArgumentOutOfRangeException(nameof(cambios), cambio.Tipo, "Una fila sin cambios no genera instrucciones.")
-        }).ToList();
+        // Una fila editada y devuelta a su valor original sigue "modificada" pero no cambia nada:
+        // generaría "UPDATE ... SET  WHERE" (SQL inválido) y la transacción descartaría todos los demás cambios
+        return cambios
+            .Where(cambio => cambio.Tipo != EstadoDeFila.Modificada || ObtenerPosicionesModificadas(columnas, cambio).Count > 0)
+            .Select(cambio => cambio.Tipo switch
+            {
+                EstadoDeFila.Nueva => CrearInsert(tabla, columnas, cambio),
+                EstadoDeFila.Modificada => CrearUpdate(tabla, columnas, cambio, posicionesDeLaLlave),
+                EstadoDeFila.Eliminada => CrearDelete(tabla, columnas, cambio, posicionesDeLaLlave),
+                _ => throw new ArgumentOutOfRangeException(nameof(cambios), cambio.Tipo, "Una fila sin cambios no genera instrucciones.")
+            })
+            .ToList();
     }
 
     public string GenerarEliminacion(string baseDeDatos, ObjetoDeEsquema objeto)
@@ -370,15 +402,47 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
     public string GenerarModificacionDesdeDefinicion(string baseDeDatos, string definicion) =>
         EnvolverEnBaseDeDatos(baseDeDatos, CambiarCreatePorAlter(definicion));
 
-    public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
-        $"""
-        USE [master];
-        GO
+    public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos, OpcionesDeEliminacionDeBaseDeDatos opciones)
+    {
+        var nombre = Delimitar(nombreDeLaBaseDeDatos);
+        var script = new StringBuilder();
 
-        ALTER DATABASE {Delimitar(nombreDeLaBaseDeDatos)} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-        DROP DATABASE {Delimitar(nombreDeLaBaseDeDatos)};
-        GO
-        """;
+        script.AppendLine("USE [master];");
+        script.AppendLine("GO");
+        script.AppendLine();
+
+        if (opciones.EliminarHistorialDeRespaldos)
+        {
+            script.AppendLine($"EXEC msdb.dbo.sp_delete_database_backuphistory @database_name = {EscribirTexto(nombreDeLaBaseDeDatos)};");
+            script.AppendLine("GO");
+            script.AppendLine();
+        }
+
+        if (opciones.CerrarConexionesExistentes)
+        {
+            // Si el DROP falla después de SINGLE_USER (otra sesión tomó el único lugar), la base quedaría
+            // inaccesible para todos: por eso se devuelve a MULTI_USER antes de informar el error
+            script.AppendLine(
+                $"""
+                BEGIN TRY
+                    ALTER DATABASE {nombre} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                    DROP DATABASE {nombre};
+                END TRY
+                BEGIN CATCH
+                    IF DB_ID({EscribirTexto(nombreDeLaBaseDeDatos)}) IS NOT NULL
+                        ALTER DATABASE {nombre} SET MULTI_USER;
+                    THROW;
+                END CATCH;
+                """);
+        }
+        else
+        {
+            script.AppendLine($"DROP DATABASE {nombre};");
+        }
+
+        script.Append("GO");
+        return script.ToString();
+    }
 
     private static string EnvolverEnBaseDeDatos(string baseDeDatos, string definicion) =>
         $"USE {Delimitar(baseDeDatos)};{Environment.NewLine}GO{Environment.NewLine}{Environment.NewLine}{definicion.Trim()}{Environment.NewLine}GO";
@@ -404,13 +468,20 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         return string.Concat(definicion.AsSpan(0, tokenCreate.Offset), "ALTER", definicion.AsSpan(tokenCreate.Offset + tokenCreate.Text.Length));
     }
 
-    private static string CrearInstruccionCreateTable(Tabla tabla, IReadOnlyList<string> definicionesDeColumnas, IReadOnlyList<string> columnasDeLaLlave)
+    private static string CrearInstruccionCreateTable(Tabla tabla, IReadOnlyList<string> definicionesDeColumnas, LlavePrimariaParaCrear? llavePrimaria)
     {
         var lineas = definicionesDeColumnas.ToList();
 
-        if (columnasDeLaLlave.Count > 0)
+        if (llavePrimaria is not null)
         {
-            lineas.Add($"CONSTRAINT {Delimitar($"PK_{tabla.Nombre}")} PRIMARY KEY ({UnirNombres(columnasDeLaLlave)})");
+            var tipoDeIndice = llavePrimaria.EsAgrupada switch
+            {
+                true => " CLUSTERED",
+                false => " NONCLUSTERED",
+                null => string.Empty
+            };
+
+            lineas.Add($"CONSTRAINT {Delimitar(llavePrimaria.Nombre)} PRIMARY KEY{tipoDeIndice} ({UnirNombres(llavePrimaria.Columnas)})");
         }
 
         return new StringBuilder()
@@ -472,7 +543,7 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         }
 
         var parametros = posiciones
-            .Select((posicion, indice) => new ParametroSql($"@v{indice}", ConvertidorDeValoresDeEdicion.Convertir(cambio.ValoresNuevos[posicion], columnas[posicion])))
+            .Select((posicion, indice) => CrearParametro($"@v{indice}", ConvertidorDeValoresDeEdicion.Convertir(cambio.ValoresNuevos[posicion], columnas[posicion]), columnas[posicion]))
             .ToList();
 
         var texto = $"INSERT INTO {Delimitar(tabla.Esquema, tabla.Nombre)} ({UnirNombres(posiciones.Select(posicion => columnas[posicion].Nombre))}) "
@@ -483,13 +554,9 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
     private static ComandoSql CrearUpdate(Tabla tabla, IReadOnlyList<Columna> columnas, CambioDeFila cambio, IReadOnlyList<int> posicionesDeLaLlave)
     {
-        var posicionesModificadas = Enumerable.Range(0, columnas.Count)
-            .Where(posicion => EsEditable(columnas[posicion]) && !Equals(cambio.ValoresNuevos[posicion], cambio.ValoresOriginales[posicion]))
-            .ToList();
-
-        var asignaciones = posicionesModificadas
+        var asignaciones = ObtenerPosicionesModificadas(columnas, cambio)
             .Select((posicion, indice) => (Texto: $"{Delimitar(columnas[posicion].Nombre)} = @v{indice}",
-                Parametro: new ParametroSql($"@v{indice}", ConvertidorDeValoresDeEdicion.Convertir(cambio.ValoresNuevos[posicion], columnas[posicion]))))
+                Parametro: CrearParametro($"@v{indice}", ConvertidorDeValoresDeEdicion.Convertir(cambio.ValoresNuevos[posicion], columnas[posicion]), columnas[posicion])))
             .ToList();
 
         var (condicion, parametrosDeLaLlave) = CrearCondicionPorLlave(columnas, cambio, posicionesDeLaLlave);
@@ -497,6 +564,14 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
         return new ComandoSql(texto, [.. asignaciones.Select(asignacion => asignacion.Parametro), .. parametrosDeLaLlave], FilasEsperadas: 1);
     }
+
+    private static ParametroSql CrearParametro(string nombre, object? valor, Columna columna) =>
+        new(nombre, valor, columna.TipoDeDato.Nombre);
+
+    private static List<int> ObtenerPosicionesModificadas(IReadOnlyList<Columna> columnas, CambioDeFila cambio) =>
+        Enumerable.Range(0, columnas.Count)
+            .Where(posicion => EsEditable(columnas[posicion]) && !Equals(cambio.ValoresNuevos[posicion], cambio.ValoresOriginales[posicion]))
+            .ToList();
 
     private static ComandoSql CrearDelete(Tabla tabla, IReadOnlyList<Columna> columnas, CambioDeFila cambio, IReadOnlyList<int> posicionesDeLaLlave)
     {
@@ -513,18 +588,23 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         IReadOnlyList<int> posicionesDeLaLlave)
     {
         var parametros = posicionesDeLaLlave
-            .Select((posicion, indice) => new ParametroSql($"@k{indice}", cambio.ValoresOriginales[posicion]))
+            .Select((posicion, indice) => CrearParametro($"@k{indice}", cambio.ValoresOriginales[posicion], columnas[posicion]))
             .ToList();
 
         var condicion = string.Join(" AND ", posicionesDeLaLlave.Select((posicion, indice) => $"{Delimitar(columnas[posicion].Nombre)} = @k{indice}"));
         return (condicion, parametros);
     }
 
-    // Identidad y rowversion las asigna SQL Server; no se pueden escribir
+    // Identidad, rowversion y columnas calculadas las asigna SQL Server; no se pueden escribir
     private static bool EsEditable(Columna columna) =>
-        !columna.EsIdentidad && columna.TipoDeDato.Nombre is not ("timestamp" or "rowversion");
+        !columna.EsIdentidad && !columna.EsCalculada && !EsRowversion(columna);
+
+    private static bool EsRowversion(Columna columna) => columna.TipoDeDato.Nombre is "timestamp" or "rowversion";
 
     private static string UnirNombres(IEnumerable<string> nombres) => string.Join(", ", nombres.Select(nombre => Delimitar(nombre)));
+
+    /// <param name="EsAgrupada">Nulo si no se conoce: SQL Server la crea agrupada por defecto.</param>
+    private sealed record LlavePrimariaParaCrear(string Nombre, IReadOnlyList<string> Columnas, bool? EsAgrupada);
 
     private static string EscribirTexto(string texto) => $"N'{texto.Replace("'", "''", StringComparison.Ordinal)}'";
 

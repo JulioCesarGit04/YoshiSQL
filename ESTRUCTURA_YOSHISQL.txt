@@ -137,7 +137,7 @@ YoshiSQL/
 │   │   │   ├── ProveedorSqlServer.cs
 │   │   │   ├── ExploradorDeEsquemaSqlServer.cs
 │   │   │   ├── EjecutorDeConsultasSqlServer.cs      Usa Microsoft.Data.SqlClient
-│   │   │   ├── DivisorDeLotesTSql.cs                Usa ScriptDom (parser oficial T-SQL)
+│   │   │   ├── DivisorDeLotesTSql.cs                Separa por GO como SSMS (línea a línea)
 │   │   │   ├── GeneradorDeScriptsSqlServer.cs
 │   │   │   ├── ConstructorDeCadenaDeConexion.cs
 │   │   │   ├── TraductorDeErroresSqlServer.cs       Convierte SqlException en ErrorDeEjecucion
@@ -374,7 +374,8 @@ YoshiSQL/
                             CSV/JSON/Excel, copiar con encabezados, plan de ejecución.
     Objetos                 Modificar (ALTER) y generar CREATE/DROP de vistas, procedimientos
                             y funciones; diagramas; diseñador de tablas; editar filas.
-    Administración          Monitor de actividad, respaldo y restauración.
+    Administración          Monitor de actividad, respaldo y restauración, eliminar base
+                            de datos (cerrando conexiones, con confirmación por nombre).
     Robustez                Registro de errores con código, aviso amigable, captura global,
                             autoguardado cada 10 s, restauración de pestañas y recuperación
                             tras un cierre inesperado.

@@ -8,6 +8,26 @@ public class AnalizadorDeContextoTSqlPruebas
     private const char MarcaDelCursor = '|';
     private readonly AnalizadorDeContextoTSql _analizador = new();
 
+    [Theory]
+    [InlineData("SELECT 1 /* sin cerrar")]
+    [InlineData("SELECT `columna`")]
+    public void Analizar_ErrorLexicoEnOtroLote_SigueSugiriendo(string otroLote)
+    {
+        var contexto = Analizar($"SELECT * FROM Cli|\r\nGO\r\n{otroLote}");
+
+        Assert.Equal(TipoDeContexto.NombreDeTabla, contexto.Tipo);
+        Assert.Equal("Cli", contexto.PalabraParcial);
+    }
+
+    [Fact]
+    public void Analizar_CursorEnUnLotePosterior_UsaLasTablasDeEseLote()
+    {
+        var contexto = Analizar("SELECT * FROM dbo.Uno AS u\nGO\nSELECT p.| FROM dbo.Pedidos AS p");
+
+        Assert.Equal(TipoDeContexto.DespuesDePunto, contexto.Tipo);
+        Assert.Equal(new ReferenciaDeTabla("dbo", "Pedidos", "p"), Assert.Single(contexto.TablasDeLaInstruccion));
+    }
+
     [Fact]
     public void Analizar_DespuesDeFrom_EsperaUnaTabla()
     {

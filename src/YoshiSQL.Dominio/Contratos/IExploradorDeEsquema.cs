@@ -126,4 +126,16 @@ public interface IExploradorDeEsquema
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
         CancellationToken tokenDeCancelacion);
+
+    /// <summary>Esquemas creados por el usuario (sin dbo, sys ni los de los roles fijos).</summary>
+    Task<IReadOnlyList<string>> ObtenerEsquemasDeUsuarioAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>Tipos alias creados con CREATE TYPE ... FROM.</summary>
+    Task<IReadOnlyList<TipoDeUsuario>> ObtenerTiposDeUsuarioAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
 }

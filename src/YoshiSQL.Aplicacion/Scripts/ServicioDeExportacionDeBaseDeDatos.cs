@@ -1,5 +1,6 @@
 using System.Text;
 using YoshiSQL.Aplicacion.Conexiones;
+using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Esquema;
 
@@ -26,19 +27,24 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
         _reloj = reloj;
     }
 
-    public async Task<string> GenerarScriptCompletoAsync(
+    public async Task<ResultadoDeExportacion> GenerarScriptCompletoAsync(
         ServidorConectado servidor,
         string baseDeDatos,
         OpcionesDeExportacion opciones,
         CancellationToken tokenDeCancelacion)
     {
         var acceso = servidor.DatosDeAcceso;
+        var advertencias = new List<string>();
 
         var script = new StringBuilder();
         script.AppendLine($"-- Script de la base de datos {baseDeDatos}");
         script.AppendLine($"-- Generado por YoshiSQL el {_reloj.GetLocalNow():yyyy-MM-dd HH:mm}");
         script.AppendLine();
         AgregarLote(script, _generador.GenerarUso(baseDeDatos));
+
+        // Esquemas y tipos de usuario van antes que todo: sin ellos fallan las tablas, vistas y procedimientos
+        // que los usan (ej. AdventureWorks: esquemas Person y Sales, tipos dbo.Name y dbo.Phone)
+        await AgregarEsquemasYTiposAsync(script, acceso, baseDeDatos, tokenDeCancelacion);
 
         var tablas = await _explorador.ObtenerTablasAsync(acceso, baseDeDatos, tokenDeCancelacion);
 
@@ -57,13 +63,15 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
             script.AppendLine();
             foreach (var tabla in tablas)
             {
-                AgregarLote(script, _generador.GenerarCreacionDeTablaSinEnvolver(tabla, columnasPorTabla[tabla]));
+                var indices = await _explorador.ObtenerIndicesAsync(acceso, baseDeDatos, tabla, tokenDeCancelacion);
+                var llavePrimaria = indices.FirstOrDefault(indice => indice.EsLlavePrimaria);
+                AgregarLote(script, _generador.GenerarCreacionDeTablaSinEnvolver(tabla, columnasPorTabla[tabla], llavePrimaria));
             }
         }
 
         if (opciones.DatosDeTablas)
         {
-            await AgregarDatosAsync(script, servidor, baseDeDatos, tablas, columnasPorTabla, tokenDeCancelacion);
+            await AgregarDatosAsync(script, advertencias, servidor, baseDeDatos, tablas, columnasPorTabla, tokenDeCancelacion);
         }
 
         if (opciones.EstructuraDeTablas)
@@ -75,26 +83,51 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
         if (opciones.Funciones)
         {
             var funciones = await _explorador.ObtenerFuncionesAsync(acceso, baseDeDatos, tokenDeCancelacion);
-            await AgregarDefinicionesAsync(script, acceso, baseDeDatos, "Funciones", funciones, tokenDeCancelacion);
+            await AgregarDefinicionesAsync(script, advertencias, acceso, baseDeDatos, "Funciones", funciones, tokenDeCancelacion);
         }
 
         if (opciones.Vistas)
         {
             var vistas = await _explorador.ObtenerVistasAsync(acceso, baseDeDatos, tokenDeCancelacion);
-            await AgregarDefinicionesAsync(script, acceso, baseDeDatos, "Vistas", vistas, tokenDeCancelacion);
+            await AgregarDefinicionesAsync(script, advertencias, acceso, baseDeDatos, "Vistas", vistas, tokenDeCancelacion);
         }
 
         if (opciones.Procedimientos)
         {
             var procedimientos = await _explorador.ObtenerProcedimientosAsync(acceso, baseDeDatos, tokenDeCancelacion);
-            await AgregarDefinicionesAsync(script, acceso, baseDeDatos, "Procedimientos almacenados", procedimientos, tokenDeCancelacion);
+            await AgregarDefinicionesAsync(script, advertencias, acceso, baseDeDatos, "Procedimientos almacenados", procedimientos, tokenDeCancelacion);
         }
 
-        return script.ToString();
+        return new ResultadoDeExportacion(script.ToString(), advertencias);
+    }
+
+    private async Task AgregarEsquemasYTiposAsync(
+        StringBuilder script,
+        Dominio.Conexiones.DatosDeAcceso acceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion)
+    {
+        var esquemas = await _explorador.ObtenerEsquemasDeUsuarioAsync(acceso, baseDeDatos, tokenDeCancelacion);
+        var tipos = await _explorador.ObtenerTiposDeUsuarioAsync(acceso, baseDeDatos, tokenDeCancelacion);
+
+        if (esquemas.Count > 0)
+        {
+            script.AppendLine("-- Esquemas");
+            script.AppendLine();
+            AgregarLote(script, string.Join(Environment.NewLine, esquemas.Select(_generador.GenerarCreacionDeEsquema)));
+        }
+
+        if (tipos.Count > 0)
+        {
+            script.AppendLine("-- Tipos de datos del usuario");
+            script.AppendLine();
+            AgregarLote(script, string.Join(Environment.NewLine, tipos.Select(_generador.GenerarCreacionDeTipo)));
+        }
     }
 
     private async Task AgregarDefinicionesAsync(
         StringBuilder script,
+        List<string> advertencias,
         Dominio.Conexiones.DatosDeAcceso acceso,
         string baseDeDatos,
         string titulo,
@@ -115,7 +148,9 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
 
             if (string.IsNullOrWhiteSpace(definicion))
             {
-                script.AppendLine($"-- {objeto.NombreCompleto}: cifrado o sin permiso para ver su definición; se omite.");
+                var aviso = $"{objeto.NombreCompleto}: cifrado o sin permiso para ver su definición; se omitió.";
+                advertencias.Add(aviso);
+                script.AppendLine($"-- {aviso}");
                 script.AppendLine();
             }
             else
@@ -127,6 +162,7 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
 
     private async Task AgregarDatosAsync(
         StringBuilder script,
+        List<string> advertencias,
         ServidorConectado servidor,
         string baseDeDatos,
         IReadOnlyList<Tabla> tablas,
@@ -142,8 +178,20 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
         {
             var lotes = _divisorDeLotes.DividirEnLotes(_generador.GenerarSeleccionCompleta(tabla));
             var resultado = await sesion.EjecutarLotesAsync(lotes, tokenDeCancelacion);
-            var filas = resultado.ConjuntosDeResultados.Count > 0 ? resultado.ConjuntosDeResultados[0].Filas : [];
 
+            // Antes un SELECT fallido se ignoraba y la tabla quedaba vacía en el script sin que nadie lo notara
+            if (resultado.TieneErrores || resultado.ConjuntosDeResultados.Count == 0)
+            {
+                var causa = resultado.Mensajes.FirstOrDefault(mensaje => mensaje.Tipo == TipoDeMensaje.Error)?.Texto
+                    ?? "la consulta no devolvió filas";
+                var aviso = $"{tabla.NombreCompleto}: no se pudieron leer sus datos ({causa.ReplaceLineEndings(" ")}).";
+                advertencias.Add(aviso);
+                script.AppendLine($"-- ERROR: {aviso}");
+                script.AppendLine();
+                continue;
+            }
+
+            var filas = resultado.ConjuntosDeResultados[0].Filas;
             var inserciones = _generador.GenerarInsertDeFilas(tabla, columnasPorTabla[tabla], filas);
 
             if (!string.IsNullOrEmpty(inserciones))

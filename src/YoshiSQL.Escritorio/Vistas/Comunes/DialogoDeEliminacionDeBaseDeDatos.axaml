@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="YoshiSQL.Escritorio.Vistas.Comunes.DialogoDeEliminacionDeBaseDeDatos"
+        Title="Eliminar base de datos"
+        Width="480" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="24,20" Spacing="14">
+        <TextBlock x:Name="Encabezado" TextWrapping="Wrap" FontWeight="SemiBold" />
+        <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                   Text="Se borrarán la base de datos y sus archivos en el servidor. Esta acción no se puede deshacer." />
+
+        <StackPanel Spacing="4">
+            <CheckBox x:Name="CerrarConexiones" Content="Cerrar las conexiones existentes" IsChecked="True" />
+            <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12" Margin="28,0,0,0"
+                       Text="Desconecta a todos los usuarios de la base y deshace sus transacciones pendientes. Sin esto, si alguien sigue conectado la base no se puede eliminar." />
+        </StackPanel>
+
+        <CheckBox x:Name="EliminarHistorial" Content="Eliminar el historial de respaldos y restauraciones" IsChecked="True" />
+
+        <StackPanel Spacing="6">
+            <TextBlock x:Name="EtiquetaDeConfirmacion" TextWrapping="Wrap" />
+            <TextBox x:Name="NombreDeConfirmacion" TextChanged="AlCambiarNombreDeConfirmacion" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button x:Name="BotonEliminar" Classes="Primario" Content="Eliminar" MinWidth="100" IsEnabled="False" Click="AlAceptar" />
+            <Button Content="Cancelar" MinWidth="100" IsCancel="True" IsDefault="True" Click="AlCancelar" />
+        </StackPanel>
+    </StackPanel>
+</Window>

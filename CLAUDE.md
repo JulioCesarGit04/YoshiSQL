@@ -86,6 +86,51 @@ Limitaciones detectadas frente a SSMS:
 - Resultado en Windows: 128 pruebas correctas, 1 omitida. Para pruebas que dependan del SO usar ese atributo.
 - Al trabajar en Windows: el código puede generar `\r\n`; no asumir `\n` en regex o `Split`.
 
+### Bug corregido (2026-10-25): scripts con varios procedimientos separados por GO
+`DivisorDeLotesTSql` usaba el lexer de ScriptDom y, ante CUALQUIER error léxico (un `` ` ``, un `?`, un `/*` sin
+cerrar), mandaba todo el script como un solo lote → cada `CREATE PROCEDURE` fallaba ("must be the first statement
+in a query batch"). Además, saltos de línea solo `\r` lanzaban `ArgumentOutOfRangeException`. Ahora separa línea
+a línea como SSMS/sqlcmd (GO solo en su línea, fuera de textos, `[identificadores]` y comentarios anidados).
+También se fijó `System.Security.Cryptography.Pkcs` 10.0.13: la 9.0.18 que trae SqlClient rompía `dotnet build` (NU1902/NU1903).
+
+### Cacería de bugs (2026-10-25) — corregidos, sin commit
+- Reconexión: si se caía la conexión, la pestaña se reabría en la base INICIAL de la cadena de conexión, no en la
+  que el usuario usaba (USE / lista) → el script corría en otra base. `SesionDeConsultaSqlServer._baseDeDatosEnUso`.
+  Cambiar de base mientras se ejecuta ahora da un mensaje claro.
+- Edición de filas: una celda editada y devuelta a su valor original generaba `UPDATE ... SET  WHERE` (inválido) y la
+  transacción descartaba TODOS los cambios. Ahora se omite (`ObtenerPosicionesModificadas`).
+- Edición de filas: `decimal` con `NumberStyles.Number` leía "10,5" como 105 (coma = miles) → dato corrupto. Ahora se
+  rechaza con sugerencia de usar punto; fechas con "/" (ambiguas dd/MM vs MM/dd) se rechazan pidiendo aaaa-mm-dd.
+- Exportar a script / Copiar como INSERT: fechas como `'yyyy-MM-dd HH:mm...'` las lee mal un `datetime` con idioma
+  español (DATEFORMAT dmy). Ahora ISO 8601 con `T`. LIMITACIÓN: sigue con 3 decimales (datetime2(7) pierde sub-ms).
+- `conexiones.json` dañado impedía listar y guardar conexiones (no se podía conectar). Ahora se copia a
+  `conexiones.json.danado` y se empieza vacío.
+- Cerrar la app: un fallo al liberar una pestaña impedía cerrar la ventana; ahora se registra y se cierra.
+- NUEVO: "Eliminar..." en el menú de la base (`DialogoDeEliminacionDeBaseDeDatos` + `ServicioDeEliminacionDeBaseDeDatos`).
+  Libera el pool de conexiones del explorador (`IEjecutorDeConsultas.LiberarConexionesInactivas`, que si no dejaba
+  sesiones "dentro" de la base y el DROP fallaba por culpa de YoshiSQL), pasa a master las pestañas en esa base, y
+  con "cerrar conexiones" usa SINGLE_USER en TRY/CATCH que vuelve a MULTI_USER si el DROP falla (antes la base podía
+  quedar atrapada en SINGLE_USER).
+### Bugs que inutilizaban el sistema (2026-10-25, segunda ronda) — corregidos, sin commit
+- `DetectorDeCambiosDeEsquema`: la regex `SELECT[\s\S]*?INTO` era cuadrática y corría en el hilo de la UI tras cada
+  ejecución (medido: 8.000 SELECT = 77 s congelado). Ahora es lineal (INTO no precedido de INSERT/MERGE) + timeout.
+- Resultados: `TextoDeResultados` se armaba en cada ejecución aunque no se viera; ahora solo en modo texto y con
+  tope de 5.000 filas. Máximo 50 grillas por ejecución (`MaximoDeConjuntosVisibles`), con aviso en Mensajes.
+- Conexión: un fallo al guardar perfil/contraseña ya no hace fallar la conexión (`RecordarParaLaProximaVezAsync`).
+  `AlmacenDeCredencialesCifrado` se recupera solo: credenciales.json dañado → copia .danado; clave ilegible (DPAPI de
+  otro equipo/usuario) → clave nueva.
+- Edición de filas: el conteo usa `SET NOCOUNT ON` + `SELECT @@ROWCOUNT` (los disparadores sin NOCOUNT hacían fallar
+  "1 fila esperada"); `ParametroSql.TipoEnElServidor` envía las fechas con su tipo exacto (datetime2 ya no se redondea);
+  `Columna.EsCalculada` (is_computed en el catálogo) → columnas calculadas de solo lectura y fuera del INSERT exportado
+  (también rowversion). PENDIENTE verificar con servidor real: @@ROWCOUNT con disparadores INSTEAD OF.
+- Autocompletado: analiza solo el lote del cursor (`RecortarAlLoteDelCursor`).
+- Respaldo: "Comprimir" solo por defecto si la edición lo admite (`ServicioDeRespaldos.AdmiteCompresion`; Express/Web no).
+  Restaurar libera antes el pool del explorador. Salud: consultas con 600 s de límite (antes 30 s).
+- PENDIENTE (de la auditoría): exportación completa (esquemas, tipos de usuario, dependencias, encoding), Excel con bigint,
+  diseñador con precisión de datetime2/time, concurrencia optimista al editar filas.
+
+- PENDIENTE: resultados enormes se cargan completos en memoria (sin tope ni streaming).
+
 ### Otros pendientes (según README / ESTRUCTURA)
 - Instalador Linux (.deb / AppImage) con ícono.
 - Valores `DEFAULT` en el diseñador de tablas.
@@ -234,9 +279,13 @@ la grilla y en el INSERT del export. No necesita la dependencia Microsoft.SqlSer
   la pestaña y muestra el mensaje de error en el cuerpo si falla.
 - Pruebas nuevas: `ServicioDeFavoritosPruebas` (5) y literales de `GenerarInsertDeFilas` (fechas, GUID, binarios,
   texto con comillas). Total: 151 (Dominio 25, Aplicacion 37, Infraestructura 89, 1 omitida en Windows).
-- Nota: la sesión se RESTAURA al reabrir (reconecta con la contraseña guardada y reabre las pestañas). "Conectar"
+- Nota: al reabrir, las pestañas se restauran pero YoshiSQL NUNCA se conecta solo: abre la ventana "Conectar"
+  con el servidor elegido y el usuario confirma (B-57, por seguridad). "Conectar"
   siempre está en la barra de herramientas y en el menú; el botón grande del centro solo aparece sin pestañas.
 
 ## Notas para trabajar
+- **Bugs: `BUGS.md` en la raíz es el registro oficial.** Todo bug nuevo encontrado (en revisiones o por el usuario)
+  se agrega a "Por arreglar" con el siguiente ID libre (`B-NN`, no se reutilizan). Al corregirlo se mueve a
+  "Arreglados" con fecha y cómo se resolvió. Prioridad: primero lo que inutiliza el sistema (🔴).
 - Al terminar una función, actualizar la sección "ESTADO ACTUAL" de `ESTRUCTURA_YOSHISQL.txt`, el README y este archivo.
 - Agregar pruebas en la capa correspondiente y mantener `dotnet build` sin advertencias.

@@ -43,8 +43,9 @@ public sealed class ServicioDeGeneracionDeScripts
     public string GenerarMantenimientoDeIndice(string baseDeDatos, Tabla tabla, string nombreDelIndice, bool reconstruir) =>
         _generadorDeScripts.GenerarMantenimientoDeIndice(baseDeDatos, tabla, nombreDelIndice, reconstruir);
 
-    public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos) =>
-        _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(nombreDeLaBaseDeDatos);
+    /// <param name="opciones">Si es nulo, se cierran las conexiones existentes para que el DROP no falle.</param>
+    public string GenerarEliminacionDeBaseDeDatos(string nombreDeLaBaseDeDatos, OpcionesDeEliminacionDeBaseDeDatos? opciones = null) =>
+        _generadorDeScripts.GenerarEliminacionDeBaseDeDatos(nombreDeLaBaseDeDatos, opciones ?? OpcionesDeEliminacionDeBaseDeDatos.Predeterminadas);
 
     public string GenerarCreacionDeInicioDeSesion() => _generadorDeScripts.GenerarCreacionDeInicioDeSesion();
 
@@ -126,6 +127,8 @@ public sealed class ServicioDeGeneracionDeScripts
             tabla,
             tokenDeCancelacion);
 
-        return _generadorDeScripts.GenerarCreacionDeTabla(baseDeDatos, tabla, columnas);
+        var indices = await _exploradorDeEsquema.ObtenerIndicesAsync(servidor.DatosDeAcceso, baseDeDatos, tabla, tokenDeCancelacion);
+
+        return _generadorDeScripts.GenerarCreacionDeTabla(baseDeDatos, tabla, columnas, indices.FirstOrDefault(indice => indice.EsLlavePrimaria));
     }
 }

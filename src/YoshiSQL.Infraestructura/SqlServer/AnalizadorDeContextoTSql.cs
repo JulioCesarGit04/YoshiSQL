@@ -50,15 +50,17 @@ public sealed class AnalizadorDeContextoTSql : IAnalizadorDeContextoSql
         TSqlTokenType.MultilineComment
     ];
 
+    private static readonly DivisorDeLotesTSql DivisorDeLotes = new();
+
     public IReadOnlyList<string> PalabrasClave => PalabrasDeTSql.PalabrasClave;
 
     public IReadOnlyList<string> Funciones => PalabrasDeTSql.Funciones;
 
     public ContextoDeAutocompletado Analizar(string textoCompleto, int posicionDelCursor)
     {
-        var cursor = Math.Clamp(posicionDelCursor, 0, textoCompleto.Length);
+        var (textoDelLote, cursor) = RecortarAlLoteDelCursor(textoCompleto, Math.Clamp(posicionDelCursor, 0, textoCompleto.Length));
         var tokensConFinDeArchivo = new TSql170Parser(initialQuotedIdentifiers: true)
-            .GetTokenStream(new StringReader(textoCompleto), out var errores);
+            .GetTokenStream(new StringReader(textoDelLote), out var errores);
 
         // Con errores léxicos (ej. una comilla sin cerrar) lo más probable es estar escribiendo un texto
         if (tokensConFinDeArchivo is null || errores.Count > 0)
@@ -74,18 +76,62 @@ public sealed class AnalizadorDeContextoTSql : IAnalizadorDeContextoSql
             return ContextoDeAutocompletado.SinSugerencias;
         }
 
-        var palabraParcial = LeerPalabraHaciaAtras(textoCompleto, cursor);
+        var palabraParcial = LeerPalabraHaciaAtras(textoDelLote, cursor);
         var inicioDeLaPalabra = cursor - palabraParcial.Length;
         var tablasDelLote = ExtraerTablas(ObtenerTokensDelLote(tokens, cursor));
 
-        if (inicioDeLaPalabra > 0 && textoCompleto[inicioDeLaPalabra - 1] == '.')
+        if (inicioDeLaPalabra > 0 && textoDelLote[inicioDeLaPalabra - 1] == '.')
         {
-            var calificador = QuitarCorchetes(LeerPalabraHaciaAtras(textoCompleto, inicioDeLaPalabra - 1));
+            var calificador = QuitarCorchetes(LeerPalabraHaciaAtras(textoDelLote, inicioDeLaPalabra - 1));
             return new ContextoDeAutocompletado(TipoDeContexto.DespuesDePunto, palabraParcial, calificador, tablasDelLote);
         }
 
         var tipo = EsperaUnNombreDeTabla(tokens, inicioDeLaPalabra) ? TipoDeContexto.NombreDeTabla : TipoDeContexto.General;
         return new ContextoDeAutocompletado(tipo, palabraParcial, Calificador: null, tablasDelLote);
+    }
+
+    /// <summary>
+    /// Solo se analiza el lote donde está el cursor (entre dos GO). Analizar todo el documento en cada tecla
+    /// trababa la escritura en scripts grandes, y un solo error léxico en otra parte (un comentario sin cerrar
+    /// al final, un carácter raro) apagaba el autocompletado de todo el archivo.
+    /// </summary>
+    /// <returns>El texto del lote y la posición del cursor dentro de él; el documento completo si el cursor está en un GO.</returns>
+    private static (string Texto, int Cursor) RecortarAlLoteDelCursor(string textoCompleto, int cursor)
+    {
+        var inicioDeCadaLinea = CalcularInicioDeCadaLinea(textoCompleto);
+
+        foreach (var lote in DivisorDeLotes.DividirEnLotes(textoCompleto))
+        {
+            var inicioDelLote = inicioDeCadaLinea[lote.LineaInicial - 1];
+
+            if (cursor >= inicioDelLote && cursor <= inicioDelLote + lote.Texto.Length)
+            {
+                return (lote.Texto, cursor - inicioDelLote);
+            }
+        }
+
+        return (textoCompleto, cursor);
+    }
+
+    // Acepta los mismos fines de línea que el divisor de lotes: \r\n, \n y \r solo
+    private static List<int> CalcularInicioDeCadaLinea(string texto)
+    {
+        var inicios = new List<int> { 0 };
+
+        for (var indice = 0; indice < texto.Length; indice++)
+        {
+            if (texto[indice] == '\r' && indice + 1 < texto.Length && texto[indice + 1] == '\n')
+            {
+                indice++;
+            }
+
+            if (texto[indice] is '\r' or '\n')
+            {
+                inicios.Add(indice + 1);
+            }
+        }
+
+        return inicios;
     }
 
     private static bool EstaDentroDeTextoOComentario(IList<TSqlParserToken> tokens, int cursor) =>
