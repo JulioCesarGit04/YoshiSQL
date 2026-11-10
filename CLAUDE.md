@@ -11,7 +11,7 @@ que **no existe**; toda la documentación vive en esos dos archivos.
 
 ```bash
 dotnet build                                   # compilar (advertencias = errores)
-dotnet test                                    # 129 pruebas xUnit
+dotnet test                                    # 256 pruebas xUnit
 dotnet run --project src/YoshiSQL.Escritorio   # ejecutar la app
 ```
 
@@ -131,6 +131,40 @@ También se fijó `System.Security.Cryptography.Pkcs` 10.0.13: la 9.0.18 que tra
 
 - PENDIENTE: resultados enormes se cargan completos en memoria (sin tope ni streaming).
 
+### Revisión contra SQL Server real (2026-11-09) — corregido, sin commit
+En este equipo hay un SQL Server 2022 local (`localhost\SQL2022`, autenticación de Windows) con bases reales del
+usuario. Se probó de punta a punta: exportar cada base → ejecutar el script en una base nueva → comparar objetos y datos.
+- **Exportar toda la base ahora produce una copia que funciona** (antes se creaba "sin errores" pero sin DEFAULT, CHECK,
+  UNIQUE, índices, disparadores, secuencias, tipos tabla, columnas calculadas ni cascadas; en PuntoVentaDB fallaban
+  12 procedimientos). `IExploradorDeEsquema.ObtenerDetallesDelEsquemaAsync` → `DetallesDelEsquema` (una consulta de
+  catálogo por pieza); el orden de las secciones está explicado en `ServicioDeExportacionDeBaseDeDatos` y NO es libre.
+  `OrdenadorPorDependencias` ordena funciones y vistas. Datos en lotes de 1.000 filas con `SET NOCOUNT ON`.
+  Resultado: las 8 bases propias se recrean con 0 errores e idénticos objetos y datos. Límites: ver B-62, B-63, B-64.
+- **Abrir .sql en ANSI** (lo habitual en SSMS/Windows): `DetectorDeCodificacion` (BOM → UTF-8 válido → UTF-16 sin
+  marca → Windows-1252). Antes las tildes y eñes de nombres de columnas y textos llegaban rotas y el script fallaba.
+- Errores dentro de un procedimiento ejecutado: el mensaje dice "Procedimiento X, Línea N" (la línea es del
+  procedimiento, no del editor). `SesionDeConsultaSqlServer.ConvertirEnMensaje`.
+- Comprobado sin cambios: el divisor de GO con los 836 módulos reales, edición de filas con disparadores
+  (AFTER sin NOCOUNT e INSTEAD OF), respaldo, restauración y eliminar base con sesiones abiertas.
+- Para repetir estas pruebas: armar una consola temporal (fuera del repo) que use `AgregarInfraestructura()` +
+  `AgregarAplicacion()` y cree bases `ZZ_YoshiPrueba_*` que se borran al terminar. Nunca tocar las bases del usuario.
+
+### Limpieza de `BUGS.md` (2026-11-10) — corregido, sin commit
+Se arreglaron todos los 🟠 y casi todos los 🟡 (queda solo B-63). Lo que cambia cómo se trabaja:
+- **Exportar** ya no arma el script en memoria: `ExportarAsync` escribe a un `TextWriter` y lee las filas con
+  `IEjecutorDeConsultas.LeerFilasAsync` (IAsyncEnumerable). La UI usa `IServicioDeDialogos.EjecutarConProgresoAsync`
+  (`DialogoDeProgreso`: avance + Cancelar), reutilizable para cualquier tarea larga.
+- **Editar filas**: el UPDATE compara también el valor original de las columnas cambiadas (concurrencia optimista).
+  Las pruebas de `GenerarComandosDeEdicion` esperan `... WHERE [Id] = @k0 AND [Col] = @o0`.
+- **Sesión**: `ISesionDeConsulta.MensajeRecibido` (mensajes en vivo; puede llegar desde otro hilo) y
+  `TieneTransaccionAbiertaAsync` (aviso al cerrar pestaña).
+- **Segunda ventana de YoshiSQL**: empieza vacía y NO guarda sesión (`IRepositorioDeSesion.EsInstanciaSecundaria`).
+- **Tipos de usuario fuera de dbo** llegan del catálogo como `esquema.Tipo` (`TipoDeDato` admite un punto).
+- **CSV**: a los textos que empiezan con `= + - @` se les antepone un apóstrofo (inyección de fórmulas).
+- **Diseñador**: `DROP COLUMN` quita antes el DEFAULT; `ADD ... NOT NULL` usa un DEFAULT temporal; el script termina
+  con `SET XACT_ABORT OFF` en un lote aparte.
+- Muchos arreglos de interfaz están "por verificar en la aplicación" (ver cada fila en `BUGS.md`).
+
 ### Otros pendientes (según README / ESTRUCTURA)
 - Instalador Linux (.deb / AppImage) con ícono.
 - Valores `DEFAULT` en el diseñador de tablas.
@@ -219,7 +253,8 @@ El usuario destacó estas como "espectaculares". No son copiar a SSMS; son el mo
   CREATE de funciones/vistas/procedimientos desde su definición (orden: tablas→datos→FKs→funciones→vistas→procs).
   `OpcionesDeExportacion` + `ServicioDeExportacionDeBaseDeDatos` (Aplicacion); generador:
   `GenerarCreacionDeTablaSinEnvolver`, `GenerarInsertDeFilas`, `GenerarLlaveForanea`, `GenerarUso`, `GenerarSeleccionCompleta`.
-  Objetos cifrados/sin permiso se omiten con un comentario. LIMITACIÓN: no maneja columnas calculadas.
+  Objetos cifrados/sin permiso se omiten con un comentario. Desde 2026-11-09 incluye también tipos tabla, secuencias,
+  columnas calculadas, índices, UNIQUE, DEFAULT, CHECK, disparadores y cascadas (ver "Revisión contra SQL Server real").
   PENDIENTE (idea): exportar una sola tabla desde su menú.
 - ⭐🔴 **Comparar dos bases (esquema + datos)**: muestra tablas/columnas nuevas, distintas o borradas y
   genera el script de sincronización. SSMS no lo trae gratis → función estrella diferenciadora.

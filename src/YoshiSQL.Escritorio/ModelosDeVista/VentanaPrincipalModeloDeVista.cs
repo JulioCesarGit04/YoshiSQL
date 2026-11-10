@@ -364,11 +364,17 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
 
     public async Task AbrirConsultaDelHistorialAsync(ConsultaEjecutada consulta)
     {
-        var contexto = Explorador.BuscarContextoDelServidor(consulta.Servidor) ?? await ObtenerOSolicitarContextoAsync();
-
-        if (contexto is not null)
+        if (Explorador.BuscarContextoDelServidor(consulta.Servidor) is { } contextoDelMismoServidor)
         {
-            await AbrirNuevaConsultaAsync(contexto with { BaseDeDatos = consulta.BaseDeDatos }, consulta.Texto, ejecutarAlAbrir: false);
+            await AbrirNuevaConsultaAsync(contextoDelMismoServidor with { BaseDeDatos = consulta.BaseDeDatos }, consulta.Texto, ejecutarAlAbrir: false);
+            return;
+        }
+
+        // El servidor de esa consulta no está conectado: se abre en el actual, pero SIN forzar la base del historial.
+        // Antes se usaba el nombre de esa base en otro servidor: o no existía, o (peor) existía y era otra distinta.
+        if (await ObtenerOSolicitarContextoAsync() is { } contexto)
+        {
+            await AbrirNuevaConsultaAsync(contexto, consulta.Texto, ejecutarAlAbrir: false);
         }
     }
 
@@ -493,23 +499,39 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             return;
         }
 
-        var resultado = await _servicioDeExportacionDeBaseDeDatos.GenerarScriptCompletoAsync(
-            contexto.Servidor, baseDeDatos, opciones, CancellationToken.None);
+        IReadOnlyList<string> advertencias = [];
 
-        // Con BOM: sin él, sqlcmd y SSMS (según su configuración) leen el archivo como ANSI y las tildes y eñes
-        // de los datos llegan corruptas a la base de destino (N'año' -> N'aÃ±o')
-        await File.WriteAllTextAsync(ruta, resultado.Script, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+        // Se escribe directo al archivo, con avance y posibilidad de cancelar: una base grande no cabe en memoria
+        // y antes la aplicación parecía colgada hasta terminar
+        var llegoAlFinal = await _servicioDeDialogos.EjecutarConProgresoAsync(
+            $"Exportando {baseDeDatos}",
+            async (avance, tokenDeCancelacion) =>
+            {
+                // Con BOM: sin él, sqlcmd y SSMS (según su configuración) leen el archivo como ANSI y las tildes y eñes
+                // de los datos llegan corruptas a la base de destino (N'año' -> N'aÃ±o')
+                await using var archivo = new StreamWriter(ruta, append: false, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                advertencias = await _servicioDeExportacionDeBaseDeDatos.ExportarAsync(
+                    contexto.Servidor, baseDeDatos, opciones, archivo, avance, tokenDeCancelacion);
+            });
+
+        if (!llegoAlFinal)
+        {
+            // Un script a medias parecería una exportación válida: se borra
+            File.Delete(ruta);
+            await _servicioDeDialogos.MostrarInformacionAsync("Exportación cancelada", "Se canceló la exportación y no se guardó ningún archivo.");
+            return;
+        }
 
         var mensaje = $"La base de datos \"{baseDeDatos}\" se exportó a:\n{ruta}";
 
-        if (resultado.Advertencias.Count > 0)
+        if (advertencias.Count > 0)
         {
-            mensaje += $"\n\nAtención: {resultado.Advertencias.Count} elemento(s) no se exportaron completos "
-                + "(también quedó anotado en el script):\n- " + string.Join("\n- ", resultado.Advertencias);
+            mensaje += $"\n\nAtención: {advertencias.Count} elemento(s) no se exportaron completos "
+                + "(también quedó anotado en el script):\n- " + string.Join("\n- ", advertencias);
         }
 
         await _servicioDeDialogos.MostrarInformacionAsync(
-            resultado.Advertencias.Count > 0 ? "Exportación con advertencias" : "Exportación completa",
+            advertencias.Count > 0 ? "Exportación con advertencias" : "Exportación completa",
             mensaje);
     }
 
@@ -672,6 +694,13 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     /// </summary>
     private async Task<bool> ConfirmarCierreAsync(DocumentoModeloDeVista documento)
     {
+        if (documento is PestanaDeConsultaModeloDeVista consulta
+            && await consulta.ObtenerAdvertenciaDeCierreAsync() is { } advertencia
+            && !await _servicioDeDialogos.ConfirmarAsync("Cerrar pestaña", advertencia, "Cerrar de todos modos", "Cancelar"))
+        {
+            return false;
+        }
+
         if (documento.TieneCambiosSinAplicar)
         {
             return await _servicioDeDialogos.ConfirmarAsync(

@@ -1,4 +1,5 @@
 using System.Data;
+using System.Runtime.CompilerServices;
 using Microsoft.Data.SqlClient;
 using YoshiSQL.Dominio.Conexiones;
 using YoshiSQL.Dominio.Contratos;
@@ -20,7 +21,29 @@ public sealed class EjecutorDeConsultasSqlServer : IEjecutorDeConsultas
         ["datetimeoffset"] = SqlDbType.DateTimeOffset
     };
 
+    // Igual que en las pestañas de consulta: leer una tabla grande no tiene tiempo límite, se cancela
+    private const int SinTiempoLimite = 0;
+
     public void LiberarConexionesInactivas() => SqlConnection.ClearAllPools();
+
+    public async IAsyncEnumerable<object?[]> LeerFilasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        string consulta,
+        [EnumeratorCancellation] CancellationToken tokenDeCancelacion)
+    {
+        await using var conexion = new SqlConnection(
+            ConstructorDeCadenaDeConexion.Construir(datosDeAcceso, baseDeDatos, usarPoolDeConexiones: false));
+        await conexion.OpenAsync(tokenDeCancelacion);
+
+        await using var comando = new SqlCommand(consulta, conexion) { CommandTimeout = SinTiempoLimite };
+        await using var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
+
+        while (await lector.ReadAsync(tokenDeCancelacion))
+        {
+            yield return SesionDeConsultaSqlServer.LeerValoresDeLaFila(lector);
+        }
+    }
 
     public async Task<ISesionDeConsulta> AbrirSesionAsync(
         DatosDeAcceso datosDeAcceso,

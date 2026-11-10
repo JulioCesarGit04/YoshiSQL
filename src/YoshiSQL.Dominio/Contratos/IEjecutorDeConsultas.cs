@@ -21,6 +21,15 @@ public interface IEjecutorDeConsultas
         CancellationToken tokenDeCancelacion);
 
     /// <summary>
+    /// Lee las filas de una consulta una por una, sin cargarlas todas en memoria (para exportar tablas grandes).
+    /// </summary>
+    IAsyncEnumerable<object?[]> LeerFilasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        string consulta,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>
     /// Cierra las conexiones inactivas que la aplicación guarda para reutilizar (las del explorador).
     /// Siguen abiertas en el servidor y, por ejemplo, impiden eliminar la base en la que estaban.
     /// </summary>

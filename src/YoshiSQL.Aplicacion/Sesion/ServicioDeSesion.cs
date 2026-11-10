@@ -24,7 +24,11 @@ public sealed class ServicioDeSesion
     {
         var estado = await _repositorioDeSesion.CargarAsync(tokenDeCancelacion);
         var seCerroIncorrectamente = await _repositorioDeSesion.RegistrarInicioAsync(tokenDeCancelacion);
-        return new SesionAnterior(estado, seCerroIncorrectamente);
+
+        // Una segunda ventana empieza vacía: las pestañas guardadas son las de la primera, que sigue abierta
+        return _repositorioDeSesion.EsInstanciaSecundaria
+            ? new SesionAnterior(EstadoDeLaSesion.Vacio, SeCerroIncorrectamente: false)
+            : new SesionAnterior(estado, seCerroIncorrectamente);
     }
 
     public Task GuardarAsync(EstadoDeLaSesion estado, CancellationToken tokenDeCancelacion) =>

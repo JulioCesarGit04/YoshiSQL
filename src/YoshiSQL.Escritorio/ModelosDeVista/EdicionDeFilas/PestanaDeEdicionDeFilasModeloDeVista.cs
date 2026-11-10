@@ -122,9 +122,16 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
         {
             Filas.Remove(fila);
         }
+        // Pulsar otra vez sobre una fila ya marcada la desmarca; antes había que recargar y perder los demás cambios
+        else if (fila.Estado == EstadoDeFila.Eliminada)
+        {
+            fila.QuitarMarcaDeEliminacion();
+            TextoDeEstado = "La fila ya no se eliminará.";
+        }
         else
         {
             fila.MarcarParaEliminar();
+            TextoDeEstado = "Fila marcada para eliminar. Pulsa \"Eliminar fila\" otra vez sobre ella para desmarcarla.";
         }
 
         ActualizarTitulo();

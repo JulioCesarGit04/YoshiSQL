@@ -14,6 +14,9 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
     private const int PorcentajeDeAvance = 10;
     private const char TipoDeArchivoDeRegistro = 'L';
 
+    // Así marca RESTORE FILELISTONLY los contenedores FILESTREAM y de tablas optimizadas para memoria
+    private const char TipoDeCarpetaDeDatos = 'S';
+
     // Valor de la columna BackupType de RESTORE HEADERONLY para un respaldo completo de la base
     private const int TipoDeRespaldoCompleto = 1;
 
@@ -95,9 +98,10 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
 
         if (opciones.CerrarConexionesExistentes)
         {
+            // En el mismo lote que el RESTORE: con un GO en medio, entre una instrucción y la otra
+            // otra conexión podía ocupar el único lugar de la base y la restauración fallaba
             script.AppendLine($"IF DB_ID({nombreDelDestino}) IS NOT NULL")
                 .AppendLine($"    ALTER DATABASE {destino} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;")
-                .AppendLine("GO")
                 .AppendLine();
         }
 
@@ -133,8 +137,14 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
     /// </summary>
     private static IEnumerable<(string NombreLogico, string RutaNueva)> UbicarArchivos(OpcionesDeRestauracion opciones)
     {
-        var archivosDeDatos = opciones.Archivos.Where(archivo => !archivo.EsDeRegistro).ToList();
+        var archivosDeDatos = opciones.Archivos.Where(archivo => !archivo.EsDeRegistro && !archivo.EsCarpeta).ToList();
         var archivosDeRegistro = opciones.Archivos.Where(archivo => archivo.EsDeRegistro).ToList();
+
+        // FILESTREAM y las tablas en memoria no son un archivo sino una carpeta: va sin extensión
+        foreach (var carpeta in opciones.Archivos.Where(archivo => archivo.EsCarpeta))
+        {
+            yield return (carpeta.NombreLogico, UnirRuta(opciones.CarpetaDeDatos, $"{opciones.BaseDeDatosDestino}_{carpeta.NombreLogico}"));
+        }
 
         for (var indice = 0; indice < archivosDeDatos.Count; indice++)
         {
@@ -204,10 +214,13 @@ public sealed class AdministradorDeRespaldosSqlServer : IAdministradorDeRespaldo
 
         while (await lector.ReadAsync(tokenDeCancelacion))
         {
+            var tipo = lector.GetString(lector.GetOrdinal("Type"))[0];
+
             archivos.Add(new ArchivoDelRespaldo(
                 lector.GetString(lector.GetOrdinal("LogicalName")),
                 lector.GetString(lector.GetOrdinal("PhysicalName")),
-                lector.GetString(lector.GetOrdinal("Type"))[0] == TipoDeArchivoDeRegistro));
+                tipo == TipoDeArchivoDeRegistro,
+                tipo == TipoDeCarpetaDeDatos));
         }
 
         return archivos;

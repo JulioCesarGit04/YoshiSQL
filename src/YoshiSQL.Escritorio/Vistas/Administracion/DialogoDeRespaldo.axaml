@@ -41,6 +41,7 @@
         </ItemsControl>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="Cancelar respaldo" MinWidth="110" IsVisible="{Binding EstaTrabajando}" Command="{Binding CancelarCommand}" />
             <Button Classes="Primario" Content="Respaldar" MinWidth="110" Command="{Binding RespaldarCommand}" />
             <Button Content="Cerrar" MinWidth="110" IsCancel="True" Click="AlCerrar" />
         </StackPanel>

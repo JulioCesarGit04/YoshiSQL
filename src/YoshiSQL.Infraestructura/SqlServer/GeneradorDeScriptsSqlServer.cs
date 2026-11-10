@@ -106,15 +106,141 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             baseDeDatos,
             $"EXEC sys.sp_rename {EscribirTexto(Delimitar(objeto.Esquema, objeto.Nombre))}, {EscribirTexto(nuevoNombre)};");
 
-    public string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria = null)
+    public string GenerarCreacionDeTablaSinEnvolver(
+        Tabla tabla,
+        IReadOnlyList<Columna> columnas,
+        Indice? llavePrimaria = null,
+        IReadOnlyList<ColumnaCalculada>? columnasCalculadas = null,
+        IReadOnlyList<IdentidadDeColumna>? identidades = null)
     {
+        var formulas = (columnasCalculadas ?? []).ToDictionary(calculada => calculada.Columna, StringComparer.OrdinalIgnoreCase);
+        var identidadesPorColumna = (identidades ?? []).ToDictionary(identidad => identidad.Columna, StringComparer.OrdinalIgnoreCase);
+
         var definicionesDeColumnas = columnas
             .OrderBy(columna => columna.Posicion)
-            .Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos))
+            .Select(columna => formulas.TryGetValue(columna.Nombre, out var formula)
+                ? DefinirColumnaCalculada(columna, formula)
+                : DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos, identidadesPorColumna.GetValueOrDefault(columna.Nombre)))
             .ToList();
 
         return CrearInstruccionCreateTable(tabla, definicionesDeColumnas, DescribirLlavePrimaria(tabla, columnas, llavePrimaria));
     }
+
+    // Una columna calculada se define solo con su fórmula: el tipo lo deduce SQL Server.
+    // NOT NULL solo es válido (y necesario, si es parte de una llave) cuando está persistida.
+    private static string DefinirColumnaCalculada(Columna columna, ColumnaCalculada formula)
+    {
+        var definicion = $"{Delimitar(columna.Nombre)} AS {formula.Definicion}";
+
+        if (!formula.EsPersistida)
+        {
+            return definicion;
+        }
+
+        return columna.AdmiteNulos ? $"{definicion} PERSISTED" : $"{definicion} PERSISTED NOT NULL";
+    }
+
+    public string GenerarCreacionDeTipoDeTabla(TipoDeTabla tipo)
+    {
+        var lineas = tipo.Columnas
+            .OrderBy(columna => columna.Posicion)
+            .Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos))
+            .ToList();
+
+        var columnasDeLaLlave = tipo.Columnas
+            .Where(columna => columna.EsLlavePrimaria)
+            .OrderBy(columna => columna.Posicion)
+            .Select(columna => columna.Nombre)
+            .ToList();
+
+        if (columnasDeLaLlave.Count > 0)
+        {
+            lineas.Add($"PRIMARY KEY ({UnirNombres(columnasDeLaLlave)})");
+        }
+
+        return new StringBuilder()
+            .AppendLine($"IF TYPE_ID({EscribirTexto(Delimitar(tipo.Esquema, tipo.Nombre))}) IS NULL")
+            .AppendLine($"    CREATE TYPE {Delimitar(tipo.Esquema, tipo.Nombre)} AS TABLE")
+            .AppendLine("    (")
+            .AppendLine(string.Join($",{Environment.NewLine}", lineas.Select(linea => SangriaDeColumna + SangriaDeColumna + linea)))
+            .Append("    );")
+            .ToString();
+    }
+
+    public string GenerarCreacionDeSecuencia(Secuencia secuencia)
+    {
+        var cache = secuencia switch
+        {
+            { UsaCache: false } => "NO CACHE",
+            { TamanoDeCache: int tamano } => $"CACHE {tamano}",
+            _ => "CACHE"
+        };
+
+        // Solo si no existe: así el script también sirve para completar una base que ya la tiene
+        return $"IF OBJECT_ID({EscribirTexto(Delimitar(secuencia.Esquema, secuencia.Nombre))}, N'SO') IS NULL{Environment.NewLine}"
+            + $"    CREATE SEQUENCE {Delimitar(secuencia.Esquema, secuencia.Nombre)} AS {secuencia.TipoDeDato} "
+            + $"START WITH {secuencia.SiguienteValor} INCREMENT BY {secuencia.Incremento} "
+            + $"MINVALUE {secuencia.ValorMinimo} MAXVALUE {secuencia.ValorMaximo} "
+            + $"{(secuencia.EsCiclica ? "CYCLE" : "NO CYCLE")} {cache};";
+    }
+
+    public string GenerarCreacionDeSinonimo(Sinonimo sinonimo) =>
+        $"IF OBJECT_ID({EscribirTexto(Delimitar(sinonimo.Esquema, sinonimo.Nombre))}, N'SN') IS NULL{Environment.NewLine}"
+        + $"    CREATE SYNONYM {Delimitar(sinonimo.Esquema, sinonimo.Nombre)} FOR {sinonimo.ObjetoBase};";
+
+    public string GenerarCreacionDeIndice(IndiceDeTabla indice)
+    {
+        var tabla = Delimitar(indice.Tabla.Esquema, indice.Tabla.Nombre);
+        var agrupado = indice.EsAgrupado ? "CLUSTERED" : "NONCLUSTERED";
+        var columnas = string.Join(", ", indice.Columnas.Select(columna => columna.EsDescendente ? $"{Delimitar(columna.Nombre)} DESC" : Delimitar(columna.Nombre)));
+
+        if (indice.EsRestriccionUnica)
+        {
+            return $"ALTER TABLE {tabla} ADD CONSTRAINT {Delimitar(indice.Nombre)} UNIQUE {agrupado} ({columnas});";
+        }
+
+        var instruccion = new StringBuilder($"CREATE {(indice.EsUnico ? "UNIQUE " : string.Empty)}{agrupado} INDEX {Delimitar(indice.Nombre)} ON {tabla} ({columnas})");
+
+        if (indice.ColumnasIncluidas.Count > 0)
+        {
+            instruccion.Append($" INCLUDE ({UnirNombres(indice.ColumnasIncluidas)})");
+        }
+
+        if (!string.IsNullOrWhiteSpace(indice.Filtro))
+        {
+            instruccion.Append($" WHERE {indice.Filtro}");
+        }
+
+        return instruccion.Append(';').ToString();
+    }
+
+    public string GenerarValorPredeterminado(ValorPredeterminado valor)
+    {
+        var restriccion = valor.Nombre is null ? string.Empty : $"CONSTRAINT {Delimitar(valor.Nombre)} ";
+        return $"ALTER TABLE {Delimitar(valor.Tabla.Esquema, valor.Tabla.Nombre)} ADD {restriccion}DEFAULT {valor.Definicion} FOR {Delimitar(valor.Columna)};";
+    }
+
+    public string GenerarRestriccionDeVerificacion(RestriccionDeVerificacion restriccion)
+    {
+        var tabla = Delimitar(restriccion.Tabla.Esquema, restriccion.Tabla.Nombre);
+        var nombre = restriccion.Nombre is null ? string.Empty : $"CONSTRAINT {Delimitar(restriccion.Nombre)} ";
+
+        // Una restricción deshabilitada puede tener filas que no la cumplen: se crea sin validar y se deja apagada.
+        // Sin nombre no se puede apagar después; ese caso (rarísimo) se crea sin validar las filas existentes.
+        if (!restriccion.EstaDeshabilitada)
+        {
+            return $"ALTER TABLE {tabla} WITH CHECK ADD {nombre}CHECK {restriccion.Definicion};";
+        }
+
+        var creacion = $"ALTER TABLE {tabla} WITH NOCHECK ADD {nombre}CHECK {restriccion.Definicion};";
+
+        return restriccion.Nombre is null
+            ? creacion
+            : $"{creacion}{Environment.NewLine}ALTER TABLE {tabla} NOCHECK CONSTRAINT {Delimitar(restriccion.Nombre)};";
+    }
+
+    public string GenerarDeshabilitacionDeDisparador(DisparadorDeTabla disparador) =>
+        $"DISABLE TRIGGER {Delimitar(disparador.Esquema, disparador.Nombre)} ON {Delimitar(disparador.EsquemaDelObjeto, disparador.NombreDelObjeto)};";
 
     // CREATE SCHEMA debe ser la única instrucción de su lote; dentro de EXEC se puede condicionar a que no exista
     public string GenerarCreacionDeEsquema(string esquema) =>
@@ -147,7 +273,15 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
     public string GenerarLlaveForanea(LlaveForanea llave) =>
         $"ALTER TABLE {Delimitar(llave.TablaOrigen.Esquema, llave.TablaOrigen.Nombre)} "
         + $"ADD CONSTRAINT {Delimitar(llave.Nombre)} FOREIGN KEY ({UnirNombres(llave.ColumnasOrigen)}) "
-        + $"REFERENCES {Delimitar(llave.TablaDestino.Esquema, llave.TablaDestino.Nombre)} ({UnirNombres(llave.ColumnasDestino)});";
+        + $"REFERENCES {Delimitar(llave.TablaDestino.Esquema, llave.TablaDestino.Nombre)} ({UnirNombres(llave.ColumnasDestino)})"
+        + $"{DescribirAccionReferencial("ON DELETE", llave.AlEliminar)}{DescribirAccionReferencial("ON UPDATE", llave.AlActualizar)};";
+
+    // Sin esto, una llave con ON DELETE CASCADE se recreaba sin la cascada y borrar un padre empezaba a fallar.
+    // El catálogo escribe las acciones con guion bajo (SET_NULL); NO_ACTION es la predeterminada y no se escribe.
+    private static string DescribirAccionReferencial(string evento, string accion) =>
+        string.IsNullOrEmpty(accion) || accion.Equals(LlaveForanea.SinAccion, StringComparison.OrdinalIgnoreCase)
+            ? string.Empty
+            : $" {evento} {accion.Replace('_', ' ')}";
 
     public string GenerarInsertDeFilas(Tabla tabla, IReadOnlyList<Columna> columnas, IReadOnlyList<object?[]> filas)
     {
@@ -305,7 +439,15 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             script.AppendLine(instruccion).AppendLine();
         }
 
-        return script.AppendLine("COMMIT TRANSACTION;").Append("GO").ToString();
+        // En un lote aparte para que se ejecute aunque el anterior falle: si no, la pestaña donde se abra el script
+        // se quedaría con XACT_ABORT activo y las consultas siguientes se comportarían distinto
+        return script
+            .AppendLine("COMMIT TRANSACTION;")
+            .AppendLine("GO")
+            .AppendLine()
+            .AppendLine("SET XACT_ABORT OFF;")
+            .Append("GO")
+            .ToString();
     }
 
     public IReadOnlyList<ComandoSql> GenerarComandosDeEdicion(Tabla tabla, IReadOnlyList<Columna> columnas, IReadOnlyList<CambioDeFila> cambios)
@@ -507,8 +649,12 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             instrucciones.Add($"ALTER TABLE {nombreDeLaTabla} DROP CONSTRAINT {Delimitar(original.NombreDeLaLlavePrimaria)};");
         }
 
-        instrucciones.AddRange(cambios.ColumnasEliminadas.Select(columna =>
-            $"ALTER TABLE {nombreDeLaTabla} DROP COLUMN {Delimitar(columna.Nombre)};"));
+        // SQL Server no deja eliminar una columna mientras tenga un valor predeterminado: primero se quita.
+        // Su nombre no se conoce de antemano (suele ser DF__Tabla__Col__1A2B3C), así que se busca al ejecutar.
+        instrucciones.AddRange(cambios.ColumnasEliminadas.Select((columna, indice) =>
+            CrearEliminacionDeValorPredeterminado(nueva.Tabla, columna.Nombre, indice)
+            + Environment.NewLine
+            + $"ALTER TABLE {nombreDeLaTabla} DROP COLUMN {Delimitar(columna.Nombre)};"));
 
         instrucciones.AddRange(cambios.ColumnasRenombradas.Select(columna =>
             $"EXEC sp_rename {EscribirTexto($"{nombreDeLaTabla}.{Delimitar(columna.NombreOriginal!)}")}, {EscribirTexto(columna.Nombre)}, N'COLUMN';"));
@@ -516,8 +662,7 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         instrucciones.AddRange(cambios.ColumnasModificadas.Select(columna =>
             $"ALTER TABLE {nombreDeLaTabla} ALTER COLUMN {Delimitar(columna.Nombre)} {columna.TipoDeDato.Describir()} {(columna.AdmiteNulos ? "NULL" : "NOT NULL")};"));
 
-        instrucciones.AddRange(cambios.ColumnasNuevas.Select(columna =>
-            $"ALTER TABLE {nombreDeLaTabla} ADD {DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos)};"));
+        instrucciones.AddRange(cambios.ColumnasNuevas.Select(columna => CrearAdicionDeColumna(nombreDeLaTabla, columna)));
 
         var columnasDeLaLlave = nueva.ColumnasDeLaLlavePrimaria.Select(columna => columna.Nombre).ToList();
 
@@ -529,6 +674,59 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
         return instrucciones.Count > 0 ? instrucciones : ["-- No hay cambios que aplicar."];
     }
+
+    private static string CrearEliminacionDeValorPredeterminado(Tabla tabla, string columna, int indice)
+    {
+        var nombreDeLaTabla = Delimitar(tabla.Esquema, tabla.Nombre);
+        var variable = $"@quitarPredeterminado{indice + 1}";
+
+        var nombreDentroDeTexto = nombreDeLaTabla.Replace("'", "''", StringComparison.Ordinal);
+
+        return string.Join(
+            Environment.NewLine,
+            $"DECLARE {variable} nvarchar(max) = N'';",
+            $"SELECT {variable} += N'ALTER TABLE {nombreDentroDeTexto} DROP CONSTRAINT ' + QUOTENAME(dc.name) + N';'",
+            "FROM sys.default_constraints AS dc",
+            "INNER JOIN sys.columns AS c ON c.object_id = dc.parent_object_id AND c.column_id = dc.parent_column_id",
+            $"WHERE dc.parent_object_id = OBJECT_ID({EscribirTexto(nombreDeLaTabla)}) AND c.name = {EscribirTexto(columna)};",
+            $"EXEC sys.sp_executesql {variable};");
+    }
+
+    /// <summary>
+    /// Una columna NOT NULL no se puede agregar a una tabla que ya tiene filas: SQL Server no sabe qué valor ponerles.
+    /// Se agrega con un valor inicial (0, texto vacío...) solo para las filas existentes, y se quita enseguida
+    /// para que la columna quede sin valor predeterminado, tal como se diseñó.
+    /// </summary>
+    private static string CrearAdicionDeColumna(string nombreDeLaTabla, DefinicionDeColumna columna)
+    {
+        var definicion = DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos);
+        var valorInicial = columna.AdmiteNulos || columna.EsIdentidad ? null : ObtenerValorInicial(columna.TipoDeDato);
+
+        if (valorInicial is null)
+        {
+            return $"ALTER TABLE {nombreDeLaTabla} ADD {definicion};";
+        }
+
+        var restriccionTemporal = Delimitar($"DF_YoshiSQL_Temporal_{columna.Nombre}");
+
+        return $"-- Las filas que ya existen reciben {valorInicial} en la columna nueva"
+            + Environment.NewLine
+            + $"ALTER TABLE {nombreDeLaTabla} ADD {definicion} CONSTRAINT {restriccionTemporal} DEFAULT ({valorInicial});"
+            + Environment.NewLine
+            + $"ALTER TABLE {nombreDeLaTabla} DROP CONSTRAINT {restriccionTemporal};";
+    }
+
+    /// <returns>El valor "vacío" del tipo, o nulo si no hay uno razonable (xml, tipos de usuario...).</returns>
+    private static string? ObtenerValorInicial(TipoDeDato tipo) => tipo.Nombre.ToLowerInvariant() switch
+    {
+        "int" or "bigint" or "smallint" or "tinyint" or "bit" or "decimal" or "numeric" or "money" or "smallmoney" or "float" or "real" => "0",
+        "char" or "varchar" or "nchar" or "nvarchar" or "text" or "ntext" => "''",
+        "date" or "datetime" or "datetime2" or "smalldatetime" or "datetimeoffset" => "'19000101'",
+        "time" => "'00:00:00'",
+        "uniqueidentifier" => "'00000000-0000-0000-0000-000000000000'",
+        "binary" or "varbinary" => "0x",
+        _ => null
+    };
 
     private static ComandoSql CrearInsert(Tabla tabla, IReadOnlyList<Columna> columnas, CambioDeFila cambio)
     {
@@ -560,10 +758,57 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             .ToList();
 
         var (condicion, parametrosDeLaLlave) = CrearCondicionPorLlave(columnas, cambio, posicionesDeLaLlave);
-        var texto = $"UPDATE {Delimitar(tabla.Esquema, tabla.Nombre)} SET {string.Join(", ", asignaciones.Select(asignacion => asignacion.Texto))} WHERE {condicion};";
+        var (condicionDeOriginales, parametrosDeOriginales) = CrearCondicionDeValoresOriginales(columnas, cambio, posicionesDeLaLlave);
+        var texto = $"UPDATE {Delimitar(tabla.Esquema, tabla.Nombre)} SET {string.Join(", ", asignaciones.Select(asignacion => asignacion.Texto))} WHERE {condicion}{condicionDeOriginales};";
 
-        return new ComandoSql(texto, [.. asignaciones.Select(asignacion => asignacion.Parametro), .. parametrosDeLaLlave], FilasEsperadas: 1);
+        return new ComandoSql(
+            texto,
+            [.. asignaciones.Select(asignacion => asignacion.Parametro), .. parametrosDeLaLlave, .. parametrosDeOriginales],
+            FilasEsperadas: 1);
     }
+
+    /// <summary>
+    /// Además de la llave, se exige que las columnas que se van a cambiar sigan teniendo el valor que el usuario vio.
+    /// Si otra persona las modificó mientras tanto, el UPDATE no encuentra la fila y se avisa, en vez de pisar su cambio.
+    /// </summary>
+    private static (string Condicion, List<ParametroSql> Parametros) CrearCondicionDeValoresOriginales(
+        IReadOnlyList<Columna> columnas,
+        CambioDeFila cambio,
+        IReadOnlyList<int> posicionesDeLaLlave)
+    {
+        var condicion = new StringBuilder();
+        var parametros = new List<ParametroSql>();
+
+        foreach (var posicion in ObtenerPosicionesModificadas(columnas, cambio))
+        {
+            // La llave ya está en la condición, y hay tipos que SQL Server no deja comparar con "=" (xml, text, geography...)
+            if (posicionesDeLaLlave.Contains(posicion) || !TiposQueSePuedenComparar.Contains(columnas[posicion].TipoDeDato.Nombre))
+            {
+                continue;
+            }
+
+            var nombre = Delimitar(columnas[posicion].Nombre);
+
+            if (cambio.ValoresOriginales[posicion] is null)
+            {
+                condicion.Append($" AND {nombre} IS NULL");
+                continue;
+            }
+
+            var parametro = CrearParametro($"@o{parametros.Count}", cambio.ValoresOriginales[posicion], columnas[posicion]);
+            condicion.Append($" AND {nombre} = {parametro.Nombre}");
+            parametros.Add(parametro);
+        }
+
+        return (condicion.ToString(), parametros);
+    }
+
+    private static readonly HashSet<string> TiposQueSePuedenComparar = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "int", "bigint", "smallint", "tinyint", "bit", "decimal", "numeric", "money", "smallmoney", "float", "real",
+        "char", "varchar", "nchar", "nvarchar", "date", "datetime", "datetime2", "smalldatetime", "datetimeoffset", "time",
+        "uniqueidentifier", "binary", "varbinary"
+    };
 
     private static ParametroSql CrearParametro(string nombre, object? valor, Columna columna) =>
         new(nombre, valor, columna.TipoDeDato.Nombre);
@@ -608,13 +853,14 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
     private static string EscribirTexto(string texto) => $"N'{texto.Replace("'", "''", StringComparison.Ordinal)}'";
 
-    private static string DefinirColumna(string nombre, TipoDeDato tipoDeDato, bool esIdentidad, bool admiteNulos)
+    /// <param name="identidad">Semilla e incremento reales; si no se conocen se usa IDENTITY(1,1).</param>
+    private static string DefinirColumna(string nombre, TipoDeDato tipoDeDato, bool esIdentidad, bool admiteNulos, IdentidadDeColumna? identidad = null)
     {
         var definicion = new StringBuilder($"{Delimitar(nombre)} {tipoDeDato.Describir()}");
 
         if (esIdentidad)
         {
-            definicion.Append(" IDENTITY(1,1)");
+            definicion.Append(identidad is null ? " IDENTITY(1,1)" : $" IDENTITY({identidad.Semilla},{identidad.Incremento})");
         }
 
         definicion.Append(admiteNulos ? " NULL" : " NOT NULL");

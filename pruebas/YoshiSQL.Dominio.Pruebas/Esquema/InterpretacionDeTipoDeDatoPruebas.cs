@@ -13,6 +13,7 @@ public class InterpretacionDeTipoDeDatoPruebas
     [InlineData("datetime2(3)", "datetime2(3)")]
     [InlineData("TIME(0)", "time(0)")]
     [InlineData("Telefono", "Telefono")]
+    [InlineData("ventas.Codigo", "ventas.Codigo")]
     [InlineData("NVARCHAR(MAX)", "nvarchar(max)")]
     public void Interpretar_TextoValido_DevuelveElTipo(string texto, string esperado)
     {
@@ -34,6 +35,8 @@ public class InterpretacionDeTipoDeDatoPruebas
     [InlineData("nvarchar(0)")]
     [InlineData("decimal(2,5)")]
     [InlineData("int; DROP TABLE x")]
+    [InlineData("a.b.c")]
+    [InlineData("ventas.")]
     public void Interpretar_TextoInvalido_DevuelveNulo(string texto)
     {
         Assert.Null(TipoDeDato.Interpretar(texto));

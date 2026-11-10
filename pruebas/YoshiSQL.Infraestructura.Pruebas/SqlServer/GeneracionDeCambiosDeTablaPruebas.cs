@@ -54,6 +54,62 @@ public class GeneracionDeCambiosDeTablaPruebas
         Assert.DoesNotContain("PRIMARY KEY", script);
     }
 
+    // SQL Server no deja eliminar una columna que todavía tiene su restricción DEFAULT
+    [Fact]
+    public void EliminarColumna_QuitaAntesSuValorPredeterminado()
+    {
+        var nueva = TablaOriginal with { Columnas = [TablaOriginal.Columnas[0], TablaOriginal.Columnas[1]] };
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", TablaOriginal, nueva);
+
+        var posicionDeLaBusqueda = script.IndexOf("FROM sys.default_constraints AS dc", StringComparison.Ordinal);
+        var posicionDelDrop = script.IndexOf("DROP COLUMN [Ciudad]", StringComparison.Ordinal);
+
+        Assert.True(posicionDeLaBusqueda > 0 && posicionDelDrop > posicionDeLaBusqueda, script);
+        Assert.Contains("WHERE dc.parent_object_id = OBJECT_ID(N'[dbo].[Clientes]') AND c.name = N'Ciudad';", script);
+        Assert.Contains("EXEC sys.sp_executesql @quitarPredeterminado1;", script);
+    }
+
+    // Sin un valor para las filas que ya existen, SQL Server rechaza la columna NOT NULL en una tabla con datos
+    [Fact]
+    public void AgregarColumnaObligatoria_UsaUnValorInicialTemporalParaLasFilasExistentes()
+    {
+        var nueva = TablaOriginal with
+        {
+            Columnas = [.. TablaOriginal.Columnas, new(null, "Puntos", Entero, AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false)]
+        };
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", TablaOriginal, nueva);
+
+        Assert.Contains("ADD [Puntos] int NOT NULL CONSTRAINT [DF_YoshiSQL_Temporal_Puntos] DEFAULT (0);", script);
+        Assert.Contains("ALTER TABLE [dbo].[Clientes] DROP CONSTRAINT [DF_YoshiSQL_Temporal_Puntos];", script);
+    }
+
+    [Fact]
+    public void AgregarColumnaOpcional_NoNecesitaValorInicial()
+    {
+        var nueva = TablaOriginal with
+        {
+            Columnas = [.. TablaOriginal.Columnas, new(null, "Puntos", Entero, AdmiteNulos: true, EsLlavePrimaria: false, EsIdentidad: false)]
+        };
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", TablaOriginal, nueva);
+
+        Assert.Contains("ADD [Puntos] int NULL;", script);
+        Assert.DoesNotContain("DF_YoshiSQL_Temporal", script);
+    }
+
+    // Si el script se abre en una pestaña, esa conexión no debe quedarse con XACT_ABORT activo
+    [Fact]
+    public void CualquierCambio_AlTerminarApagaXactAbortEnUnLoteAparte()
+    {
+        var nueva = TablaOriginal with { Columnas = [TablaOriginal.Columnas[0], TablaOriginal.Columnas[1]] };
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", TablaOriginal, nueva);
+
+        Assert.EndsWith($"COMMIT TRANSACTION;{Environment.NewLine}GO{Environment.NewLine}{Environment.NewLine}SET XACT_ABORT OFF;{Environment.NewLine}GO", script);
+    }
+
     [Fact]
     public void CambiarTipoDeColumnaDeLaLlave_QuitaYVuelveACrearLaLlave()
     {

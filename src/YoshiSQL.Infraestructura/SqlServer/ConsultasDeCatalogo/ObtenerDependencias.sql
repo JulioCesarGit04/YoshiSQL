@@ -15,5 +15,7 @@ SELECT DISTINCT
     N'Lo usa' AS relacion
 FROM sys.sql_expression_dependencies d
 WHERE d.referenced_id = OBJECT_ID(QUOTENAME(@esquema) + N'.' + QUOTENAME(@nombre))
+    -- Sin permiso para ver el objeto que lo usa, su nombre llega NULL y no se puede mostrar
+    AND OBJECT_NAME(d.referencing_id) IS NOT NULL
 
 ORDER BY relacion, esquema, nombre;

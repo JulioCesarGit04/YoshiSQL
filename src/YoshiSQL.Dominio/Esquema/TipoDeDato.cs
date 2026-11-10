@@ -12,6 +12,9 @@ public sealed record TipoDeDato(string Nombre, int? Longitud = null, int? Precis
     // SQL Server representa las longitudes "max" con -1
     private const int LongitudMaxima = -1;
 
+    // Esquema y nombre
+    private const int CantidadMaximaDePartesDelNombre = 2;
+
     // Tipos del sistema: se escriben en minúsculas. Los tipos de usuario conservan sus mayúsculas,
     // porque en una base con intercalación sensible a mayúsculas "name" no es el tipo "Name".
     private static readonly HashSet<string> TiposDelSistema = new(StringComparer.OrdinalIgnoreCase)
@@ -103,6 +106,12 @@ public sealed record TipoDeDato(string Nombre, int? Longitud = null, int? Precis
     private static string NormalizarNombre(string nombre) =>
         TiposDelSistema.Contains(nombre) ? nombre.ToLowerInvariant() : nombre;
 
-    private static bool EsNombreValido(string nombre) =>
-        nombre.Length > 0 && nombre.All(caracter => char.IsLetterOrDigit(caracter) || caracter == '_');
+    // Se admite un punto para los tipos de usuario con esquema, ej. "ventas.Codigo"
+    private static bool EsNombreValido(string nombre)
+    {
+        var partes = nombre.Split('.');
+
+        return partes.Length <= CantidadMaximaDePartesDelNombre
+            && partes.All(parte => parte.Length > 0 && parte.All(caracter => char.IsLetterOrDigit(caracter) || caracter == '_'));
+    }
 }

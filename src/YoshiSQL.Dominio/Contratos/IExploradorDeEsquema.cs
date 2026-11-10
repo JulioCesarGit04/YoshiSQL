@@ -138,4 +138,13 @@ public interface IExploradorDeEsquema
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
         CancellationToken tokenDeCancelacion);
+
+    /// <summary>
+    /// Lo que acompaña a las tablas de toda la base (valores predeterminados, restricciones, índices, columnas calculadas,
+    /// disparadores, secuencias, tipos tabla y dependencias), leído de una vez para exportar la base completa.
+    /// </summary>
+    Task<DetallesDelEsquema> ObtenerDetallesDelEsquemaAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
 }

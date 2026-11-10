@@ -24,7 +24,34 @@ public interface IGeneradorDeScripts
     string GenerarCreacionDeTabla(string baseDeDatos, Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria = null);
 
     /// <summary>CREATE TABLE sin el USE/GO, para armar el script completo de una base de datos.</summary>
-    string GenerarCreacionDeTablaSinEnvolver(Tabla tabla, IReadOnlyList<Columna> columnas, Indice? llavePrimaria = null);
+    /// <param name="columnasCalculadas">Fórmulas de las columnas calculadas de la tabla; sin ellas se crearían como columnas normales vacías.</param>
+    string GenerarCreacionDeTablaSinEnvolver(
+        Tabla tabla,
+        IReadOnlyList<Columna> columnas,
+        Indice? llavePrimaria = null,
+        IReadOnlyList<ColumnaCalculada>? columnasCalculadas = null,
+        IReadOnlyList<IdentidadDeColumna>? identidades = null);
+
+    /// <summary>CREATE SYNONYM, solo si no existe.</summary>
+    string GenerarCreacionDeSinonimo(Sinonimo sinonimo);
+
+    /// <summary>CREATE TYPE ... AS TABLE de un tipo tabla, solo si no existe.</summary>
+    string GenerarCreacionDeTipoDeTabla(TipoDeTabla tipo);
+
+    /// <summary>CREATE SEQUENCE que continúa desde el valor en que quedó la original.</summary>
+    string GenerarCreacionDeSecuencia(Secuencia secuencia);
+
+    /// <summary>CREATE INDEX, o ALTER TABLE ADD CONSTRAINT UNIQUE si es una restricción.</summary>
+    string GenerarCreacionDeIndice(IndiceDeTabla indice);
+
+    /// <summary>ALTER TABLE ADD DEFAULT para el valor predeterminado de una columna.</summary>
+    string GenerarValorPredeterminado(ValorPredeterminado valor);
+
+    /// <summary>ALTER TABLE ADD CHECK; si la original estaba deshabilitada, la deja deshabilitada.</summary>
+    string GenerarRestriccionDeVerificacion(RestriccionDeVerificacion restriccion);
+
+    /// <summary>DISABLE TRIGGER para dejar el disparador como estaba en la base original.</summary>
+    string GenerarDeshabilitacionDeDisparador(DisparadorDeTabla disparador);
 
     /// <summary>Crea el esquema solo si no existe (se puede ejecutar varias veces).</summary>
     string GenerarCreacionDeEsquema(string esquema);

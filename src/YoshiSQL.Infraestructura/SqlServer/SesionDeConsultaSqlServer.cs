@@ -1,5 +1,6 @@
 using System.Data;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
@@ -11,7 +12,7 @@ namespace YoshiSQL.Infraestructura.SqlServer;
 /// Conexión abierta de una pestaña. Ejecuta los lotes uno tras otro y recoge
 /// resultados y mensajes en el mismo orden en que los envía el servidor.
 /// </summary>
-internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
+internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
 {
     // Los errores con severidad mayor a 10 son errores reales; los demás son avisos o PRINT
     private const int SeveridadMaximaDeUnAviso = 10;
@@ -22,6 +23,7 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     private readonly SqlConnection _conexion;
     private readonly List<MensajeDeEjecucion> _mensajesDeLaEjecucion = [];
     private int _lineaInicialDelLoteActual = 1;
+    private bool _elLoteActualDefineUnModulo;
     private int _ejecucionEnCurso;
 
     // La base en uso (por USE o por la lista de bases). Si se cae la conexión, al reabrir se vuelve a ella:
@@ -38,6 +40,8 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     }
 
     public string BaseDeDatosActual => _conexion.Database;
+
+    public event EventHandler<MensajeDeEjecucion>? MensajeRecibido;
 
     public bool EstaEjecutando => Volatile.Read(ref _ejecucionEnCurso) == 1;
 
@@ -200,6 +204,25 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
         }
     }
 
+    public async Task<bool> TieneTransaccionAbiertaAsync(CancellationToken tokenDeCancelacion)
+    {
+        // Con la conexión ocupada o caída no se puede preguntar; una conexión caída ya perdió su transacción
+        if (EstaEjecutando || _conexion.State != ConnectionState.Open)
+        {
+            return false;
+        }
+
+        try
+        {
+            await using var comando = new SqlCommand("SELECT @@TRANCOUNT;", _conexion);
+            return Convert.ToInt32(await comando.ExecuteScalarAsync(tokenDeCancelacion), System.Globalization.CultureInfo.InvariantCulture) > 0;
+        }
+        catch (Exception error) when (error is SqlException or InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         _conexion.InfoMessage -= RegistrarMensajeDelServidor;
@@ -247,6 +270,7 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
         CancellationToken tokenDeCancelacion)
     {
         _lineaInicialDelLoteActual = lote.LineaInicial;
+        _elLoteActualDefineUnModulo = ExpresionDeDefinicionDeModulo().IsMatch(lote.Texto);
 
         await using var comando = new SqlCommand(lote.Texto, _conexion)
         {
@@ -289,7 +313,7 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     private static string ObtenerNombreVisibleDeColumna(string nombre) =>
         string.IsNullOrEmpty(nombre) ? "(Sin nombre de columna)" : nombre;
 
-    private static object?[] LeerValoresDeLaFila(SqlDataReader lector)
+    internal static object?[] LeerValoresDeLaFila(SqlDataReader lector)
     {
         var valores = new object?[lector.FieldCount];
 
@@ -337,7 +361,9 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
     {
         foreach (SqlError error in argumentos.Errors)
         {
-            _mensajesDeLaEjecucion.Add(ConvertirEnMensaje(error));
+            var mensaje = ConvertirEnMensaje(error);
+            _mensajesDeLaEjecucion.Add(mensaje);
+            MensajeRecibido?.Invoke(this, mensaje);
         }
     }
 
@@ -356,11 +382,27 @@ internal sealed class SesionDeConsultaSqlServer : ISesionDeConsulta
             return MensajeDeEjecucion.Informacion(error.Message);
         }
 
+        // Si el error ocurrió dentro de un procedimiento, función o disparador que el lote solo EJECUTA, la línea
+        // se cuenta dentro del código de ese objeto, no del editor: sumarla al lote señalaba una línea cualquiera
+        // del script. Se muestra como en SSMS ("Procedimiento X, Línea N") y sin salto al editor.
+        var ocurrioEnOtroObjeto = !string.IsNullOrEmpty(error.Procedure) && !_elLoteActualDefineUnModulo;
+
+        if (ocurrioEnOtroObjeto)
+        {
+            return MensajeDeEjecucion.Error(
+                $"Mensaje {error.Number}, Nivel {error.Class}, Estado {error.State}, Procedimiento {error.Procedure}, Línea {error.LineNumber}\n{error.Message}");
+        }
+
         var lineaEnElEditor = _lineaInicialDelLoteActual + error.LineNumber - 1;
-        var texto = $"Mensaje {error.Number}, Nivel {error.Class}, Estado {error.State}, Línea {lineaEnElEditor}\n{error.Message}";
+        var procedimiento = string.IsNullOrEmpty(error.Procedure) ? string.Empty : $"Procedimiento {error.Procedure}, ";
+        var texto = $"Mensaje {error.Number}, Nivel {error.Class}, Estado {error.State}, {procedimiento}Línea {lineaEnElEditor}\n{error.Message}";
 
         return MensajeDeEjecucion.Error(texto, lineaEnElEditor);
     }
+
+    // Un lote que crea o modifica un procedimiento, función, disparador o vista: ahí la línea del error sí es del editor
+    [GeneratedRegex(@"\b(CREATE(\s+OR\s+ALTER)?|ALTER)\s+(PROC|PROCEDURE|FUNCTION|TRIGGER|VIEW)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ExpresionDeDefinicionDeModulo();
 
     private ResultadoDeEjecucion CrearResultado(
         EstadoDeEjecucion estado,

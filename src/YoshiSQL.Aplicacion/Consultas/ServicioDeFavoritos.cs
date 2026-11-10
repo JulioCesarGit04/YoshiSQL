@@ -14,6 +14,9 @@ public sealed class ServicioDeFavoritos
     private readonly List<ConsultaFavorita> _favoritos = [];
     private readonly Lock _bloqueo = new();
 
+    // Dos guardados seguidos escribían a la vez el mismo archivo temporal y uno de los dos fallaba
+    private readonly SemaphoreSlim _guardadoExclusivo = new(1, 1);
+
     public ServicioDeFavoritos(IRepositorioDeFavoritos repositorio, ILogger<ServicioDeFavoritos> registro)
     {
         _repositorio = repositorio;
@@ -68,6 +71,7 @@ public sealed class ServicioDeFavoritos
     private async Task GuardarYNotificarAsync()
     {
         FavoritosModificados?.Invoke(this, EventArgs.Empty);
+        await _guardadoExclusivo.WaitAsync();
 
         try
         {
@@ -76,6 +80,10 @@ public sealed class ServicioDeFavoritos
         catch (Exception error)
         {
             _registro.LogWarning(error, "No se pudieron guardar los favoritos");
+        }
+        finally
+        {
+            _guardadoExclusivo.Release();
         }
     }
 }

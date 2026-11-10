@@ -3,7 +3,8 @@ SELECT
     s.name AS Esquema,
     t.name AS Tabla,
     c.name AS Nombre,
-    ty.name AS Tipo,
+    -- Un tipo de usuario que no está en dbo necesita su esquema (ventas.Codigo); sin él no se encuentra
+    IIF(ty.is_user_defined = 1 AND SCHEMA_NAME(ty.schema_id) <> N'dbo', SCHEMA_NAME(ty.schema_id) + N'.' + ty.name, ty.name) AS Tipo,
     CAST(CASE
         WHEN ty.name IN ('varchar', 'char', 'varbinary', 'binary') THEN c.max_length
         WHEN ty.name IN ('nvarchar', 'nchar') THEN IIF(c.max_length = -1, -1, c.max_length / 2)

@@ -54,7 +54,9 @@ public sealed class RegistroDeErrores
             error.Message,
             InformacionDelEntorno.Describir());
 
+        // Se incluye la causa: sin ella, un "acceso denegado" al guardar o un disco lleno se veían como un fallo misterioso
         var mensaje = $"Algo falló al realizar la acción \"{contexto.Accion}\".\n"
+            + $"Causa: {error.Message}\n"
             + $"YoshiSQL sigue funcionando. El detalle quedó guardado en el registro con el código {codigo}.";
 
         return new ErrorRegistrado(codigo, mensaje, EsInesperado: true, error.ToString());

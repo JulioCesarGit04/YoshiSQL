@@ -15,6 +15,16 @@ public class HistorialDeConsultasPruebas
         _historial = new HistorialDeConsultas(_repositorio, NullLogger<HistorialDeConsultas>.Instance);
     }
 
+    [Theory]
+    [InlineData("CREATE LOGIN ana WITH PASSWORD = 'Secreta$1', CHECK_POLICY = ON;", "CREATE LOGIN ana WITH PASSWORD = '***', CHECK_POLICY = ON;")]
+    [InlineData("ALTER LOGIN ana WITH password=N'nueva' OLD_PASSWORD = 'vie''ja';", "ALTER LOGIN ana WITH password='***' OLD_PASSWORD = '***';")]
+    [InlineData("CREATE CREDENTIAL c WITH IDENTITY = 'x', SECRET = 'clave';", "CREATE CREDENTIAL c WITH IDENTITY = 'x', SECRET = '***';")]
+    [InlineData("SELECT password FROM dbo.Usuarios WHERE nombre = 'ana';", "SELECT password FROM dbo.Usuarios WHERE nombre = 'ana';")]
+    public void OcultarContrasenas_ReemplazaSoloElValorDeLaContrasena(string original, string esperado)
+    {
+        Assert.Equal(esperado, HistorialDeConsultas.OcultarContrasenas(original));
+    }
+
     [Fact]
     public async Task ObtenerRecientes_DevuelveLaUltimaPrimero()
     {

@@ -17,6 +17,12 @@ public interface IRepositorioDeSesion
     Task RegistrarCierreCorrectoAsync(CancellationToken tokenDeCancelacion);
 
     /// <summary>
+    /// Verdadero si al iniciar ya había otro YoshiSQL abierto. Esta ventana no restaura ni guarda la sesión,
+    /// para no pisar la de la primera.
+    /// </summary>
+    bool EsInstanciaSecundaria { get; }
+
+    /// <summary>
     /// Guarda como archivos .sql los scripts que no se pudieron restaurar en una pestaña.
     /// </summary>
     /// <returns>Carpeta donde quedaron los archivos.</returns>

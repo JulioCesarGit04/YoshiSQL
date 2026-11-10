@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="YoshiSQL.Escritorio.Vistas.Comunes.DialogoDeProgreso"
+        Width="480" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="24,20" Spacing="14">
+        <TextBlock x:Name="Detalle" Text="Preparando..." TextWrapping="Wrap" MinHeight="36" />
+        <ProgressBar IsIndeterminate="True" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BotonDeCancelar" Content="Cancelar" MinWidth="96" IsCancel="True" Click="AlCancelar" />
+        </StackPanel>
+    </StackPanel>
+</Window>

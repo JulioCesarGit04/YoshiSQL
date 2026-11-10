@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
@@ -7,10 +8,12 @@ namespace YoshiSQL.Aplicacion.Consultas;
 /// <summary>
 /// Últimas consultas ejecutadas, de la más reciente a la más antigua. Se conservan entre sesiones.
 /// </summary>
-public sealed class HistorialDeConsultas
+public sealed partial class HistorialDeConsultas
 {
     public const int CantidadMaximaDeConsultas = 500;
     public const int LargoMaximoDelTexto = 50_000;
+
+    private const string TextoOculto = "'***'";
 
     private readonly IRepositorioDeHistorial _repositorio;
     private readonly ILogger<HistorialDeConsultas> _registro;
@@ -41,9 +44,8 @@ public sealed class HistorialDeConsultas
 
     public async Task RegistrarAsync(ConsultaEjecutada consulta)
     {
-        var consultaRecortada = consulta.Texto.Length > LargoMaximoDelTexto
-            ? consulta with { Texto = consulta.Texto[..LargoMaximoDelTexto] }
-            : consulta;
+        var textoRecortado = consulta.Texto.Length > LargoMaximoDelTexto ? consulta.Texto[..LargoMaximoDelTexto] : consulta.Texto;
+        var consultaRecortada = consulta with { Texto = OcultarContrasenas(textoRecortado) };
 
         lock (_bloqueo)
         {
@@ -57,6 +59,16 @@ public sealed class HistorialDeConsultas
 
         await GuardarYNotificarAsync();
     }
+
+    /// <summary>
+    /// El historial se guarda en un archivo de texto: un CREATE LOGIN ... WITH PASSWORD = '...' dejaba ahí la contraseña.
+    /// </summary>
+    public static string OcultarContrasenas(string textoSql) =>
+        ExpresionDeContrasena().Replace(textoSql, coincidencia => coincidencia.Groups["inicio"].Value + TextoOculto);
+
+    // PASSWORD = '...', OLD_PASSWORD = N'...' y SECRET = '...' (credenciales); '' es una comilla dentro del texto
+    [GeneratedRegex(@"(?<inicio>(PASSWORD|SECRET)\s*=\s*)N?'(?:[^']|'')*'", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ExpresionDeContrasena();
 
     public async Task EliminarAsync(ConsultaEjecutada consulta)
     {

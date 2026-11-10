@@ -198,13 +198,22 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         RecordarContrasena = perfil.RecordarContrasena;
         ConfiarEnCertificadoDelServidor = perfil.ConfiarEnCertificadoDelServidor;
         ColorSeleccionado = OpcionesDeColor.FirstOrDefault(opcion => opcion.Hex == perfil.Color) ?? OpcionesDeColor[0];
+
+        // Mientras llega la contraseña se muestra vacía: nunca debe quedar a la vista la del perfil anterior
+        Contrasena = string.Empty;
+
         try
         {
-            Contrasena = await _servicioDeConexiones.ObtenerContrasenaGuardadaAsync(perfil, CancellationToken.None) ?? string.Empty;
+            var contrasena = await _servicioDeConexiones.ObtenerContrasenaGuardadaAsync(perfil, CancellationToken.None) ?? string.Empty;
+
+            // Si el usuario eligió otro perfil mientras tanto, esta contraseña ya no corresponde al que se ve
+            if (_idDelPerfilEnEdicion == perfil.Id)
+            {
+                Contrasena = contrasena;
+            }
         }
         catch (Exception error)
         {
-            Contrasena = string.Empty;
             MensajeDeError = _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Leer contraseña guardada", perfil.NombreVisible));
         }
     }

@@ -26,9 +26,38 @@ public class GeneracionDeComandosDeEdicionPruebas
 
         var comando = Assert.Single(_generador.GenerarComandosDeEdicion(Clientes, Columnas, [new CambioDeFila(EstadoDeFila.Modificada, originales, nuevos)]));
 
-        Assert.Equal("UPDATE [dbo].[Clientes] SET [Nombre] = @v0 WHERE [Id] = @k0;", comando.Texto);
-        Assert.Equal([new ParametroSql("@v0", "Mario Bros", "nvarchar"), new ParametroSql("@k0", 7, "int")], comando.Parametros);
+        // Además de la llave se exige el valor que el usuario vio: si otra persona lo cambió, no se pisa su cambio
+        Assert.Equal("UPDATE [dbo].[Clientes] SET [Nombre] = @v0 WHERE [Id] = @k0 AND [Nombre] = @o0;", comando.Texto);
+        Assert.Equal(
+            [new ParametroSql("@v0", "Mario Bros", "nvarchar"), new ParametroSql("@k0", 7, "int"), new ParametroSql("@o0", "Mario", "nvarchar")],
+            comando.Parametros);
         Assert.Equal(1, comando.FilasEsperadas);
+    }
+
+    [Fact]
+    public void Modificacion_ValorOriginalNulo_ComparaConIsNull()
+    {
+        object?[] originales = [7, "Mario", null];
+        object?[] nuevos = [7, "Mario", "25.00"];
+
+        var comando = Assert.Single(_generador.GenerarComandosDeEdicion(Clientes, Columnas, [new CambioDeFila(EstadoDeFila.Modificada, originales, nuevos)]));
+
+        Assert.Equal("UPDATE [dbo].[Clientes] SET [Saldo] = @v0 WHERE [Id] = @k0 AND [Saldo] IS NULL;", comando.Texto);
+    }
+
+    [Fact]
+    public void Modificacion_ColumnaQueNoSePuedeComparar_SoloUsaLaLlave()
+    {
+        Columna[] columnas =
+        [
+            new("Id", new TipoDeDato("int"), AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: false, Posicion: 1),
+            new("Detalle", new TipoDeDato("xml"), AdmiteNulos: true, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 2)
+        ];
+
+        var comando = Assert.Single(_generador.GenerarComandosDeEdicion(
+            Clientes, columnas, [new CambioDeFila(EstadoDeFila.Modificada, [1, "<a/>"], [1, "<b/>"])]));
+
+        Assert.Equal("UPDATE [dbo].[Clientes] SET [Detalle] = @v0 WHERE [Id] = @k0;", comando.Texto);
     }
 
     [Fact]
@@ -73,7 +102,7 @@ public class GeneracionDeComandosDeEdicionPruebas
         var comando = Assert.Single(_generador.GenerarComandosDeEdicion(
             Clientes, columnas, [new CambioDeFila(EstadoDeFila.Modificada, [1, "a", "A"], [1, "b", "editado"])]));
 
-        Assert.Equal("UPDATE [dbo].[Clientes] SET [Nombre] = @v0 WHERE [Id] = @k0;", comando.Texto);
+        Assert.Equal("UPDATE [dbo].[Clientes] SET [Nombre] = @v0 WHERE [Id] = @k0 AND [Nombre] = @o0;", comando.Texto);
     }
 
     [Fact]

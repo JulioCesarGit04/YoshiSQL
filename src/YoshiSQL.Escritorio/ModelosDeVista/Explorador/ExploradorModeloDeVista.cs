@@ -43,14 +43,27 @@ public sealed partial class ExploradorModeloDeVista : ModeloDeVistaBase
     public void AgregarServidor(ServidorConectado servidor)
     {
         // Si ya hay un nodo para el mismo servidor y usuario, se selecciona en vez de duplicarlo
-        if (BuscarNodoDelMismoServidor(servidor) is { } existente)
+        var existente = BuscarNodoDelMismoServidor(servidor);
+
+        if (existente is not null && existente.Contexto?.Servidor.DatosDeAcceso.Contrasena == servidor.DatosDeAcceso.Contrasena)
         {
             NodoSeleccionado = existente;
             return;
         }
 
         var nodo = _fabricaDeNodos.CrearNodoDeServidor(servidor);
-        Servidores.Add(nodo);
+
+        if (existente is not null)
+        {
+            // Se reconectó con otra contraseña (la cambiaron en el servidor): el nodo viejo seguiría usando la anterior
+            // y cada carpeta daría "error de inicio de sesión". Se reemplaza en su mismo lugar.
+            Servidores[Servidores.IndexOf(existente)] = nodo;
+        }
+        else
+        {
+            Servidores.Add(nodo);
+        }
+
         nodo.EstaExpandido = true;
         NodoSeleccionado = nodo;
         OnPropertyChanged(nameof(TieneServidores));

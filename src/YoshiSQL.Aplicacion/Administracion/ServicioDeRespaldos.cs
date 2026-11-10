@@ -52,11 +52,13 @@ public sealed class ServicioDeRespaldos
     /// <summary>
     /// Ejecuta el script de respaldo o restauración desde master.
     /// </summary>
+    /// <param name="avance">Recibe cada mensaje del servidor (10 %, 20 %...) en cuanto llega.</param>
     /// <returns>Los mensajes del servidor, incluido el avance (10 %, 20 %...).</returns>
     public async Task<IReadOnlyList<MensajeDeEjecucion>> EjecutarAsync(
         ServidorConectado servidor,
         string script,
-        CancellationToken tokenDeCancelacion)
+        CancellationToken tokenDeCancelacion,
+        IProgress<MensajeDeEjecucion>? avance = null)
     {
         var lotes = _proveedor.DivisorDeLotes.DividirEnLotes(script);
 
@@ -66,7 +68,18 @@ public sealed class ServicioDeRespaldos
 
         await using var sesion = await _proveedor.Ejecutor.AbrirSesionAsync(
             servidor.DatosDeAcceso, Dominio.Conexiones.PerfilDeConexion.BaseDeDatosDelSistema, tokenDeCancelacion);
+
+        if (avance is not null)
+        {
+            sesion.MensajeRecibido += (_, mensaje) => avance.Report(mensaje);
+        }
+
         var resultado = await sesion.EjecutarLotesAsync(lotes, tokenDeCancelacion);
+
+        if (resultado.Estado == EstadoDeEjecucion.Cancelada)
+        {
+            throw new OperationCanceledException(tokenDeCancelacion);
+        }
 
         if (resultado.TieneErrores)
         {

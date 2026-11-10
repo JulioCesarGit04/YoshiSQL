@@ -6,7 +6,9 @@ SELECT
     columnaOrigen.name AS ColumnaOrigen,
     esquemaDestino.name AS EsquemaDestino,
     tablaDestino.name AS TablaDestino,
-    columnaDestino.name AS ColumnaDestino
+    columnaDestino.name AS ColumnaDestino,
+    fk.delete_referential_action_desc AS AlEliminar,
+    fk.update_referential_action_desc AS AlActualizar
 FROM sys.foreign_keys AS fk
 INNER JOIN sys.foreign_key_columns AS fkc ON fkc.constraint_object_id = fk.object_id
 INNER JOIN sys.tables AS tablaOrigen ON tablaOrigen.object_id = fk.parent_object_id

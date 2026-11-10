@@ -12,6 +12,17 @@ public interface ISesionDeConsulta : IAsyncDisposable
 
     bool EstaEjecutando { get; }
 
+    /// <summary>
+    /// Se dispara con cada mensaje del servidor en el momento en que llega (PRINT, avance de un respaldo...),
+    /// sin esperar a que termine la ejecución. Puede dispararse desde otro hilo.
+    /// </summary>
+    event EventHandler<MensajeDeEjecucion>? MensajeRecibido;
+
+    /// <summary>
+    /// Verdadero si quedó una transacción sin confirmar (BEGIN TRANSACTION sin COMMIT): al cerrar la conexión se deshace.
+    /// </summary>
+    Task<bool> TieneTransaccionAbiertaAsync(CancellationToken tokenDeCancelacion);
+
     Task<ResultadoDeEjecucion> EjecutarLotesAsync(
         IReadOnlyList<LoteSql> lotes,
         CancellationToken tokenDeCancelacion);

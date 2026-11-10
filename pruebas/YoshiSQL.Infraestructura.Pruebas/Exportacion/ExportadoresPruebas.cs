@@ -27,6 +27,23 @@ public class ExportadoresPruebas
             texto.TrimStart('﻿'));
     }
 
+    // Una hoja de cálculo ejecuta como fórmula las celdas que empiezan con = + - @
+    [Fact]
+    public async Task ExportadorCsv_TextoQueEmpiezaComoFormula_SeNeutralizaPeroLosNumerosNegativosNo()
+    {
+        var conjunto = new ConjuntoDeResultados(
+            [new ColumnaDeResultado("Nota", "nvarchar"), new ColumnaDeResultado("Saldo", "int")],
+            [["=HYPERLINK(\"http://malo\")", -5], ["@cmd", 10], ["normal", 0]]);
+        using var flujo = new MemoryStream();
+
+        await new ExportadorCsv().ExportarAsync(conjunto, flujo, CancellationToken.None);
+        var lineas = Encoding.UTF8.GetString(flujo.ToArray()).Split("\r\n");
+
+        Assert.Equal("\"'=HYPERLINK(\"\"http://malo\"\")\",-5", lineas[1]);
+        Assert.Equal("'@cmd,10", lineas[2]);
+        Assert.Equal("normal,0", lineas[3]);
+    }
+
     [Fact]
     public async Task ExportadorJson_ConservaTiposYNulos()
     {

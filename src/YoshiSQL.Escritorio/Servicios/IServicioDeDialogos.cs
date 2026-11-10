@@ -32,6 +32,12 @@ public interface IServicioDeDialogos
     /// <summary>Muestra la paleta de comandos; devuelve el comando elegido o null si se cancela.</summary>
     Task<ComandoDePaleta?> MostrarPaletaDeComandosAsync(IReadOnlyList<ComandoDePaleta> comandos);
 
+    /// <summary>
+    /// Ejecuta una tarea larga mostrando por dónde va y un botón para cancelarla.
+    /// </summary>
+    /// <returns>Verdadero si la tarea terminó; falso si el usuario la canceló. Los errores de la tarea se propagan.</returns>
+    Task<bool> EjecutarConProgresoAsync(string titulo, Func<IProgress<string>, CancellationToken, Task> tarea);
+
     Task<string?> SeleccionarArchivoParaAbrirAsync();
 
     Task<string?> SeleccionarArchivoParaGuardarAsync(string nombreSugerido, TipoDeArchivo tipoDeArchivo);

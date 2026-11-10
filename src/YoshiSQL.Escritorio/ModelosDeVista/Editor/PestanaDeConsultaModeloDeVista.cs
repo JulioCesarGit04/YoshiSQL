@@ -176,6 +176,25 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         BaseDeDatosActual = PerfilDeConexion.BaseDeDatosDelSistema;
     }
 
+    /// <summary>
+    /// Lo que se perdería al cerrar la pestaña sin que el usuario lo note; nulo si no hay nada que avisar.
+    /// </summary>
+    public async Task<string?> ObtenerAdvertenciaDeCierreAsync()
+    {
+        if (EstaEjecutando)
+        {
+            return $"\"{NombreDelArchivo}\" tiene una consulta en ejecución. Si cierras la pestaña, se cancela.";
+        }
+
+        if (_sesion is not null && await _sesion.TieneTransaccionAbiertaAsync(CancellationToken.None))
+        {
+            return $"\"{NombreDelArchivo}\" tiene una transacción abierta (BEGIN TRANSACTION sin COMMIT).\n"
+                + "Si cierras la pestaña, SQL Server deshace todos los cambios de esa transacción.";
+        }
+
+        return null;
+    }
+
     public void CargarTexto(string texto)
     {
         _estaCargandoTexto = true;

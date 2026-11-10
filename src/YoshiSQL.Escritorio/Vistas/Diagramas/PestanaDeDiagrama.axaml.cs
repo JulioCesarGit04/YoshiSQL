@@ -81,7 +81,23 @@ public partial class PestanaDeDiagrama : UserControl
         _distanciaDelPunteroAlBorde = new Point(posicionDelPuntero.X - tabla.X, posicionDelPuntero.Y - tabla.Y);
         _tablaArrastrada = tabla;
         argumentos.Pointer.Capture(encabezado);
+
+        // Si el sistema le quita el puntero (cambio de ventana, un menú, Alt+Tab) nunca llega "soltar"
+        // y la tabla quedaba pegada al mouse
+        encabezado.PointerCaptureLost -= AlPerderElPuntero;
+        encabezado.PointerCaptureLost += AlPerderElPuntero;
         argumentos.Handled = true;
+    }
+
+    private async void AlPerderElPuntero(object? remitente, PointerCaptureLostEventArgs argumentos)
+    {
+        if (_tablaArrastrada is null || Modelo is null)
+        {
+            return;
+        }
+
+        _tablaArrastrada = null;
+        await Modelo.TerminarArrastreAsync();
     }
 
     private void AlMoverPuntero(object? remitente, PointerEventArgs argumentos)

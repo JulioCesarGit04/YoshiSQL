@@ -248,7 +248,7 @@ public sealed class FabricaDeNodos
 
         nodo.EstablecerAcciones(
             AccionDeSeleccionarFilas(contexto, tabla),
-            new AccionDelNodo($"Editar las primeras {_servicioDePreferencias.Actuales.FilasAlEditar} filas",
+            new AccionDelNodo(() => $"Editar las primeras {_servicioDePreferencias.Actuales.FilasAlEditar} filas",
                 ComandoSeguro("Editar filas", contexto, () => _acciones.AbrirEdicionDeFilasAsync(contexto, tabla))),
             new AccionDelNodo("Diseñar", ComandoSeguro("Diseñar tabla", contexto, () => _acciones.AbrirDisenadorDeTablaAsync(contexto, tabla))),
             new AccionDelNodo("Generar script CREATE TABLE", ComandoSeguro("Generar script CREATE TABLE", contexto, async () =>
@@ -413,7 +413,7 @@ public sealed class FabricaDeNodos
         new("Ver diagrama", ComandoSeguro("Abrir diagrama", contexto, () => _acciones.AbrirDiagramaAsync(contexto)));
 
     private AccionDelNodo AccionDeSeleccionarFilas(ContextoDelNodo contexto, ObjetoDeEsquema objeto) =>
-        new($"Seleccionar las primeras {_generadorDeScripts.FilasPorDefectoAlSeleccionar} filas", ComandoSeguro("Seleccionar filas", contexto, () =>
+        new(() => $"Seleccionar las primeras {_generadorDeScripts.FilasPorDefectoAlSeleccionar} filas", ComandoSeguro("Seleccionar filas", contexto, () =>
         {
             var script = _generadorDeScripts.GenerarSeleccionDeFilas(contexto.BaseDeDatosOPredeterminada, objeto);
             return _acciones.AbrirNuevaConsultaAsync(contexto, script, ejecutarAlAbrir: true);

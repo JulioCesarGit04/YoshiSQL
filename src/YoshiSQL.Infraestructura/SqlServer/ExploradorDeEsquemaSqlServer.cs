@@ -13,6 +13,10 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
     // supera los 30 s predeterminados de SqlClient; el panel fallaba siempre con "tardó demasiado"
     private const int SegundosParaAnalisisPesados = 600;
 
+    // Los 30 s predeterminados de SqlClient no alcanzan para leer el catálogo de bases con miles de objetos
+    // o en servidores ocupados: el explorador y el autocompletado fallaban con "tardó demasiado"
+    private const int SegundosParaConsultasDeCatalogo = 120;
+
     public async Task<Servidor> ObtenerServidorAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion)
     {
         var servidores = await LeerFilasAsync(
@@ -337,7 +341,9 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                 TablaOrigen = new Tabla(lector.GetString(1), lector.GetString(2)),
                 ColumnaOrigen = lector.GetString(3),
                 TablaDestino = new Tabla(lector.GetString(4), lector.GetString(5)),
-                ColumnaDestino = lector.GetString(6)
+                ColumnaDestino = lector.GetString(6),
+                AlEliminar = lector.GetString(7),
+                AlActualizar = lector.GetString(8)
             },
             tokenDeCancelacion);
 
@@ -351,7 +357,9 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                     primeraFila.TablaOrigen,
                     grupo.Select(fila => fila.ColumnaOrigen).ToList(),
                     primeraFila.TablaDestino,
-                    grupo.Select(fila => fila.ColumnaDestino).ToList());
+                    grupo.Select(fila => fila.ColumnaDestino).ToList(),
+                    primeraFila.AlEliminar,
+                    primeraFila.AlActualizar);
             })
             .ToList();
     }
@@ -381,6 +389,159 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                     LeerEnteroOpcional(lector, 5)),
                 AdmiteNulos: lector.GetBoolean(6)),
             tokenDeCancelacion);
+
+    public async Task<DetallesDelEsquema> ObtenerDetallesDelEsquemaAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion)
+    {
+        var valoresPredeterminados = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarValoresPredeterminados", parametros: [],
+            lector => new ValorPredeterminado(
+                new Tabla(lector.GetString(0), lector.GetString(1)),
+                Columna: lector.GetString(2),
+                Nombre: LeerTextoOpcional(lector, 3),
+                Definicion: lector.GetString(4)),
+            tokenDeCancelacion);
+
+        var restricciones = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarRestriccionesDeVerificacion", parametros: [],
+            lector => new RestriccionDeVerificacion(
+                new Tabla(lector.GetString(0), lector.GetString(1)),
+                Nombre: LeerTextoOpcional(lector, 2),
+                Definicion: lector.GetString(3),
+                EstaDeshabilitada: lector.GetBoolean(4)),
+            tokenDeCancelacion);
+
+        var columnasCalculadas = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarColumnasCalculadas", parametros: [],
+            lector => new ColumnaCalculada(
+                new Tabla(lector.GetString(0), lector.GetString(1)),
+                Columna: lector.GetString(2),
+                Definicion: lector.GetString(3),
+                EsPersistida: lector.GetBoolean(4)),
+            tokenDeCancelacion);
+
+        var disparadores = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarDisparadoresDeTablas", parametros: [],
+            lector => new DisparadorDeTabla(
+                Esquema: lector.GetString(0),
+                Nombre: lector.GetString(1),
+                EsquemaDelObjeto: lector.GetString(2),
+                NombreDelObjeto: lector.GetString(3),
+                Definicion: LeerTextoOpcional(lector, 4),
+                EstaDeshabilitado: lector.GetBoolean(5)),
+            tokenDeCancelacion);
+
+        var secuencias = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarSecuencias", parametros: [],
+            lector => new Secuencia(
+                Esquema: lector.GetString(0),
+                Nombre: lector.GetString(1),
+                TipoDeDato: lector.GetString(2),
+                SiguienteValor: lector.GetString(3),
+                Incremento: lector.GetString(4),
+                ValorMinimo: lector.GetString(5),
+                ValorMaximo: lector.GetString(6),
+                EsCiclica: lector.GetBoolean(7),
+                UsaCache: lector.GetBoolean(8),
+                TamanoDeCache: LeerEnteroOpcional(lector, 9)),
+            tokenDeCancelacion);
+
+        var dependencias = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarDependenciasEntreModulos", parametros: [],
+            lector => new DependenciaEntreModulos(lector.GetString(0), lector.GetString(1), lector.GetString(2), lector.GetString(3)),
+            tokenDeCancelacion);
+
+        var identidades = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarIdentidades", parametros: [],
+            lector => new IdentidadDeColumna(
+                new Tabla(lector.GetString(0), lector.GetString(1)),
+                Columna: lector.GetString(2),
+                Semilla: lector.GetString(3),
+                Incremento: lector.GetString(4)),
+            tokenDeCancelacion);
+
+        var sinonimos = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarSinonimos", parametros: [],
+            lector => new Sinonimo(lector.GetString(0), lector.GetString(1), lector.GetString(2)),
+            tokenDeCancelacion);
+
+        return new DetallesDelEsquema(
+            valoresPredeterminados,
+            restricciones,
+            await ObtenerIndicesDeTodasLasTablasAsync(datosDeAcceso, baseDeDatos, tokenDeCancelacion),
+            columnasCalculadas,
+            disparadores,
+            secuencias,
+            await ObtenerTiposDeTablaAsync(datosDeAcceso, baseDeDatos, tokenDeCancelacion),
+            dependencias,
+            identidades,
+            sinonimos);
+    }
+
+    private static async Task<IReadOnlyList<IndiceDeTabla>> ObtenerIndicesDeTodasLasTablasAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion)
+    {
+        var columnasDeIndices = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarIndicesDeTodasLasTablas", parametros: [],
+            lector => new
+            {
+                Tabla = new Tabla(lector.GetString(0), lector.GetString(1)),
+                Nombre = lector.GetString(2),
+                EsUnico = lector.GetBoolean(3),
+                EsRestriccionUnica = lector.GetBoolean(4),
+                EsAgrupado = lector.GetBoolean(5),
+                Columna = lector.GetString(6),
+                EsDescendente = lector.GetBoolean(7),
+                EsIncluida = lector.GetBoolean(8),
+                Filtro = LeerTextoOpcional(lector, 9)
+            },
+            tokenDeCancelacion);
+
+        return columnasDeIndices
+            .GroupBy(fila => (fila.Tabla, fila.Nombre))
+            .Select(grupo =>
+            {
+                var primeraFila = grupo.First();
+                return new IndiceDeTabla(
+                    primeraFila.Tabla,
+                    primeraFila.Nombre,
+                    primeraFila.EsUnico,
+                    primeraFila.EsRestriccionUnica,
+                    primeraFila.EsAgrupado,
+                    grupo.Where(fila => !fila.EsIncluida).Select(fila => new ColumnaDeIndice(fila.Columna, fila.EsDescendente)).ToList(),
+                    grupo.Where(fila => fila.EsIncluida).Select(fila => fila.Columna).ToList(),
+                    primeraFila.Filtro);
+            })
+            .ToList();
+    }
+
+    private static async Task<IReadOnlyList<TipoDeTabla>> ObtenerTiposDeTablaAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion)
+    {
+        const int PosicionDeLaPrimeraColumnaDeDatos = 2;
+
+        var filas = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarColumnasDeTiposDeTabla", parametros: [],
+            lector => (
+                Esquema: lector.GetString(0),
+                Nombre: lector.GetString(1),
+                Columna: LeerColumna(lector, PosicionDeLaPrimeraColumnaDeDatos)),
+            tokenDeCancelacion);
+
+        return filas
+            .GroupBy(fila => (fila.Esquema, fila.Nombre))
+            .Select(grupo => new TipoDeTabla(grupo.Key.Esquema, grupo.Key.Nombre, grupo.Select(fila => fila.Columna).ToList()))
+            .ToList();
+    }
+
+    private static string? LeerTextoOpcional(SqlDataReader lector, int posicion) =>
+        lector.IsDBNull(posicion) ? null : lector.GetString(posicion);
 
     /// <param name="posicionInicial">Posición en la fila donde empiezan los datos de la columna.</param>
     private static Columna LeerColumna(SqlDataReader lector, int posicionInicial)
@@ -428,10 +589,7 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             await using var comando = new SqlCommand(LectorDeConsultasDeCatalogo.Leer(nombreDeLaConsulta), conexion);
             comando.Parameters.AddRange(parametros);
 
-            if (segundosDeEspera is int segundos)
-            {
-                comando.CommandTimeout = segundos;
-            }
+            comando.CommandTimeout = segundosDeEspera ?? SegundosParaConsultasDeCatalogo;
 
             await using var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
             var filas = new List<T>();

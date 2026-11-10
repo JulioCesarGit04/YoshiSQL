@@ -12,7 +12,11 @@ public sealed class ExportadorCsv : IExportadorDeResultados
 {
     private const char Separador = ',';
     private const char Comilla = '"';
+    private const char Apostrofo = '\'';
     private static readonly Encoding CodificacionConBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+
+    // Excel y LibreOffice ejecutan como fórmula cualquier celda que empiece con uno de estos caracteres
+    private static readonly char[] IniciosDeFormula = ['=', '+', '-', '@', '\t', '\r'];
 
     public FormatoDeExportacion Formato => FormatoDeExportacion.Csv;
 
@@ -28,8 +32,22 @@ public sealed class ExportadorCsv : IExportadorDeResultados
         foreach (var fila in conjunto.Filas)
         {
             tokenDeCancelacion.ThrowIfCancellationRequested();
-            await escritor.WriteLineAsync(UnirCampos(fila.Select(ConvertidorDeValoresATexto.Convertir)));
+            await escritor.WriteLineAsync(UnirCampos(fila.Select(ConvertirCelda)));
         }
+    }
+
+    /// <summary>
+    /// Un texto de la base como "=HYPERLINK(...)" se ejecutaría al abrir el CSV en una hoja de cálculo.
+    /// Se le antepone un apóstrofo, que la hoja de cálculo muestra como texto. Solo a los textos:
+    /// los números negativos (-5) se dejan como están.
+    /// </summary>
+    private static string? ConvertirCelda(object? valor)
+    {
+        var texto = ConvertidorDeValoresATexto.Convertir(valor);
+
+        return valor is string && !string.IsNullOrEmpty(texto) && IniciosDeFormula.Contains(texto[0])
+            ? Apostrofo + texto
+            : texto;
     }
 
     private static string UnirCampos(IEnumerable<string?> campos) =>

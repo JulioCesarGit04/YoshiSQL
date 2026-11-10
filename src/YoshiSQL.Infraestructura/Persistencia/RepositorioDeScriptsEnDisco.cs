@@ -10,8 +10,16 @@ public sealed class RepositorioDeScriptsEnDisco : IRepositorioDeScripts
     private static readonly Encoding CodificacionUtf8SinBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private static readonly Encoding CodificacionUtf8ConBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
-    public Task<string> LeerAsync(string rutaDelArchivo, CancellationToken tokenDeCancelacion) =>
-        File.ReadAllTextAsync(rutaDelArchivo, tokenDeCancelacion);
+    /// <summary>
+    /// Lee el archivo en la codificación que realmente tiene. Leerlo siempre como UTF-8 convertía en "�" las tildes
+    /// y eñes de los scripts guardados en ANSI (lo habitual en SSMS y en editores de Windows): un procedimiento con
+    /// una columna [Descripción] o un texto 'Año' dejaba de funcionar o guardaba datos corruptos.
+    /// </summary>
+    public async Task<string> LeerAsync(string rutaDelArchivo, CancellationToken tokenDeCancelacion)
+    {
+        var bytes = await File.ReadAllBytesAsync(rutaDelArchivo, tokenDeCancelacion);
+        return DetectorDeCodificacion.Decodificar(bytes);
+    }
 
     /// <summary>
     /// Un script solo con caracteres ASCII se guarda sin BOM (idéntico en cualquier herramienta). Si tiene tildes o eñes

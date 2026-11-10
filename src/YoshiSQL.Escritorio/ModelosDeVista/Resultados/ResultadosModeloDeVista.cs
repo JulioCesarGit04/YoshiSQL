@@ -56,7 +56,12 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
 
     public ObservableCollection<ConjuntoDeResultadosModeloDeVista> Conjuntos { get; } = [];
 
-    public ObservableCollection<MensajeDeEjecucion> Mensajes { get; } = [];
+    /// <summary>
+    /// Se reemplaza la lista completa en vez de agregar uno por uno: un script con miles de mensajes
+    /// (un INSERT por fila) avisaba a la interfaz miles de veces y tardaba mucho en mostrarse.
+    /// </summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<MensajeDeEjecucion> Mensajes { get; private set; } = [];
 
     [ObservableProperty]
     public partial int IndiceDePestanaSeleccionada { get; set; }
@@ -98,18 +103,17 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
             Conjuntos.Add(new ConjuntoDeResultadosModeloDeVista(conjunto, _servicioDeExportacion));
         }
 
-        foreach (var mensaje in resultado.Mensajes)
-        {
-            Mensajes.Add(mensaje);
-        }
+        var mensajes = new List<MensajeDeEjecucion>(resultado.Mensajes.Count + 2);
+        mensajes.AddRange(resultado.Mensajes);
 
         if (resultado.ConjuntosDeResultados.Count > MaximoDeConjuntosVisibles)
         {
-            Mensajes.Add(MensajeDeEjecucion.Advertencia(
+            mensajes.Add(MensajeDeEjecucion.Advertencia(
                 $"La consulta devolvió {resultado.ConjuntosDeResultados.Count} conjuntos de resultados; se muestran los primeros {MaximoDeConjuntosVisibles}."));
         }
 
-        Mensajes.Add(MensajeDeEjecucion.Informacion($"Hora de finalización: {DateTimeOffset.Now:yyyy-MM-ddTHH:mm:ss.fffzzz}"));
+        mensajes.Add(MensajeDeEjecucion.Informacion($"Hora de finalización: {DateTimeOffset.Now:yyyy-MM-ddTHH:mm:ss.fffzzz}"));
+        Mensajes = mensajes;
 
         var debeMostrarMensajes = Conjuntos.Count == 0 || resultado.TieneErrores;
         IndiceDePestanaSeleccionada = debeMostrarMensajes ? IndiceDePestanaDeMensajes : IndiceDePestanaDeResultados;
@@ -120,7 +124,7 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     public void MostrarError(string mensaje)
     {
         Limpiar();
-        Mensajes.Add(MensajeDeEjecucion.Error(mensaje));
+        Mensajes = [MensajeDeEjecucion.Error(mensaje)];
         IndiceDePestanaSeleccionada = IndiceDePestanaDeMensajes;
         NotificarCambioDeConjuntos();
     }
@@ -128,7 +132,7 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
     public void Limpiar()
     {
         Conjuntos.Clear();
-        Mensajes.Clear();
+        Mensajes = [];
         Plan = null;
         NotificarCambioDeConjuntos();
     }

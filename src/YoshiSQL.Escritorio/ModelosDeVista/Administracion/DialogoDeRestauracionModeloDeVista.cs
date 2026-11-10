@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Administracion;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Errores;
+using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Respaldos;
 using YoshiSQL.Escritorio.Servicios;
 
@@ -19,6 +20,7 @@ public sealed partial class DialogoDeRestauracionModeloDeVista : ModeloDeVistaBa
     private readonly IServicioDeDialogos _servicioDeDialogos;
     private readonly IServicioDeErrores _servicioDeErrores;
     private CarpetasDelServidor? _carpetasDelServidor;
+    private CancellationTokenSource? _cancelacion;
 
     public DialogoDeRestauracionModeloDeVista(
         ServidorConectado servidor,
@@ -127,7 +129,21 @@ public sealed partial class DialogoDeRestauracionModeloDeVista : ModeloDeVistaBa
 
         try
         {
-            var mensajesDelServidor = await _servicioDeRespaldos.EjecutarAsync(_servidor, ScriptGenerado, CancellationToken.None);
+            _cancelacion = new CancellationTokenSource();
+            CancelarCommand.NotifyCanExecuteChanged();
+
+            // El porcentaje (10 %, 20 %...) se muestra a medida que el servidor lo informa, no todo junto al final
+            var enCurso = true;
+            var avance = new Progress<MensajeDeEjecucion>(mensaje =>
+            {
+                if (enCurso)
+                {
+                    Mensajes.Add(mensaje.Texto);
+                }
+            });
+
+            var mensajesDelServidor = await _servicioDeRespaldos.EjecutarAsync(_servidor, ScriptGenerado, _cancelacion.Token, avance);
+            enCurso = false;
             Mensajes.Clear();
 
             foreach (var mensaje in mensajesDelServidor)
@@ -138,6 +154,11 @@ public sealed partial class DialogoDeRestauracionModeloDeVista : ModeloDeVistaBa
             Mensajes.Add($"Base de datos \"{BaseDeDatosDestino}\" restaurada.");
             TerminoCorrectamente = true;
         }
+        catch (OperationCanceledException)
+        {
+            Mensajes.Clear();
+            Mensajes.Add($"Restauración cancelada. La base \"{BaseDeDatosDestino}\" quedó a medio restaurar: vuelve a restaurarla o elimínala.");
+        }
         catch (Exception error)
         {
             Mensajes.Clear();
@@ -146,8 +167,16 @@ public sealed partial class DialogoDeRestauracionModeloDeVista : ModeloDeVistaBa
         finally
         {
             EstaTrabajando = false;
+            _cancelacion?.Dispose();
+            _cancelacion = null;
+            CancelarCommand.NotifyCanExecuteChanged();
         }
     }
+
+    [RelayCommand(CanExecute = nameof(PuedeCancelar))]
+    private void Cancelar() => _cancelacion?.Cancel();
+
+    private bool PuedeCancelar() => _cancelacion is not null;
 
     private bool PuedeLeerRespaldo() => !EstaTrabajando && !string.IsNullOrWhiteSpace(RutaDelArchivo);
 

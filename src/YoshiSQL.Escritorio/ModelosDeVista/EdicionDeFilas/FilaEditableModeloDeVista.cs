@@ -56,6 +56,12 @@ public sealed partial class FilaEditableModeloDeVista : ModeloDeVistaBase
 
     public void MarcarParaEliminar() => Estado = EstadoDeFila.Eliminada;
 
+    /// <summary>
+    /// Deshace "eliminar fila": vuelve a como estaba, conservando lo que se le había editado antes.
+    /// </summary>
+    public void QuitarMarcaDeEliminacion() =>
+        Estado = _valores.SequenceEqual(ValoresOriginales) ? EstadoDeFila.SinCambios : EstadoDeFila.Modificada;
+
     public CambioDeFila CrearCambio() =>
         new(Estado, Estado == EstadoDeFila.Nueva ? [] : ValoresOriginales, _valores);
 

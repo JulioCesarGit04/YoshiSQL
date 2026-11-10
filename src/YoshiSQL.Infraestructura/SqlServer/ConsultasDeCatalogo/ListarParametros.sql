@@ -1,7 +1,8 @@
 -- Parámetros de un procedimiento (el nombre incluye la @); se excluye el valor de retorno
 SELECT
     p.name AS Nombre,
-    ty.name AS Tipo,
+    -- Un tipo de usuario que no está en dbo necesita su esquema (ventas.Codigo); sin él no se encuentra
+    IIF(ty.is_user_defined = 1 AND SCHEMA_NAME(ty.schema_id) <> N'dbo', SCHEMA_NAME(ty.schema_id) + N'.' + ty.name, ty.name) AS Tipo,
     CAST(CASE
         WHEN ty.name IN ('varchar', 'char', 'varbinary', 'binary') THEN p.max_length
         WHEN ty.name IN ('nvarchar', 'nchar') THEN IIF(p.max_length = -1, -1, p.max_length / 2)

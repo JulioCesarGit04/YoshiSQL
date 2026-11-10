@@ -104,6 +104,19 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     public Task MostrarTextoAsync(string titulo, string texto) =>
         new DialogoDeTexto(titulo, texto).ShowDialog(ObtenerVentanaActiva());
 
+    public async Task<bool> EjecutarConProgresoAsync(string titulo, Func<IProgress<string>, CancellationToken, Task> tarea)
+    {
+        var dialogo = new DialogoDeProgreso(titulo, tarea);
+        var llegoAlFinal = await dialogo.ShowDialog<bool>(ObtenerVentanaActiva());
+
+        if (dialogo.Error is { } error)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw();
+        }
+
+        return llegoAlFinal;
+    }
+
     public Task<string?> PedirTextoAsync(string titulo, string etiqueta, string valorInicial) =>
         new DialogoDeEntrada(titulo, etiqueta, valorInicial).ShowDialog<string?>(ObtenerVentanaActiva());
 

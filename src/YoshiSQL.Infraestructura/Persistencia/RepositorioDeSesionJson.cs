@@ -46,8 +46,17 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
         }
     }
 
+    public bool EsInstanciaSecundaria { get; private set; }
+
     public async Task GuardarAsync(EstadoDeLaSesion estado, CancellationToken tokenDeCancelacion)
     {
+        // La sesión guardada pertenece a la primera ventana de YoshiSQL: si una segunda también escribiera,
+        // cada autoguardado borraría las pestañas de la otra
+        if (EsInstanciaSecundaria)
+        {
+            return;
+        }
+
         await _accesoExclusivo.WaitAsync(tokenDeCancelacion);
 
         try
@@ -64,8 +73,16 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
 
     public async Task<bool> RegistrarInicioAsync(CancellationToken tokenDeCancelacion)
     {
-        var seCerroIncorrectamente = File.Exists(_rutas.ArchivoDeEjecucionEnCurso)
-            && !OtraInstanciaSigueAbierta(await File.ReadAllTextAsync(_rutas.ArchivoDeEjecucionEnCurso, tokenDeCancelacion));
+        var hayMarca = File.Exists(_rutas.ArchivoDeEjecucionEnCurso);
+
+        if (hayMarca && OtraInstanciaSigueAbierta(await File.ReadAllTextAsync(_rutas.ArchivoDeEjecucionEnCurso, tokenDeCancelacion)))
+        {
+            // La marca es de otro YoshiSQL que sigue abierto: no se toca, y esta ventana no guarda sesión
+            EsInstanciaSecundaria = true;
+            return false;
+        }
+
+        var seCerroIncorrectamente = hayMarca;
 
         _rutas.AsegurarQueExistaLaCarpetaDeEstado();
         var marca = Encoding.UTF8.GetBytes(Environment.ProcessId.ToString());
@@ -76,7 +93,11 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
 
     public Task RegistrarCierreCorrectoAsync(CancellationToken tokenDeCancelacion)
     {
-        File.Delete(_rutas.ArchivoDeEjecucionEnCurso);
+        if (!EsInstanciaSecundaria)
+        {
+            File.Delete(_rutas.ArchivoDeEjecucionEnCurso);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -89,12 +110,30 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
 
         foreach (var pestana in pestanas.Where(pestana => pestana.TieneTexto))
         {
-            var rutaDelArchivo = Path.Combine(carpeta, Path.GetFileName(pestana.NombreDelArchivo));
+            var rutaDelArchivo = ElegirRutaLibre(carpeta, Path.GetFileName(pestana.NombreDelArchivo));
             var contenido = Encoding.UTF8.GetBytes(pestana.Texto!);
             await EscritorDeArchivosSeguro.EscribirAsync(rutaDelArchivo, contenido, tokenDeCancelacion);
         }
 
         return carpeta;
+    }
+
+    /// <summary>
+    /// Dos pestañas pueden llamarse igual (consulta.sql de carpetas distintas): la segunda se guarda como
+    /// "consulta (2).sql" en vez de sobrescribir a la primera.
+    /// </summary>
+    private static string ElegirRutaLibre(string carpeta, string nombreDelArchivo)
+    {
+        var ruta = Path.Combine(carpeta, nombreDelArchivo);
+        var nombreSinExtension = Path.GetFileNameWithoutExtension(nombreDelArchivo);
+        var extension = Path.GetExtension(nombreDelArchivo);
+
+        for (var numero = 2; File.Exists(ruta); numero++)
+        {
+            ruta = Path.Combine(carpeta, $"{nombreSinExtension} ({numero}){extension}");
+        }
+
+        return ruta;
     }
 
     /// <summary>
@@ -110,9 +149,13 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
         try
         {
             using var proceso = Process.GetProcessById(idDelProceso);
-            return !proceso.HasExited;
+            using var esteProceso = Process.GetCurrentProcess();
+
+            // El sistema reutiliza los números de proceso: tras un cierre inesperado ese número puede ser ya de otro programa
+            return !proceso.HasExited
+                && string.Equals(proceso.ProcessName, esteProceso.ProcessName, StringComparison.OrdinalIgnoreCase);
         }
-        catch (ArgumentException)
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException)
         {
             // El proceso ya no existe
             return false;

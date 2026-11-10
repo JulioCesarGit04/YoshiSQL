@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Administracion;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Errores;
+using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Respaldos;
 using YoshiSQL.Escritorio.Servicios;
 
@@ -17,6 +18,7 @@ public sealed partial class DialogoDeRespaldoModeloDeVista : ModeloDeVistaBase
     private readonly ServidorConectado _servidor;
     private readonly ServicioDeRespaldos _servicioDeRespaldos;
     private readonly IServicioDeErrores _servicioDeErrores;
+    private CancellationTokenSource? _cancelacion;
 
     public DialogoDeRespaldoModeloDeVista(
         ServidorConectado servidor,
@@ -84,7 +86,21 @@ public sealed partial class DialogoDeRespaldoModeloDeVista : ModeloDeVistaBase
 
         try
         {
-            var mensajesDelServidor = await _servicioDeRespaldos.EjecutarAsync(_servidor, ScriptGenerado, CancellationToken.None);
+            _cancelacion = new CancellationTokenSource();
+            CancelarCommand.NotifyCanExecuteChanged();
+
+            // El porcentaje (10 %, 20 %...) se muestra a medida que el servidor lo informa, no todo junto al final
+            var enCurso = true;
+            var avance = new Progress<MensajeDeEjecucion>(mensaje =>
+            {
+                if (enCurso)
+                {
+                    Mensajes.Add(mensaje.Texto);
+                }
+            });
+
+            var mensajesDelServidor = await _servicioDeRespaldos.EjecutarAsync(_servidor, ScriptGenerado, _cancelacion.Token, avance);
+            enCurso = false;
             Mensajes.Clear();
 
             foreach (var mensaje in mensajesDelServidor)
@@ -95,6 +111,11 @@ public sealed partial class DialogoDeRespaldoModeloDeVista : ModeloDeVistaBase
             Mensajes.Add($"Respaldo creado en {RutaDelArchivo}");
             TerminoCorrectamente = true;
         }
+        catch (OperationCanceledException)
+        {
+            Mensajes.Clear();
+            Mensajes.Add("Respaldo cancelado. El archivo quedó incompleto: no lo uses para restaurar.");
+        }
         catch (Exception error)
         {
             Mensajes.Clear();
@@ -103,8 +124,16 @@ public sealed partial class DialogoDeRespaldoModeloDeVista : ModeloDeVistaBase
         finally
         {
             EstaTrabajando = false;
+            _cancelacion?.Dispose();
+            _cancelacion = null;
+            CancelarCommand.NotifyCanExecuteChanged();
         }
     }
+
+    [RelayCommand(CanExecute = nameof(PuedeCancelar))]
+    private void Cancelar() => _cancelacion?.Cancel();
+
+    private bool PuedeCancelar() => _cancelacion is not null;
 
     private bool PuedeRespaldar() => !EstaTrabajando && !string.IsNullOrWhiteSpace(RutaDelArchivo);
 
