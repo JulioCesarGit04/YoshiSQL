@@ -5,7 +5,7 @@
         x:DataType="vm:DialogoDeRespaldoModeloDeVista"
         Title="Respaldar base de datos"
         Width="640" SizeToContent="Height"
-        CanResize="False" ShowInTaskbar="False"
+        CanResize="True" MinWidth="460" ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner">
 
     <StackPanel Margin="24,20" Spacing="12">

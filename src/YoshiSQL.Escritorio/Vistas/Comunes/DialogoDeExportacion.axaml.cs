@@ -27,7 +27,8 @@ public partial class DialogoDeExportacion : Window
             DatosDeTablas: DatosDeTablas.IsChecked == true,
             Vistas: Vistas.IsChecked == true,
             Procedimientos: Procedimientos.IsChecked == true,
-            Funciones: Funciones.IsChecked == true));
+            Funciones: Funciones.IsChecked == true,
+            UsuariosYPermisos: UsuariosYPermisos.IsChecked == true));
 
     private void AlCancelar(object? remitente, RoutedEventArgs argumentos) => Close(null);
 }

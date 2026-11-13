@@ -16,6 +16,8 @@
             <CheckBox x:Name="Vistas" Content="Vistas" IsChecked="True" />
             <CheckBox x:Name="Procedimientos" Content="Procedimientos almacenados" IsChecked="True" />
             <CheckBox x:Name="Funciones" Content="Funciones" IsChecked="True" />
+            <CheckBox x:Name="UsuariosYPermisos" Content="Usuarios, roles y permisos" IsChecked="False"
+                      ToolTip.Tip="Los usuarios se asocian a su inicio de sesión si existe en el servidor de destino; si no, se crean sin inicio de sesión" />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">

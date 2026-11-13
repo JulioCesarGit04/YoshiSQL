@@ -1,4 +1,5 @@
 using YoshiSQL.Dominio.Autocompletado;
+using YoshiSQL.Dominio.Consultas;
 
 namespace YoshiSQL.Escritorio.Controles;
 
@@ -8,4 +9,7 @@ namespace YoshiSQL.Escritorio.Controles;
 public interface IProveedorDeSugerencias
 {
     Task<IReadOnlyList<Sugerencia>> ObtenerSugerenciasAsync(string textoCompleto, int posicionDelCursor);
+
+    /// <summary>Errores de sintaxis del texto, para subrayarlos. Se llama fuera del hilo de la interfaz.</summary>
+    IReadOnlyList<ErrorDeSintaxis> BuscarErroresDeSintaxis(string textoCompleto);
 }

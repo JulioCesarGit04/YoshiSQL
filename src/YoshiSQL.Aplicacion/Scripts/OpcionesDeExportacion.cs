@@ -8,7 +8,8 @@ public sealed record OpcionesDeExportacion(
     bool DatosDeTablas,
     bool Vistas,
     bool Procedimientos,
-    bool Funciones)
+    bool Funciones,
+    bool UsuariosYPermisos = false)
 {
-    public static readonly OpcionesDeExportacion Todo = new(true, true, true, true, true);
+    public static readonly OpcionesDeExportacion Todo = new(true, true, true, true, true, true);
 }

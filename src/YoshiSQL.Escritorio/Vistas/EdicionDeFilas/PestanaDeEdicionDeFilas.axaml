@@ -14,7 +14,7 @@
             <Grid ColumnDefinitions="Auto,220,*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="2">
                     <Button Classes="Herramienta" Content="Agregar fila" Command="{Binding AgregarFilaCommand}" />
-                    <Button Classes="Herramienta" Content="Eliminar fila" Command="{Binding EliminarFilaCommand}" />
+                    <Button Classes="Herramienta" Content="{Binding TextoDeEliminarFila}" Command="{Binding EliminarFilaCommand}" />
                     <Button Classes="Herramienta" Content="Recargar" Command="{Binding CargarCommand}" />
                 </StackPanel>
 
@@ -22,9 +22,22 @@
                          PlaceholderText="Filtrar filas cargadas..."
                          ToolTip.Tip="Oculta al instante las filas que no contengan este texto (no vuelve a consultar)" />
 
-                <TextBlock Grid.Column="2" Margin="16,0" VerticalAlignment="Center" FontSize="11.5"
-                           Foreground="{DynamicResource PincelDeTextoSecundario}" TextTrimming="CharacterEllipsis"
-                           Text="Amarillo: modificada · Verde: nueva · Rojo: se eliminará" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="16,0" VerticalAlignment="Center" ClipToBounds="True">
+                    <StackPanel.Styles>
+                        <Style Selector="TextBlock">
+                            <Setter Property="FontSize" Value="11.5" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSecundario}" />
+                            <Setter Property="Margin" Value="0,0,8,0" />
+                        </Style>
+                    </StackPanel.Styles>
+                    <Border Classes="MuestraDeColor" Background="#E5C07B" />
+                    <TextBlock Text="modificada" />
+                    <Border Classes="MuestraDeColor" Background="#6CC24A" />
+                    <TextBlock Text="nueva" />
+                    <Border Classes="MuestraDeColor" Background="#F07178" />
+                    <TextBlock Text="se eliminará" />
+                </StackPanel>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10">
                     <CheckBox Content="Guardar al cambiar de fila" IsChecked="{Binding GuardarAlCambiarDeFila}" VerticalAlignment="Center"

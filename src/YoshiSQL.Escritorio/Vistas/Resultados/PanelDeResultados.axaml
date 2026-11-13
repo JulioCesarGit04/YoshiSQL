@@ -23,7 +23,7 @@
                     <ItemsControl ItemsSource="{Binding Conjuntos}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ConjuntoDeResultadosModeloDeVista">
-                                <Border Height="220" Margin="0,0,0,6"
+                                <Border Height="{Binding AltoSugerido}" Margin="0,0,0,6"
                                         BorderBrush="{DynamicResource PincelDeBorde}" BorderThickness="0,0,0,1">
                                     <resultados:GrillaDeResultados Conjunto="{Binding}" />
                                 </Border>
@@ -97,7 +97,7 @@
                                                                FontWeight="{Binding EsCostosa, Converter={x:Static conv:BooleanoANegrita.Instancia}}" />
                                                     <TextBlock Text="{Binding Operacion}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                                     <TextBlock Text="{Binding Objeto}" IsVisible="{Binding TieneObjeto}" VerticalAlignment="Center"
-                                                               Foreground="#61AFEF" />
+                                                               Foreground="{DynamicResource PincelDeObjeto}" />
                                                     <TextBlock Text="{Binding Filas}" VerticalAlignment="Center" FontSize="11.5"
                                                                Foreground="{DynamicResource PincelDeTextoSecundario}" />
                                                     <TextBlock Text="Estimación muy distinta a lo real" IsVisible="{Binding EstimacionMuyDiferente}"

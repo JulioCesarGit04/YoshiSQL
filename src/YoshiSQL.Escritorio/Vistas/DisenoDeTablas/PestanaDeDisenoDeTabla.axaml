@@ -21,6 +21,10 @@
                 <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4">
                     <Button Classes="Herramienta" Content="Agregar columna" Command="{Binding AgregarColumnaCommand}" />
                     <Button Classes="Herramienta" Content="Quitar columna" Command="{Binding QuitarColumnaCommand}" />
+                    <Button Classes="Herramienta" Content="Subir" Command="{Binding SubirColumnaCommand}"
+                            IsVisible="{Binding PuedeReordenarColumnas}" ToolTip.Tip="Mover la columna seleccionada hacia arriba" />
+                    <Button Classes="Herramienta" Content="Bajar" Command="{Binding BajarColumnaCommand}"
+                            IsVisible="{Binding PuedeReordenarColumnas}" ToolTip.Tip="Mover la columna seleccionada hacia abajo" />
                     <Button Classes="Herramienta" Content="Ver script" Command="{Binding VerScriptCommand}"
                             ToolTip.Tip="Abrir el script de cambios en una consulta, sin aplicarlo" />
                     <Button Classes="Primario" Content="Aplicar cambios" Command="{Binding AplicarCommand}" Margin="6,0,0,0" />
@@ -65,6 +69,8 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Valor predeterminado" Binding="{Binding ValorPredeterminado}" Width="2*"
+                                    FontFamily="{StaticResource FuenteMonoespaciada}" />
                 <!-- Casillas dentro de la celda para marcarlas con un solo clic -->
                 <DataGridTemplateColumn Header="Permite nulos" Width="*">
                     <DataGridTemplateColumn.CellTemplate>

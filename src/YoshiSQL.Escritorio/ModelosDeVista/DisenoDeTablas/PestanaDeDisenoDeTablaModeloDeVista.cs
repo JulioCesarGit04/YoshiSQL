@@ -140,6 +140,37 @@ public sealed partial class PestanaDeDisenoDeTablaModeloDeVista : DocumentoModel
         }
     }
 
+    /// <summary>
+    /// El orden de las columnas solo se puede elegir al crear la tabla: SQL Server no permite reordenar
+    /// las de una tabla existente sin volver a crearla entera.
+    /// </summary>
+    public bool PuedeReordenarColumnas => EsTablaNueva;
+
+    [RelayCommand(CanExecute = nameof(PuedeReordenarColumnas))]
+    private void SubirColumna() => MoverColumnaSeleccionada(desplazamiento: -1);
+
+    [RelayCommand(CanExecute = nameof(PuedeReordenarColumnas))]
+    private void BajarColumna() => MoverColumnaSeleccionada(desplazamiento: 1);
+
+    private void MoverColumnaSeleccionada(int desplazamiento)
+    {
+        if (ColumnaSeleccionada is not { } columna)
+        {
+            return;
+        }
+
+        var posicion = Columnas.IndexOf(columna);
+        var destino = posicion + desplazamiento;
+
+        if (posicion < 0 || destino < 0 || destino >= Columnas.Count)
+        {
+            return;
+        }
+
+        Columnas.Move(posicion, destino);
+        ColumnaSeleccionada = columna;
+    }
+
     [RelayCommand]
     private async Task VerScriptAsync()
     {

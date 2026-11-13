@@ -21,6 +21,11 @@ public sealed record PreferenciasDelUsuario
     public bool AjustarLineasLargas { get; init; }
 
     /// <summary>
+    /// Subraya en rojo los errores de sintaxis mientras se escribe, sin ejecutar nada.
+    /// </summary>
+    public bool SubrayarErroresDeSintaxis { get; init; } = true;
+
+    /// <summary>
     /// Filas que trae "Seleccionar las primeras N filas" (TOP del SELECT generado).
     /// </summary>
     public int FilasAlSeleccionar { get; init; } = 1000;

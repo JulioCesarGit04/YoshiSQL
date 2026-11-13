@@ -8,7 +8,7 @@ Lista viva de errores encontrados en revisiones y en el uso real. Reglas:
 - Gravedad: 🔴 inutiliza el sistema o daña datos · 🟠 importante · 🟡 menor.
 - "Por verificar" = el arreglo o el bug se dedujo leyendo código; falta comprobarlo contra un SQL Server real.
 
-Siguiente ID libre: **B-65**
+Siguiente ID libre: **B-66**
 
 ---
 
@@ -26,7 +26,7 @@ _Ninguno por ahora._
 
 | ID | Bug | Dónde | Detalle |
 |---|---|---|---|
-| B-63 | Exportar no incluye algunos objetos poco comunes | `ServicioDeExportacionDeBaseDeDatos.cs` | Usuarios y permisos, índices columnstore/XML/espaciales/de texto completo, índices sobre vistas, colecciones de esquemas XML, disparadores de base de datos (DDL), objetos CLR, propiedades extendidas, intercalación propia de una columna, y restricciones dentro de un tipo tabla (salvo su llave primaria). Los sinónimos ya se exportan (2026-11-10). El script lo avisa en su encabezado. En AdventureWorks2022 solo fallan los 3 objetos que usan esquemas XML o texto completo. |
+| B-63 | Exportar no incluye algunos objetos poco comunes | `ServicioDeExportacionDeBaseDeDatos.cs` | Quedan fuera: índices XML, espaciales y de texto completo, índices sobre vistas, colecciones de esquemas XML, objetos CLR, intercalación propia de una columna y restricciones dentro de un tipo tabla (salvo su llave primaria). El script lo avisa en su encabezado. Ya se exportan (2026-11-10/12): sinónimos, propiedades extendidas, disparadores de base de datos, índices columnstore y, como opción, usuarios, roles y permisos. En AdventureWorks2022 solo fallan los objetos que usan esquemas XML o texto completo. |
 
 ---
 
@@ -47,6 +47,7 @@ _Ninguno por ahora._
 | B-50 | 2026-10-25 | La app se congelaba tras ejecutar scripts grandes (8.000 SELECT = 77 s) | Regex lineal en `DetectorDeCambiosDeEsquema` + tiempo máximo; 50.000 SELECT < 1 s. |
 | B-51 | 2026-10-25 | Cada ejecución armaba una tabla de texto con todas las filas; miles de conjuntos creaban miles de grillas | Texto solo en modo texto y hasta 5.000 filas; máximo 50 grillas con aviso. |
 | B-52 | 2026-10-25 | Varios bloqueos de uso diario | Conexión no falla si no se puede guardar la contraseña, y el almacén de credenciales se repara solo (credenciales dañadas o clave DPAPI ilegible). Edición de filas: conteo con `@@ROWCOUNT` (disparadores), fechas con su tipo (`ParametroSql.TipoEnElServidor`), columnas calculadas de solo lectura. Autocompletado solo en el lote del cursor. Compresión de respaldo según edición (Express/Web no). Restaurar libera el pool. Salud con 600 s de límite. **Por verificar:** `@@ROWCOUNT` con disparadores INSTEAD OF. |
+| B-65 | 2026-11-12 | **El historial recortaba los scripts de más de 50.000 caracteres sin avisar**: al abrirlos desde el historial parecían completos y se ejecutaban cortados, a veces en mitad de una instrucción | Encontrado al revisar la sesión guardada (dos pestañas abiertas desde el historial tenían exactamente 50.000 caracteres). El texto recortado termina ahora con un comentario visible `SCRIPT INCOMPLETO` (`HistorialDeConsultas.AvisoDeTextoRecortado`). |
 | B-10 | 2026-11-10 | Diseñador: no se podía borrar una columna con DEFAULT ni agregar una columna NOT NULL a una tabla con datos | Antes del `DROP COLUMN` se busca y quita su restricción DEFAULT; una columna NOT NULL nueva se agrega con un valor inicial temporal (0, texto vacío, 1900-01-01...) para las filas existentes y luego se quita ese valor predeterminado. **Verificado con SQL Server real.** |
 | B-14 | 2026-11-10 | Exportar cargaba toda la base en memoria, sin avance ni cancelar | `ServicioDeExportacionDeBaseDeDatos.ExportarAsync` escribe directo al archivo; las filas se leen por tramos (`IEjecutorDeConsultas.LeerFilasAsync`). Nueva ventana `DialogoDeProgreso` (`IServicioDeDialogos.EjecutarConProgresoAsync`) con avance y Cancelar; si se cancela, el archivo a medias se borra. **Verificado con SQL Server real.** La ventana, por verificar. |
 | B-15 | 2026-11-10 | Editar filas: se sobrescribían los cambios de otra persona | El `UPDATE` exige, además de la llave, que las columnas que se cambian sigan con el valor que el usuario vio (`CrearCondicionDeValoresOriginales`); si no, avisa y no guarda. Cambios de otra persona en otras columnas no estorban. **Verificado con SQL Server real.** |

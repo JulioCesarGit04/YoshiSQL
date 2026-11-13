@@ -15,7 +15,9 @@ public sealed record DetallesDelEsquema(
     IReadOnlyList<TipoDeTabla> TiposDeTabla,
     IReadOnlyList<DependenciaEntreModulos> DependenciasEntreModulos,
     IReadOnlyList<IdentidadDeColumna> Identidades,
-    IReadOnlyList<Sinonimo> Sinonimos)
+    IReadOnlyList<Sinonimo> Sinonimos,
+    IReadOnlyList<PropiedadExtendida> PropiedadesExtendidas,
+    IReadOnlyList<DisparadorDeBaseDeDatos> DisparadoresDeBaseDeDatos)
 {
-    public static readonly DetallesDelEsquema Vacio = new([], [], [], [], [], [], [], [], [], []);
+    public static readonly DetallesDelEsquema Vacio = new([], [], [], [], [], [], [], [], [], [], [], []);
 }

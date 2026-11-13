@@ -18,7 +18,10 @@ public abstract partial class DocumentoModeloDeVista : ModeloDeVistaBase, IAsync
 
     public ServidorConectado Servidor { get; }
 
-    public string DescripcionDeLaConexion => $"{Servidor.Perfil.NombreVisible} ({Servidor.Perfil.Usuario})";
+    // Con autenticación de Windows no hay nombre de usuario: antes se veía un paréntesis vacío
+    public string DescripcionDeLaConexion => string.IsNullOrEmpty(Servidor.Perfil.Usuario)
+        ? $"{Servidor.Perfil.NombreVisible} (Windows)"
+        : $"{Servidor.Perfil.NombreVisible} ({Servidor.Perfil.Usuario})";
 
     /// <summary>Color "#RRGGBB" de la conexión para la barra de estado; nulo si no se eligió uno.</summary>
     public string? ColorDeLaConexion => Servidor.Perfil.Color;
@@ -32,6 +35,16 @@ public abstract partial class DocumentoModeloDeVista : ModeloDeVistaBase, IAsync
 
     [ObservableProperty]
     public partial string TextoDeEstado { get; protected set; } = "Listo";
+
+    /// <summary>Verdadero mientras la pestaña trabaja (ej. una consulta en ejecución); se marca en su encabezado.</summary>
+    [ObservableProperty]
+    public partial bool EstaOcupado { get; protected set; }
+
+    /// <summary>
+    /// Lo que se ve al pasar el mouse sobre la pestaña: a qué servidor pertenece y, si tiene, su archivo.
+    /// </summary>
+    public string DescripcionParaLaPestana =>
+        InformacionAdicional is { Length: > 0 } informacion ? $"{DescripcionDeLaConexion}\n{informacion}" : DescripcionDeLaConexion;
 
     /// <summary>
     /// Verdadero si cerrar la pestaña haría perder cambios que el usuario no aplicó (ej. en el diseñador).

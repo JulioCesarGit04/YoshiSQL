@@ -5,6 +5,7 @@ using YoshiSQL.Dominio.Diseno;
 using YoshiSQL.Dominio.Edicion;
 using YoshiSQL.Dominio.Errores;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Seguridad;
 using static YoshiSQL.Infraestructura.SqlServer.DelimitadorDeIdentificadores;
 
 namespace YoshiSQL.Infraestructura.SqlServer;
@@ -184,6 +185,24 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
             + $"{(secuencia.EsCiclica ? "CYCLE" : "NO CYCLE")} {cache};";
     }
 
+    public string GenerarDeshabilitacionDeDisparadorDeBaseDeDatos(DisparadorDeBaseDeDatos disparador) =>
+        $"DISABLE TRIGGER {Delimitar(disparador.Nombre)} ON DATABASE;";
+
+    public string GenerarPropiedadExtendida(PropiedadExtendida propiedad)
+    {
+        var instruccion = new StringBuilder("EXEC sys.sp_addextendedproperty ")
+            .Append($"@name = {EscribirTexto(propiedad.Nombre)}, @value = {EscribirTexto(propiedad.Valor)}, ")
+            .Append($"@level0type = N'SCHEMA', @level0name = {EscribirTexto(propiedad.Esquema)}, ")
+            .Append($"@level1type = N'{propiedad.TipoDelObjeto}', @level1name = {EscribirTexto(propiedad.Objeto)}");
+
+        if (propiedad.Columna is not null)
+        {
+            instruccion.Append($", @level2type = N'COLUMN', @level2name = {EscribirTexto(propiedad.Columna)}");
+        }
+
+        return instruccion.Append(';').ToString();
+    }
+
     public string GenerarCreacionDeSinonimo(Sinonimo sinonimo) =>
         $"IF OBJECT_ID({EscribirTexto(Delimitar(sinonimo.Esquema, sinonimo.Nombre))}, N'SN') IS NULL{Environment.NewLine}"
         + $"    CREATE SYNONYM {Delimitar(sinonimo.Esquema, sinonimo.Nombre)} FOR {sinonimo.ObjetoBase};";
@@ -192,6 +211,11 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
     {
         var tabla = Delimitar(indice.Tabla.Esquema, indice.Tabla.Nombre);
         var agrupado = indice.EsAgrupado ? "CLUSTERED" : "NONCLUSTERED";
+
+        if (indice.EsColumnar)
+        {
+            return CrearIndiceColumnar(indice, tabla, agrupado);
+        }
         var columnas = string.Join(", ", indice.Columnas.Select(columna => columna.EsDescendente ? $"{Delimitar(columna.Nombre)} DESC" : Delimitar(columna.Nombre)));
 
         if (indice.EsRestriccionUnica)
@@ -209,6 +233,80 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         if (!string.IsNullOrWhiteSpace(indice.Filtro))
         {
             instruccion.Append($" WHERE {indice.Filtro}");
+        }
+
+        return instruccion.Append(';').ToString();
+    }
+
+    private static string CrearIndiceColumnar(IndiceDeTabla indice, string tabla, string agrupado)
+    {
+        var instruccion = new StringBuilder($"CREATE {agrupado} COLUMNSTORE INDEX {Delimitar(indice.Nombre)} ON {tabla}");
+
+        // El agrupado abarca toda la tabla y no admite lista de columnas
+        if (!indice.EsAgrupado && indice.ColumnasIncluidas.Count > 0)
+        {
+            instruccion.Append($" ({UnirNombres(indice.ColumnasIncluidas)})");
+        }
+
+        if (!string.IsNullOrWhiteSpace(indice.Filtro))
+        {
+            instruccion.Append($" WHERE {indice.Filtro}");
+        }
+
+        return instruccion.Append(';').ToString();
+    }
+
+    public string GenerarCreacionDeUsuarioExistente(UsuarioDeBaseDeDatos usuario)
+    {
+        var nombre = Delimitar(usuario.Nombre);
+        var sinInicioDeSesion = $"CREATE USER {nombre} WITHOUT LOGIN;";
+        var condicion = $"IF DATABASE_PRINCIPAL_ID({EscribirTexto(usuario.Nombre)}) IS NULL";
+
+        if (string.IsNullOrWhiteSpace(usuario.InicioDeSesion))
+        {
+            return $"{condicion}{Environment.NewLine}    {sinInicioDeSesion}";
+        }
+
+        return string.Join(
+            Environment.NewLine,
+            condicion,
+            "BEGIN",
+            $"    IF SUSER_ID({EscribirTexto(usuario.InicioDeSesion)}) IS NOT NULL",
+            $"        CREATE USER {nombre} FOR LOGIN {Delimitar(usuario.InicioDeSesion)};",
+            "    ELSE",
+            $"        {sinInicioDeSesion}",
+            "END;");
+    }
+
+    public string GenerarCreacionDeRol(RolDeBaseDeDatos rol) =>
+        $"IF DATABASE_PRINCIPAL_ID({EscribirTexto(rol.Nombre)}) IS NULL{Environment.NewLine}    CREATE ROLE {Delimitar(rol.Nombre)};";
+
+    public string GenerarMiembroDeRol(MiembroDeRol miembro) =>
+        $"ALTER ROLE {Delimitar(miembro.Rol)} ADD MEMBER {Delimitar(miembro.Miembro)};";
+
+    public string GenerarPermiso(PermisoDeBaseDeDatos permiso)
+    {
+        var instruccion = new StringBuilder(permiso.EsDenegacion ? "DENY " : "GRANT ").Append(permiso.Permiso);
+
+        if (permiso.Objeto is not null && permiso.Esquema is not null)
+        {
+            instruccion.Append($" ON OBJECT::{Delimitar(permiso.Esquema, permiso.Objeto)}");
+
+            if (permiso.Columna is not null)
+            {
+                instruccion.Append($" ({Delimitar(permiso.Columna)})");
+            }
+        }
+        else if (permiso.Esquema is not null)
+        {
+            instruccion.Append($" ON SCHEMA::{Delimitar(permiso.Esquema)}");
+        }
+
+        instruccion.Append($" TO {Delimitar(permiso.Beneficiario)}");
+
+        if (permiso.PuedeOtorgarlo)
+        {
+            instruccion.Append(" WITH GRANT OPTION");
         }
 
         return instruccion.Append(';').ToString();
@@ -310,7 +408,7 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
         foreach (var fila in filas)
         {
-            var valores = string.Join(", ", posicionesInsertables.Select(posicion => EscribirLiteralSql(fila[posicion])));
+            var valores = string.Join(", ", posicionesInsertables.Select(posicion => EscribirLiteralDeColumna(fila[posicion], ordenadas[posicion])));
             texto.AppendLine($"INSERT INTO {nombreDeLaTabla} ({listaDeColumnas}) VALUES ({valores});");
         }
 
@@ -366,6 +464,22 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
     // Fechas en ISO 8601 con "T": sin la T, una columna datetime con idioma español (DATEFORMAT dmy)
     // lee "2026-01-05" como año-día-mes y guarda otra fecha o falla con "fuera de rango"
+    // Formatos con los 7 decimales de segundo de datetime2 y datetimeoffset. Solo se usan en columnas de esos tipos:
+    // una columna datetime rechaza un texto con más de 3 decimales.
+    private const string FormatoDeFechaPrecisa = "yyyy-MM-dd'T'HH:mm:ss.fffffff";
+    private const string FormatoDeFechaConZonaPrecisa = "yyyy-MM-dd'T'HH:mm:ss.fffffffzzz";
+
+    /// <summary>
+    /// Igual que <see cref="EscribirLiteralSql"/>, pero conociendo la columna: antes una columna datetime2(7)
+    /// se exportaba con 3 decimales y la copia perdía las fracciones de milisegundo.
+    /// </summary>
+    private static string EscribirLiteralDeColumna(object? valor, Columna columna) => (valor, columna.TipoDeDato.Nombre.ToLowerInvariant()) switch
+    {
+        (DateTime fecha, "datetime2") => $"'{fecha.ToString(FormatoDeFechaPrecisa, System.Globalization.CultureInfo.InvariantCulture)}'",
+        (DateTimeOffset fecha, "datetimeoffset") => $"'{fecha.ToString(FormatoDeFechaConZonaPrecisa, System.Globalization.CultureInfo.InvariantCulture)}'",
+        _ => EscribirLiteralSql(valor)
+    };
+
     private static string EscribirLiteralSql(object? valor) => valor switch
     {
         null => "NULL",
@@ -419,7 +533,7 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         var instrucciones = original is null
             ? [CrearInstruccionCreateTable(
                 nueva.Tabla,
-                nueva.Columnas.Select(columna => DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos)).ToList(),
+                nueva.Columnas.Select(DefinirColumnaConValorPredeterminado).ToList(),
                 nueva.ColumnasDeLaLlavePrimaria.Any()
                     ? new LlavePrimariaParaCrear($"PK_{nueva.Nombre}", nueva.ColumnasDeLaLlavePrimaria.Select(columna => columna.Nombre).ToList(), EsAgrupada: null)
                     : null)]
@@ -664,6 +778,11 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
 
         instrucciones.AddRange(cambios.ColumnasNuevas.Select(columna => CrearAdicionDeColumna(nombreDeLaTabla, columna)));
 
+        // Cambiar un valor predeterminado es quitar la restricción anterior (si había) y crear otra.
+        // Va después de renombrar, así que se usa el nombre nuevo de la columna.
+        instrucciones.AddRange(cambios.ColumnasConOtroValorPredeterminado.Select((columna, indice) =>
+            CrearCambioDeValorPredeterminado(nueva.Tabla, columna, cambios.ColumnasEliminadas.Count + indice)));
+
         var columnasDeLaLlave = nueva.ColumnasDeLaLlavePrimaria.Select(columna => columna.Nombre).ToList();
 
         if (cambios.CambiaLaLlavePrimaria && columnasDeLaLlave.Count > 0)
@@ -673,6 +792,29 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
         }
 
         return instrucciones.Count > 0 ? instrucciones : ["-- No hay cambios que aplicar."];
+    }
+
+    private static string DefinirColumnaConValorPredeterminado(DefinicionDeColumna columna)
+    {
+        var definicion = DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos);
+        return columna.TieneValorPredeterminado ? $"{definicion} DEFAULT {EntreParentesis(columna.ValorPredeterminado!)}" : definicion;
+    }
+
+    private static string CrearCambioDeValorPredeterminado(Tabla tabla, DefinicionDeColumna columna, int indice)
+    {
+        var eliminacion = CrearEliminacionDeValorPredeterminado(tabla, columna.Nombre, indice);
+
+        return columna.TieneValorPredeterminado
+            ? eliminacion + Environment.NewLine
+                + $"ALTER TABLE {Delimitar(tabla.Esquema, tabla.Nombre)} ADD DEFAULT {EntreParentesis(columna.ValorPredeterminado!)} FOR {Delimitar(columna.Nombre)};"
+            : eliminacion;
+    }
+
+    // El usuario escribe "0" o "getdate()"; SQL Server lo guarda como "((0))". Si ya viene entre paréntesis se deja igual.
+    private static string EntreParentesis(string expresion)
+    {
+        var texto = expresion.Trim();
+        return texto.StartsWith('(') && texto.EndsWith(')') ? texto : $"({texto})";
     }
 
     private static string CrearEliminacionDeValorPredeterminado(Tabla tabla, string columna, int indice)
@@ -699,6 +841,12 @@ public sealed class GeneradorDeScriptsSqlServer : IGeneradorDeScripts
     /// </summary>
     private static string CrearAdicionDeColumna(string nombreDeLaTabla, DefinicionDeColumna columna)
     {
+        // Con un valor predeterminado propio, las filas existentes lo reciben y no hace falta uno temporal
+        if (columna.TieneValorPredeterminado)
+        {
+            return $"ALTER TABLE {nombreDeLaTabla} ADD {DefinirColumnaConValorPredeterminado(columna)};";
+        }
+
         var definicion = DefinirColumna(columna.Nombre, columna.TipoDeDato, columna.EsIdentidad, columna.AdmiteNulos);
         var valorInicial = columna.AdmiteNulos || columna.EsIdentidad ? null : ObtenerValorInicial(columna.TipoDeDato);
 

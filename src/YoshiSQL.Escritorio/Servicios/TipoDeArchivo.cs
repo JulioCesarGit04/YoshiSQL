@@ -7,4 +7,8 @@ namespace YoshiSQL.Escritorio.Servicios;
 public sealed record TipoDeArchivo(string Descripcion, string Extension)
 {
     public static readonly TipoDeArchivo ScriptSql = new("Scripts SQL", "sql");
+
+    public static readonly TipoDeArchivo ImagenPng = new("Imagen PNG", "png");
+
+    public static readonly TipoDeArchivo DocumentoPdf = new("Documento PDF", "pdf");
 }

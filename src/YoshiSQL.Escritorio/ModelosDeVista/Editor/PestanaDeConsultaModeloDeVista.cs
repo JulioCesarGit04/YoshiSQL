@@ -81,8 +81,14 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
     public event EventHandler<bool>? CambioDeCapitalizacionSolicitado;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(InformacionAdicional))]
+    [NotifyPropertyChangedFor(nameof(InformacionAdicional), nameof(DescripcionParaLaPestana))]
     public partial string? RutaDelArchivo { get; private set; }
+
+    /// <summary>Línea y columna del cursor, para la barra de estado. Lo escribe el editor.</summary>
+    [ObservableProperty]
+    public partial string? PosicionDelCursor { get; set; }
+
+    partial void OnEstaEjecutandoChanged(bool value) => EstaOcupado = value;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Titulo))]
@@ -358,6 +364,19 @@ public sealed partial class PestanaDeConsultaModeloDeVista : DocumentoModeloDeVi
         catch (Exception error)
         {
             _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Autocompletar"));
+            return [];
+        }
+    }
+
+    public IReadOnlyList<ErrorDeSintaxis> BuscarErroresDeSintaxis(string textoCompleto)
+    {
+        try
+        {
+            return _servicioDeFormato.BuscarErroresDeSintaxis(textoCompleto);
+        }
+        // El subrayado es una ayuda: si el análisis falla, simplemente no se subraya nada
+        catch (Exception)
+        {
             return [];
         }
     }

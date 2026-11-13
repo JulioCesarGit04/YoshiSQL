@@ -6,24 +6,27 @@
              x:Class="YoshiSQL.Escritorio.Vistas.Editor.PestanaDeConsulta"
              x:DataType="vm:PestanaDeConsultaModeloDeVista">
 
-    <Grid RowDefinitions="*,1,280">
+    <Grid x:Name="Cuadricula" RowDefinitions="*,5,280">
         <controles:EditorSql x:Name="Editor"
                              Grid.Row="0"
                              Document="{Binding Documento}"
                              Seleccion="{Binding Seleccion, Mode=OneWayToSource}"
+                             PosicionDelCursor="{Binding PosicionDelCursor, Mode=OneWayToSource}"
                              ProveedorDeSugerencias="{Binding}"
                              FontFamily="{DynamicResource FuenteDelEditor}"
                              FontSize="{DynamicResource TamanoDeLetraDelEditor}"
                              ShowLineNumbers="{DynamicResource MostrarNumerosDeLinea}"
+                             SubrayarErroresDeSintaxis="{DynamicResource SubrayarErroresDeSintaxis}"
                              WordWrap="{DynamicResource AjustarLineasLargas}"
                              Padding="4,6,0,0"
                              Background="{DynamicResource PincelDeFondo}"
                              Foreground="{DynamicResource PincelDeTexto}"
                              LineNumbersForeground="{DynamicResource PincelDeNumerosDeLinea}" />
 
-        <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
+        <Border Grid.Row="1" Classes="LineaDivisoria" Height="1" VerticalAlignment="Bottom" />
+        <GridSplitter x:Name="SeparadorDeResultados" Grid.Row="1" ResizeDirection="Rows" />
 
-        <resultados:PanelDeResultados Grid.Row="2" DataContext="{Binding Resultados}" />
+        <resultados:PanelDeResultados x:Name="PanelDeResultados" Grid.Row="2" DataContext="{Binding Resultados}" />
 
         <ProgressBar Grid.Row="0" VerticalAlignment="Top" Height="2" MinHeight="2"
                      IsIndeterminate="True" IsVisible="{Binding EstaEjecutando}" />

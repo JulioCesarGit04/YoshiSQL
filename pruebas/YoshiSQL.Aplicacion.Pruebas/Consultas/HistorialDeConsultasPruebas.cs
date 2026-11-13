@@ -70,7 +70,12 @@ public class HistorialDeConsultasPruebas
     {
         await _historial.RegistrarAsync(CrearConsulta(new string('x', HistorialDeConsultas.LargoMaximoDelTexto + 10)));
 
-        Assert.Equal(HistorialDeConsultas.LargoMaximoDelTexto, _historial.ObtenerRecientes()[0].Texto.Length);
+        var guardado = _historial.ObtenerRecientes()[0].Texto;
+
+        Assert.Equal(HistorialDeConsultas.LargoMaximoDelTexto, guardado.Length);
+
+        // Quien lo abra desde el historial debe ver que no está completo
+        Assert.EndsWith(HistorialDeConsultas.AvisoDeTextoRecortado, guardado);
     }
 
     private static ConsultaEjecutada CrearConsulta(string texto) =>

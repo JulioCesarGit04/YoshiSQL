@@ -20,6 +20,10 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
     // Igual que SSMS: las consultas no tienen tiempo límite, el usuario las cancela
     private const int SinTiempoLimite = 0;
 
+    // Un resultado se guarda entero en memoria para mostrarlo: sin un tope, un SELECT sin WHERE sobre una tabla
+    // de decenas de millones de filas agotaba la memoria y cerraba la aplicación. Para sacar más filas está exportar.
+    internal const int MaximoDeFilasPorResultado = 1_000_000;
+
     private readonly SqlConnection _conexion;
     private readonly List<MensajeDeEjecucion> _mensajesDeLaEjecucion = [];
     private int _lineaInicialDelLoteActual = 1;
@@ -278,16 +282,54 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
         };
         comando.StatementCompleted += RegistrarFilasAfectadas;
 
-        await using var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
+        var lector = await comando.ExecuteReaderAsync(tokenDeCancelacion);
+        var seAlcanzoElTope = false;
 
-        do
+        try
         {
-            if (lector.FieldCount > 0)
+            do
             {
-                conjuntosDeResultados.Add(await LeerConjuntoDeResultadosAsync(lector, tokenDeCancelacion));
+                if (lector.FieldCount == 0)
+                {
+                    continue;
+                }
+
+                var conjunto = await LeerConjuntoDeResultadosAsync(lector, tokenDeCancelacion);
+                conjuntosDeResultados.Add(conjunto);
+
+                if (conjunto.CantidadDeFilas >= MaximoDeFilasPorResultado)
+                {
+                    seAlcanzoElTope = true;
+                    _mensajesDeLaEjecucion.Add(MensajeDeEjecucion.Advertencia(
+                        $"Se muestran solo las primeras {MaximoDeFilasPorResultado:N0} filas y se detuvo el resto de este lote para no agotar la memoria. "
+                        + "Agrega un WHERE o un TOP, o exporta la tabla si necesitas todas."));
+
+                    // El servidor seguiría enviando filas: se le pide que pare
+                    comando.Cancel();
+                    break;
+                }
             }
+            while (await lector.NextResultAsync(tokenDeCancelacion));
         }
-        while (await lector.NextResultAsync(tokenDeCancelacion));
+        finally
+        {
+            await CerrarLectorAsync(lector, seAlcanzoElTope);
+        }
+    }
+
+    /// <summary>
+    /// Tras detener el lote a propósito, el cierre del lector puede informar "cancelado por el usuario":
+    /// eso no es un error de la consulta y no debe llegar a los mensajes.
+    /// </summary>
+    private static async Task CerrarLectorAsync(SqlDataReader lector, bool seDetuvoAProposito)
+    {
+        try
+        {
+            await lector.DisposeAsync();
+        }
+        catch (SqlException) when (seDetuvoAProposito)
+        {
+        }
     }
 
     private static async Task<ConjuntoDeResultados> LeerConjuntoDeResultadosAsync(
@@ -302,7 +344,7 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
 
         var filas = new List<object?[]>();
 
-        while (await lector.ReadAsync(tokenDeCancelacion))
+        while (filas.Count < MaximoDeFilasPorResultado && await lector.ReadAsync(tokenDeCancelacion))
         {
             filas.Add(LeerValoresDeLaFila(lector));
         }

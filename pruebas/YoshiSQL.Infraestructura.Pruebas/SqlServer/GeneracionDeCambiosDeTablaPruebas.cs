@@ -99,6 +99,71 @@ public class GeneracionDeCambiosDeTablaPruebas
         Assert.DoesNotContain("DF_YoshiSQL_Temporal", script);
     }
 
+    [Fact]
+    public void TablaNueva_ConValorPredeterminado_LoEscribeEntreParentesis()
+    {
+        var tabla = new DefinicionDeTabla("dbo", "Productos",
+        [
+            new(null, "Id", Entero, AdmiteNulos: false, EsLlavePrimaria: true, EsIdentidad: true),
+            new(null, "Activo", new TipoDeDato("bit"), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, ValorPredeterminado: "1"),
+            new(null, "Creado", new TipoDeDato("datetime"), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, ValorPredeterminado: "(getdate())")
+        ]);
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", original: null, tabla);
+
+        Assert.Contains("[Activo] bit NOT NULL DEFAULT (1)", script);
+        Assert.Contains("[Creado] datetime NOT NULL DEFAULT (getdate())", script);
+    }
+
+    [Fact]
+    public void CambiarElValorPredeterminado_QuitaElAnteriorYCreaElNuevo()
+    {
+        var original = TablaOriginal with
+        {
+            Columnas = [TablaOriginal.Columnas[0], TablaOriginal.Columnas[1], TablaOriginal.Columnas[2] with { ValorPredeterminado = "(N'Lima')" }]
+        };
+        var nueva = original with
+        {
+            Columnas = [original.Columnas[0], original.Columnas[1], original.Columnas[2] with { ValorPredeterminado = "N'Cusco'" }]
+        };
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", original, nueva);
+
+        var posicionDeLaBusqueda = script.IndexOf("AND c.name = N'Ciudad';", StringComparison.Ordinal);
+        var posicionDelNuevo = script.IndexOf("ALTER TABLE [dbo].[Clientes] ADD DEFAULT (N'Cusco') FOR [Ciudad];", StringComparison.Ordinal);
+
+        Assert.True(posicionDeLaBusqueda > 0 && posicionDelNuevo > posicionDeLaBusqueda, script);
+        Assert.DoesNotContain("ALTER COLUMN", script);
+    }
+
+    [Fact]
+    public void QuitarElValorPredeterminado_SoloEliminaLaRestriccion()
+    {
+        var original = TablaOriginal with
+        {
+            Columnas = [TablaOriginal.Columnas[0], TablaOriginal.Columnas[1], TablaOriginal.Columnas[2] with { ValorPredeterminado = "(N'Lima')" }]
+        };
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", original, TablaOriginal);
+
+        Assert.Contains("EXEC sys.sp_executesql @quitarPredeterminado1;", script);
+        Assert.DoesNotContain("ADD DEFAULT", script);
+    }
+
+    [Fact]
+    public void AgregarColumnaObligatoriaConValorPredeterminadoPropio_NoUsaElTemporal()
+    {
+        var nueva = TablaOriginal with
+        {
+            Columnas = [.. TablaOriginal.Columnas, new(null, "Puntos", Entero, AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, ValorPredeterminado: "10")]
+        };
+
+        var script = _generador.GenerarCambiosDeTabla("Ventas", TablaOriginal, nueva);
+
+        Assert.Contains("ADD [Puntos] int NOT NULL DEFAULT (10);", script);
+        Assert.DoesNotContain("DF_YoshiSQL_Temporal", script);
+    }
+
     // Si el script se abre en una pestaña, esa conexión no debe quedarse con XACT_ABORT activo
     [Fact]
     public void CualquierCambio_AlTerminarApagaXactAbortEnUnLoteAparte()

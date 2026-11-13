@@ -4,6 +4,42 @@
              x:Class="YoshiSQL.Escritorio.Vistas.Diagramas.PestanaDeDiagrama"
              x:DataType="vm:PestanaDeDiagramaModeloDeVista">
 
+    <UserControl.Styles>
+        <!-- Línea de una relación: gris normalmente, verde y más gruesa cuando está seleccionada -->
+        <Style Selector="Polyline.LineaDeRelacion">
+            <Setter Property="Stroke" Value="{DynamicResource PincelDeLineaDeRelacion}" />
+            <Setter Property="StrokeThickness" Value="1.4" />
+        </Style>
+        <Style Selector="Polyline.LineaDeRelacion.Seleccionada">
+            <Setter Property="Stroke" Value="{DynamicResource PincelDeAcento}" />
+            <Setter Property="StrokeThickness" Value="2.6" />
+        </Style>
+        <Style Selector="Polygon.FlechaDeRelacion">
+            <Setter Property="Fill" Value="{DynamicResource PincelDeAdvertencia}" />
+        </Style>
+        <Style Selector="Polygon.FlechaDeRelacion.Seleccionada">
+            <Setter Property="Fill" Value="{DynamicResource PincelDeAcento}" />
+        </Style>
+        <Style Selector="Ellipse.OrigenDeRelacion">
+            <Setter Property="Stroke" Value="{DynamicResource PincelDeLineaDeRelacion}" />
+        </Style>
+        <Style Selector="Ellipse.OrigenDeRelacion.Seleccionada">
+            <Setter Property="Stroke" Value="{DynamicResource PincelDeAcento}" />
+            <Setter Property="Fill" Value="{DynamicResource PincelDeAcento}" />
+        </Style>
+        <!-- Tarjeta de una tabla que es extremo de lo seleccionado -->
+        <Style Selector="Border.TarjetaDeTabla">
+            <Setter Property="BorderBrush" Value="{DynamicResource PincelDeBordeDeTarjeta}" />
+        </Style>
+        <Style Selector="Border.TarjetaDeTabla.Resaltada">
+            <Setter Property="BorderBrush" Value="{DynamicResource PincelDeAcento}" />
+        </Style>
+        <!-- Columna que la relación seleccionada une -->
+        <Style Selector="Grid.FilaDeColumna.Resaltada">
+            <Setter Property="Background" Value="{DynamicResource PincelDeSeleccion}" />
+        </Style>
+    </UserControl.Styles>
+
     <DockPanel>
         <!-- Barra del diagrama -->
         <Border DockPanel.Dock="Top"
@@ -22,11 +58,22 @@
                     <Button Classes="Herramienta" Content="{Binding ZoomVisible}" MinWidth="56"
                             Command="{Binding RestablecerZoomCommand}" ToolTip.Tip="Volver al 100%" />
                     <Button Classes="Herramienta" Content="Acercar" Command="{Binding AcercarCommand}" />
+                    <Button Classes="Herramienta" Content="Ajustar" Click="AlAjustarALaVentana"
+                            ToolTip.Tip="Cambiar el zoom para que quepa todo el diagrama" />
+                    <Rectangle Width="1" Margin="8,4" Fill="{DynamicResource PincelDeBorde}" />
+                    <TextBox Width="190" VerticalAlignment="Center" Text="{Binding TextoDeBusqueda}"
+                             PlaceholderText="Buscar tabla..." KeyDown="AlPresionarTeclaEnLaBusqueda"
+                             ToolTip.Tip="Escribe parte del nombre; Enter pasa a la siguiente coincidencia" />
+                    <Rectangle Width="1" Margin="8,4" Fill="{DynamicResource PincelDeBorde}" />
+                    <Button Classes="Herramienta" Content="Guardar imagen" Click="AlGuardarComoImagen"
+                            ToolTip.Tip="Guardar el diagrama como imagen PNG, con las tablas tal como están acomodadas" />
+                    <Button Classes="Herramienta" Content="Guardar PDF" Click="AlGuardarComoPdf"
+                            ToolTip.Tip="Guardar el diagrama como PDF, con las tablas tal como están acomodadas" />
                 </StackPanel>
 
                 <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="11.5"
-                           Foreground="{DynamicResource PincelDeTextoSecundario}"
-                           Text="Arrastra las tablas por su encabezado  ·  Ctrl + rueda para zoom" />
+                           Foreground="{DynamicResource PincelDeTextoSecundario}" TextTrimming="CharacterEllipsis"
+                           Text="Toca una línea o una tabla para ver sus relaciones  ·  Ctrl + rueda para zoom" />
             </Grid>
         </Border>
 
@@ -35,10 +82,12 @@
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
                 <LayoutTransformControl x:Name="Transformador" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <!-- Tocar el fondo vacío quita la selección -->
                     <Panel x:Name="Lienzo"
                            Width="{Binding AnchoDelLienzo}"
                            Height="{Binding AltoDelLienzo}"
-                           Background="Transparent">
+                           Background="Transparent"
+                           PointerPressed="AlPresionarElFondo">
 
                         <!-- Tablas -->
                         <ItemsControl ItemsSource="{Binding Tablas}">
@@ -56,12 +105,15 @@
                             </ItemsControl.Styles>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:TablaDelDiagramaModeloDeVista">
-                                    <Border Width="{x:Static vm:TablaDelDiagramaModeloDeVista.Ancho}"
+                                    <Border Classes="TarjetaDeTabla"
+                                            Classes.Resaltada="{Binding EstaResaltada}"
+                                            Opacity="{Binding Opacidad}"
+                                            Width="{x:Static vm:TablaDelDiagramaModeloDeVista.Ancho}"
                                             Background="{DynamicResource PincelDePanelElevado}"
-                                            BorderBrush="{DynamicResource PincelDeBordeDeTarjeta}"
                                             BorderThickness="1"
                                             CornerRadius="6"
-                                            BoxShadow="0 6 18 0 #55000000">
+                                            BoxShadow="0 6 18 0 #55000000"
+                                            PointerPressed="AlPresionarTabla">
                                         <StackPanel>
                                             <Border Height="{x:Static vm:TablaDelDiagramaModeloDeVista.AlturaDelEncabezado}"
                                                     Background="{DynamicResource PincelDeEncabezadoDeTarjeta}"
@@ -83,18 +135,21 @@
                                                           Margin="0,0,0,6">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="vm:ColumnaDelDiagramaModeloDeVista">
-                                                        <Grid Height="{x:Static vm:TablaDelDiagramaModeloDeVista.AlturaDeFila}"
-                                                              ColumnDefinitions="20,*,Auto" Margin="10,0">
-                                                            <Path Classes="Icono" Width="14" Height="14" Stroke="#E5C07B"
+                                                        <!-- El margen va por dentro (en las columnas) para que el resaltado cubra toda la fila -->
+                                                        <Grid Classes="FilaDeColumna"
+                                                              Classes.Resaltada="{Binding EstaResaltada}"
+                                                              Height="{x:Static vm:TablaDelDiagramaModeloDeVista.AlturaDeFila}"
+                                                              ColumnDefinitions="30,*,Auto">
+                                                            <Path Classes="Icono" Width="14" Height="14" Stroke="#E5C07B" Margin="10,0,0,0" HorizontalAlignment="Left"
                                                                   IsVisible="{Binding EsLlavePrimaria}"
                                                                   Data="M1.5,7 A2.5,2.5 0 1 0 6.5,7 A2.5,2.5 0 1 0 1.5,7 Z M6.5,7 H12.5 M10.5,7 V9 M12.5,7 V8.5" />
-                                                            <Path Classes="Icono" Width="14" Height="14" Stroke="#56B6C2"
+                                                            <Path Classes="Icono" Width="14" Height="14" Stroke="#56B6C2" Margin="10,0,0,0" HorizontalAlignment="Left"
                                                                   IsVisible="{Binding EsLlaveForanea}"
                                                                   Data="M1.5,7 H11 M8,4 L11,7 L8,10" />
                                                             <TextBlock Grid.Column="1" Text="{Binding Nombre}" FontSize="12.5"
                                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                                             <TextBlock Grid.Column="2" Text="{Binding TipoVisible}" FontSize="11.5"
-                                                                       Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                       Margin="8,0,10,0" VerticalAlignment="Center"
                                                                        Foreground="{DynamicResource PincelDeTextoSecundario}" />
                                                         </Grid>
                                                     </DataTemplate>
@@ -115,20 +170,22 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:RelacionDelDiagramaModeloDeVista">
-                                    <Canvas>
-                                        <!-- Línea ancha e invisible: facilita pasar el mouse para ver el detalle -->
-                                        <Polyline Points="{Binding Puntos}" Stroke="Transparent" StrokeThickness="6"
+                                    <Canvas Opacity="{Binding Opacidad}">
+                                        <!-- Línea ancha e invisible: es la zona donde se toca la relación, mucho más fácil de acertar que la línea fina -->
+                                        <Polyline Points="{Binding Puntos}" Stroke="Transparent" StrokeThickness="12"
+                                                  Cursor="Hand" PointerPressed="AlPresionarRelacion"
                                                   ToolTip.Tip="{Binding Descripcion}" />
-                                        <Polyline Points="{Binding Puntos}" Stroke="{DynamicResource PincelDeLineaDeRelacion}" StrokeThickness="1.4"
-                                                  StrokeJoin="Round" IsHitTestVisible="False" />
-                                        <Ellipse Width="8" Height="8" Stroke="{DynamicResource PincelDeLineaDeRelacion}" StrokeThickness="1.4"
+                                        <Polyline Classes="LineaDeRelacion" Classes.Seleccionada="{Binding EstaSeleccionada}"
+                                                  Points="{Binding Puntos}" StrokeJoin="Round" IsHitTestVisible="False" />
+                                        <!-- Círculo en la columna que guarda el dato (la llave foránea) -->
+                                        <Ellipse Classes="OrigenDeRelacion" Classes.Seleccionada="{Binding EstaSeleccionada}"
+                                                 Width="8" Height="8" StrokeThickness="1.4"
                                                  Fill="{DynamicResource PincelDeFondo}" IsHitTestVisible="False"
                                                  Canvas.Left="{Binding MarcadorDeOrigenIzquierda}"
                                                  Canvas.Top="{Binding MarcadorDeOrigenArriba}" />
-                                        <Ellipse Width="8" Height="8" Fill="{DynamicResource PincelDeAdvertencia}"
-                                                 IsHitTestVisible="False"
-                                                 Canvas.Left="{Binding MarcadorDeDestinoIzquierda}"
-                                                 Canvas.Top="{Binding MarcadorDeDestinoArriba}" />
+                                        <!-- Flecha hacia la tabla de donde viene el dato (la llave primaria) -->
+                                        <Polygon Classes="FlechaDeRelacion" Classes.Seleccionada="{Binding EstaSeleccionada}"
+                                                 Points="{Binding PuntasDeLaFlecha}" IsHitTestVisible="False" />
                                     </Canvas>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -136,6 +193,23 @@
                     </Panel>
                 </LayoutTransformControl>
             </ScrollViewer>
+
+            <!-- Explicación de lo seleccionado: de dónde sale el dato y adónde va -->
+            <Border IsVisible="{Binding HaySeleccion}"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16,0,16,24" MaxWidth="640"
+                    Background="{DynamicResource PincelDePanelElevado}"
+                    BorderBrush="{DynamicResource PincelDeAcento}" BorderThickness="1" CornerRadius="6"
+                    Padding="14,10" BoxShadow="0 6 18 0 #55000000">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="4">
+                        <SelectableTextBlock Text="{Binding TituloDeLaSeleccion}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <SelectableTextBlock Text="{Binding DetalleDeLaSeleccion}" FontSize="12" TextWrapping="Wrap"
+                                             Foreground="{DynamicResource PincelDeTextoSecundario}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="Herramienta" Content="Quitar selección" VerticalAlignment="Top"
+                            Command="{Binding QuitarSeleccionCommand}" />
+                </Grid>
+            </Border>
 
             <!-- Estados: cargando, error o base sin tablas -->
             <TextBlock IsVisible="{Binding EstaCargando}" Text="Cargando diagrama..."

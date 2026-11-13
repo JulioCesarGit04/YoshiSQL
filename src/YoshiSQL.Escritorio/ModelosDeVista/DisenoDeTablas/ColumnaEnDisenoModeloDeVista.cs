@@ -18,6 +18,7 @@ public sealed partial class ColumnaEnDisenoModeloDeVista : ModeloDeVistaBase
         AdmiteNulos = columnaExistente?.AdmiteNulos ?? true;
         EsLlavePrimaria = columnaExistente?.EsLlavePrimaria ?? false;
         EsIdentidad = columnaExistente?.EsIdentidad ?? false;
+        ValorPredeterminado = columnaExistente?.ValorPredeterminado ?? string.Empty;
     }
 
     public IReadOnlyList<string> TiposDeDatoSugeridos { get; }
@@ -42,6 +43,10 @@ public sealed partial class ColumnaEnDisenoModeloDeVista : ModeloDeVistaBase
     [ObservableProperty]
     public partial bool EsIdentidad { get; set; }
 
+    /// <summary>Expresión del DEFAULT, ej. 0, getdate() o 'A'. Vacío si la columna no tiene.</summary>
+    [ObservableProperty]
+    public partial string ValorPredeterminado { get; set; }
+
     // Una llave primaria nunca admite nulos; se ajusta automáticamente para no obligar al usuario
     partial void OnEsLlavePrimariaChanged(bool value)
     {
@@ -58,6 +63,8 @@ public sealed partial class ColumnaEnDisenoModeloDeVista : ModeloDeVistaBase
 
         return tipoDeDato is null
             ? null
-            : new DefinicionDeColumna(NombreOriginal, Nombre.Trim(), tipoDeDato, AdmiteNulos, EsLlavePrimaria, EsIdentidad);
+            : new DefinicionDeColumna(
+                NombreOriginal, Nombre.Trim(), tipoDeDato, AdmiteNulos, EsLlavePrimaria, EsIdentidad,
+                string.IsNullOrWhiteSpace(ValorPredeterminado) ? null : ValorPredeterminado.Trim());
     }
 }

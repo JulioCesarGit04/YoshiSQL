@@ -11,7 +11,7 @@ que **no existe**; toda la documentación vive en esos dos archivos.
 
 ```bash
 dotnet build                                   # compilar (advertencias = errores)
-dotnet test                                    # 256 pruebas xUnit
+dotnet test                                    # 289 pruebas xUnit
 dotnet run --project src/YoshiSQL.Escritorio   # ejecutar la app
 ```
 
@@ -129,7 +129,7 @@ También se fijó `System.Security.Cryptography.Pkcs` 10.0.13: la 9.0.18 que tra
 - PENDIENTE (de la auditoría): exportación completa (esquemas, tipos de usuario, dependencias, encoding), Excel con bigint,
   diseñador con precisión de datetime2/time, concurrencia optimista al editar filas.
 
-- PENDIENTE: resultados enormes se cargan completos en memoria (sin tope ni streaming).
+- Resultados enormes: desde 2026-11-10 hay un tope de 1.000.000 de filas por resultado (siguen en memoria, sin streaming).
 
 ### Revisión contra SQL Server real (2026-11-09) — corregido, sin commit
 En este equipo hay un SQL Server 2022 local (`localhost\SQL2022`, autenticación de Windows) con bases reales del
@@ -165,9 +165,70 @@ Se arreglaron todos los 🟠 y casi todos los 🟡 (queda solo B-63). Lo que cam
   con `SET XACT_ABORT OFF` en un lote aparte.
 - Muchos arreglos de interfaz están "por verificar en la aplicación" (ver cada fila en `BUGS.md`).
 
+### Mejoras de interfaz (2026-11-10) — hecho, sin commit
+Revisión visual con capturas de la ventana real. Lo que cambia cómo se trabaja en la interfaz:
+- **Disposición recordada**: `DisposicionDeLaVentana` (Dominio) + `IRepositorioDeDisposicion` → `ventana.json` en la
+  carpeta de estado + `DisposicionDeLaInterfaz` (Escritorio, singleton observable). Guarda tamaño, maximizada, ancho del
+  explorador, alto de resultados y si esos dos paneles se ven. La ventana la aplica al abrir y la guarda al cerrar; la
+  vista de consulta la obtiene de `VentanaPrincipalModeloDeVista.Disposicion`.
+- **Paneles ocultables**: Ctrl+B (explorador) y Ctrl+R (resultados), menú "Ver" y botones en la barra. Al ejecutar con
+  el panel de resultados oculto, se vuelve a mostrar solo.
+- **Separadores**: `GridSplitter` transparente de 5 px + `Border.LineaDivisoria` de 1 px. No volver a darle fondo.
+- **Pestañas**: clic derecho (cerrar, cerrar las demás, cerrar todas), clic con la rueda para cerrar, punto verde mientras
+  ejecuta (`DocumentoModeloDeVista.EstaOcupado`) y servidor en la ayuda emergente (`DescripcionParaLaPestana`).
+- **Editor**: línea y columna en la barra de estado (`EditorSql.PosicionDelCursor`); fragmentos con Tab
+  (`FragmentosDeTSql`: ssf, st, ins, upd, del, ct, cte, decl, ifex, try, tran, proc, func, cur; lista en Ayuda);
+  subrayado de errores de sintaxis en vivo (`SubrayadoDeErrores` + `IFormateadorDeSql.BuscarErroresDeSintaxis`,
+  espera 700 ms, se puede apagar en Preferencias).
+- **Buscar en la base de datos** (Ctrl+Shift+O): `BuscarObjetos.sql` busca en nombres, columnas y código; los resultados
+  se muestran reutilizando la paleta de comandos.
+- **Resultados**: clic en el encabezado ordena (`ComparadorDeCeldas`, solo en pantalla).
+- **Conectar**: nombre opcional de la conexión (`PerfilDeConexion.Nombre`/`Titulo`/`Detalle`), "Probar conexión" y
+  botón para ver la contraseña.
+- Para capturar la ventana en pruebas: `PrintWindow` sobre el identificador de la ventana, NUNCA copiar la pantalla
+  (captura lo que el usuario tenga delante). En Windows la carpeta de configuración no se puede redirigir: una copia de
+  prueba usa las conexiones reales del usuario, así que no conectar desde ella.
+- Segunda tanda (2026-11-10): filtro en la grilla de resultados (menú "Filtrar filas...", `DataGridCollectionView.Filter`),
+  alto de cada grilla según sus filas cuando hay varias (`AltoSugerido`), separadores en el menú de las tablas
+  (`AccionDelNodo.Separador()`: Avalonia dibuja como línea una opción cuyo texto es "-"), nombres accesibles en los
+  botones de solo icono (`AutomationProperties.Name`), **valores DEFAULT en el diseñador**
+  (`DefinicionDeColumna.ValorPredeterminado`, `CambiosDeTabla.ColumnasConOtroValorPredeterminado`,
+  `ListarValoresPredeterminadosDeTabla.sql`), **tope de 1.000.000 de filas por resultado**
+  (`SesionDeConsultaSqlServer.MaximoDeFilasPorResultado`: corta el lote con `comando.Cancel()` y avisa),
+  fechas `datetime2`/`datetimeoffset` con sus 7 decimales al exportar, propiedades extendidas (MS_Description)
+  en la exportación, y `empaquetar-linux.sh` (genera un .deb; **sin probar**, se escribió desde Windows).
+- Tercera tanda (2026-11-10): botones "Subir"/"Bajar" en el diseñador (solo al crear la tabla: SQL Server no reordena
+  columnas de una tabla existente), grupo opcional de las conexiones (`PerfilDeConexion.Grupo`; la lista las muestra
+  juntas y el título queda "Grupo / Nombre") y disparadores de base de datos (DDL) en la exportación, al final de todo.
+- Cuarta tanda (2026-11-12): exportar incluye índices columnstore (`IndiceDeTabla.EsColumnar`) y, como opción del
+  diálogo, usuarios, roles y permisos (`OpcionesDeExportacion.UsuariosYPermisos`, `IExploradorDeEsquema.ObtenerSeguridadAsync`
+  → `SeguridadDeLaBaseDeDatos`; un usuario se crea `FOR LOGIN` solo si ese inicio existe en el destino y, si no,
+  `WITHOUT LOGIN`). Iconos en el menú del explorador (`IconosDeAcciones`: se eligen por una palabra del texto de la
+  opción). Los diálogos redimensionables recuerdan su tamaño (`ServicioDeDialogos.ConTamanoRecordado` +
+  `DisposicionDeLaVentana.Dialogos`). El historial marca los scripts recortados (B-65).
+- **Probar la interfaz sin tocar los datos del usuario**: variable de entorno `YOSHISQL_CARPETA_DE_DATOS=<carpeta>`
+  (`RutasDeLaAplicacion.VariableDeCarpetaDeDatos`): todo se guarda ahí. SIN esa variable, una copia de prueba abierta
+  cuando el YoshiSQL del usuario está cerrado se convierte en la principal, restaura SUS pestañas y, si se cierra
+  normalmente, descarta sus scripts sin guardar. Usarla siempre; si no, respaldar `sesion.json` y nunca cerrar la ventana.
+- Con automatización de interfaz (UIA) se pueden pulsar botones y capturar ventanas, pero el editor (AvaloniaEdit)
+  no expone su texto: no se puede escribir en él, así que subrayado, fragmentos, orden y filtro siguen sin verse en pantalla.
+- PENDIENTE: dividir el editor y plan de ejecución como diagrama.
+
+### Compatibilidad con Linux (2026-11-13)
+- Revisado: el código ya separaba lo propio de cada sistema (DPAPI solo en Windows; en Linux, permisos 600/700),
+  las mayúsculas de archivos y recursos coinciden (Linux distingue mayúsculas) y `dotnet publish -r linux-x64`
+  (normal y de un solo archivo) compila sin errores con SkiaSharp y HarfBuzz nativos incluidos.
+- Corregido: `EscritorDeArchivosSeguro` crea el temporal ya con permisos 600 (`FileStreamOptions.UnixCreateMode`);
+  antes había un instante en que la clave y las contraseñas quedaban legibles por otros usuarios.
+- Corregido: la marca de "YoshiSQL abierto" guarda número de proceso y hora de arranque (`RepositorioDeSesionJson.CrearMarca`):
+  Linux reutiliza los números de proceso y con `dotnet run` todos se llaman "dotnet".
+- CI: `.github/workflows/compilar-y-probar.yml` compila y corre las pruebas en Ubuntu y Windows en cada push.
+  Es la única forma de correr las pruebas en Linux desde este equipo (WSL no tiene distribución instalada).
+- `empaquetar-linux.sh`: versión tomada de `Directory.Build.props`; dependencias para Ubuntu 22.04–25.04 y Debian 12.
+- Sin probar en un Linux real: la ventana, los diálogos de archivos (necesitan xdg-desktop-portal o GTK) y el `.deb`.
+
 ### Otros pendientes (según README / ESTRUCTURA)
-- Instalador Linux (.deb / AppImage) con ícono.
-- Valores `DEFAULT` en el diseñador de tablas.
+- Instalador Linux: existe `empaquetar-linux.sh` (.deb) pero falta probarlo en Linux; AppImage no está hecho.
 - Probar todo contra servidor real y en Windows 11.
 - Otros motores (PostgreSQL, MySQL) como nuevo proveedor en Infraestructura.
 

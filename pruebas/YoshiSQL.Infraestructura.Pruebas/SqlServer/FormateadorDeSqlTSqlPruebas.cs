@@ -38,4 +38,23 @@ public class FormateadorDeSqlTSqlPruebas
 
         Assert.Contains("línea 2", error.Message);
     }
+
+    [Fact]
+    public void BuscarErroresDeSintaxis_CodigoCorrectoConVariosLotes_NoDevuelveErrores()
+    {
+        const string Script = "CREATE PROCEDURE dbo.p AS SELECT 1;\nGO\nSELECT * FROM dbo.Clientes WHERE Id = 1;";
+
+        Assert.Empty(_formateador.BuscarErroresDeSintaxis(Script));
+    }
+
+    [Fact]
+    public void BuscarErroresDeSintaxis_PalabraMalEscrita_IndicaDondeEsta()
+    {
+        const string Script = "SELECT 1;\nSELEC * FROM dbo.Clientes;";
+
+        var error = Assert.Single(_formateador.BuscarErroresDeSintaxis(Script));
+
+        Assert.Equal(2, error.Linea);
+        Assert.Equal(Script.IndexOf("SELEC *", StringComparison.Ordinal), error.Posicion);
+    }
 }

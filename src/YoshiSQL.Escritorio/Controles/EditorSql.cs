@@ -35,6 +35,20 @@ public sealed class EditorSql : TextEditor
             nameof(Seleccion),
             defaultBindingMode: BindingMode.OneWayToSource);
 
+    public static readonly StyledProperty<string?> PosicionDelCursorProperty =
+        AvaloniaProperty.Register<EditorSql, string?>(
+            nameof(PosicionDelCursor),
+            defaultBindingMode: BindingMode.OneWayToSource);
+
+    public static readonly StyledProperty<bool> SubrayarErroresDeSintaxisProperty =
+        AvaloniaProperty.Register<EditorSql, bool>(nameof(SubrayarErroresDeSintaxis), defaultValue: true);
+
+    // Se espera a que el usuario deje de escribir: analizar en cada tecla sería un desperdicio
+    private static readonly TimeSpan EsperaAntesDeAnalizar = TimeSpan.FromMilliseconds(700);
+
+    // Un script enorme tarda en analizarse y casi nunca se está escribiendo a mano
+    private const int LargoMaximoParaAnalizar = 300_000;
+
     private static readonly Lazy<IHighlightingDefinition> ResaltadoOscuro = new(() => CargarDefinicionDeResaltado(RecursoDeResaltadoOscuro));
     private static readonly Lazy<IHighlightingDefinition> ResaltadoClaro = new(() => CargarDefinicionDeResaltado(RecursoDeResaltadoClaro));
 
@@ -46,9 +60,16 @@ public sealed class EditorSql : TextEditor
     private TextDocument? _documentoMostrado;
     private bool _estaRestaurando;
     private CompletionWindow? _ventanaDeSugerencias;
+    private readonly SubrayadoDeErrores _subrayadoDeErrores = new();
+    private readonly DispatcherTimer _temporizadorDeAnalisis;
 
     public EditorSql()
     {
+        _temporizadorDeAnalisis = new DispatcherTimer { Interval = EsperaAntesDeAnalizar };
+        _temporizadorDeAnalisis.Tick += async (_, _) => await AnalizarSintaxisAsync();
+        TextArea.TextView.BackgroundRenderers.Add(_subrayadoDeErrores);
+        TextChanged += (_, _) => ProgramarAnalisisDeSintaxis();
+
         AplicarResaltadoDelTema();
         ActualThemeVariantChanged += (_, _) => AplicarResaltadoDelTema();
         ShowLineNumbers = true;
@@ -63,7 +84,11 @@ public sealed class EditorSql : TextEditor
             PublicarSeleccion();
             RecordarEstadoDelDocumento();
         };
-        TextArea.Caret.PositionChanged += (_, _) => RecordarEstadoDelDocumento();
+        TextArea.Caret.PositionChanged += (_, _) =>
+        {
+            RecordarEstadoDelDocumento();
+            PublicarPosicionDelCursor();
+        };
         TextArea.TextView.ScrollOffsetChanged += (_, _) => RecordarEstadoDelDocumento();
         DocumentChanged += (_, _) => AlCambiarDeDocumento();
 
@@ -84,6 +109,92 @@ public sealed class EditorSql : TextEditor
     {
         get => GetValue(SeleccionProperty);
         set => SetValue(SeleccionProperty, value);
+    }
+
+    public bool SubrayarErroresDeSintaxis
+    {
+        get => GetValue(SubrayarErroresDeSintaxisProperty);
+        set => SetValue(SubrayarErroresDeSintaxisProperty, value);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs cambio)
+    {
+        base.OnPropertyChanged(cambio);
+
+        if (cambio.Property == SubrayarErroresDeSintaxisProperty)
+        {
+            ProgramarAnalisisDeSintaxis();
+        }
+    }
+
+    private void ProgramarAnalisisDeSintaxis()
+    {
+        // Lo subrayado corresponde al texto anterior: se quita ya y se vuelve a calcular cuando el usuario pare
+        MostrarErroresDeSintaxis([]);
+        _temporizadorDeAnalisis.Stop();
+        _temporizadorDeAnalisis.Start();
+    }
+
+    private async Task AnalizarSintaxisAsync()
+    {
+        _temporizadorDeAnalisis.Stop();
+
+        if (!SubrayarErroresDeSintaxis || ProveedorDeSugerencias is not { } proveedor || Document is not { } documento
+            || documento.TextLength == 0 || documento.TextLength > LargoMaximoParaAnalizar)
+        {
+            return;
+        }
+
+        var texto = documento.Text;
+        var errores = await Task.Run(() => proveedor.BuscarErroresDeSintaxis(texto));
+
+        // Si mientras tanto cambió el texto o la pestaña, este resultado ya no corresponde a lo que se ve
+        if (!ReferenceEquals(Document, documento) || documento.TextLength != texto.Length || documento.Text != texto)
+        {
+            return;
+        }
+
+        MostrarErroresDeSintaxis(errores.Select(error => CalcularTramoDelError(texto, error.Posicion)).ToList());
+    }
+
+    private void MostrarErroresDeSintaxis(IReadOnlyList<(int Inicio, int Longitud)> tramos)
+    {
+        if (tramos.Count == 0 && _subrayadoDeErrores.Tramos.Count == 0)
+        {
+            return;
+        }
+
+        _subrayadoDeErrores.Tramos = tramos;
+        TextArea.TextView.InvalidateLayer(_subrayadoDeErrores.Layer);
+    }
+
+    /// <summary>
+    /// El analizador solo dice dónde empieza el error: se subraya la palabra que está ahí
+    /// (o un carácter, si no es una palabra), sin pasar del final del texto.
+    /// </summary>
+    private static (int Inicio, int Longitud) CalcularTramoDelError(string texto, int posicion)
+    {
+        if (texto.Length == 0)
+        {
+            return (0, 0);
+        }
+
+        var inicio = Math.Clamp(posicion, 0, texto.Length - 1);
+        var fin = inicio;
+
+        while (fin < texto.Length && EsCaracterDeNombre(texto[fin]))
+        {
+            fin++;
+        }
+
+        return (inicio, Math.Max(fin - inicio, 1));
+    }
+
+    /// <summary>Línea y columna del cursor ("Lín 12, Col 5"), para mostrarlas en la barra de estado.</summary>
+    public string? PosicionDelCursor
+    {
+        get => GetValue(PosicionDelCursorProperty);
+        set => SetValue(PosicionDelCursorProperty, value);
     }
 
     // Reutiliza la plantilla visual del TextEditor original
@@ -280,7 +391,42 @@ public sealed class EditorSql : TextEditor
         {
             argumentos.Handled = true;
             _ = MostrarSugerenciasAsync();
+            return;
         }
+
+        // Tab después de una abreviatura (ej. "ssf") la reemplaza por su fragmento de código.
+        // Con la lista de sugerencias abierta, Tab sigue sirviendo para aceptar la sugerencia.
+        var esTabSolo = argumentos.Key == Key.Tab && argumentos.KeyModifiers == KeyModifiers.None;
+
+        if (esTabSolo && _ventanaDeSugerencias is null && TextArea.Selection.IsEmpty && InsertarFragmento())
+        {
+            argumentos.Handled = true;
+        }
+    }
+
+    /// <returns>Verdadero si la palabra antes del cursor era la abreviatura de un fragmento y se insertó.</returns>
+    private bool InsertarFragmento()
+    {
+        if (Document is null)
+        {
+            return false;
+        }
+
+        var abreviatura = LeerPalabraAntesDelCursor();
+
+        if (abreviatura.Length == 0 || FragmentosDeTSql.Buscar(abreviatura) is not { } fragmento)
+        {
+            return false;
+        }
+
+        var inicio = CaretOffset - abreviatura.Length;
+        var texto = fragmento.Texto.ReplaceLineEndings(Environment.NewLine);
+        var posicionDeLaMarca = texto.IndexOf(FragmentosDeTSql.MarcaDelCursor, StringComparison.Ordinal);
+        var textoFinal = texto.Replace(FragmentosDeTSql.MarcaDelCursor, string.Empty, StringComparison.Ordinal);
+
+        Document.Replace(inicio, abreviatura.Length, textoFinal);
+        CaretOffset = inicio + (posicionDeLaMarca >= 0 ? posicionDeLaMarca : textoFinal.Length);
+        return true;
     }
 
     private async Task MostrarSugerenciasAsync()
@@ -330,6 +476,9 @@ public sealed class EditorSql : TextEditor
 
     private static bool EsCaracterDeNombre(char caracter) => char.IsLetterOrDigit(caracter) || caracter is '_' or '@' or '#';
 
+    private void PublicarPosicionDelCursor() =>
+        PosicionDelCursor = $"Lín {TextArea.Caret.Line}, Col {TextArea.Caret.Column}";
+
     private void PublicarSeleccion()
     {
         var segmento = TextArea.Selection.SurroundingSegment;
@@ -356,6 +505,8 @@ public sealed class EditorSql : TextEditor
     {
         _documentoMostrado = Document;
         PublicarSeleccion();
+        PublicarPosicionDelCursor();
+        ProgramarAnalisisDeSintaxis();
 
         if (Document is not { } documento || !_estadosPorDocumento.TryGetValue(documento, out var estado))
         {

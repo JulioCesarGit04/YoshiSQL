@@ -251,6 +251,7 @@ public sealed class FabricaDeNodos
             new AccionDelNodo(() => $"Editar las primeras {_servicioDePreferencias.Actuales.FilasAlEditar} filas",
                 ComandoSeguro("Editar filas", contexto, () => _acciones.AbrirEdicionDeFilasAsync(contexto, tabla))),
             new AccionDelNodo("Diseñar", ComandoSeguro("Diseñar tabla", contexto, () => _acciones.AbrirDisenadorDeTablaAsync(contexto, tabla))),
+            AccionDelNodo.Separador(),
             new AccionDelNodo("Generar script CREATE TABLE", ComandoSeguro("Generar script CREATE TABLE", contexto, async () =>
             {
                 var script = await _generadorDeScripts.GenerarCreacionDeTablaAsync(contexto.Servidor, baseDeDatos, tabla, CancellationToken.None);
@@ -261,10 +262,12 @@ public sealed class FabricaDeNodos
             AccionDeScriptDml("Generar script DELETE", contexto, tabla, TipoDeScriptDml.Eliminacion),
             AccionQueAbreScript("Generar script DROP TABLE", contexto,
                 () => _generadorDeScripts.GenerarEliminacion(baseDeDatos, tabla)),
+            AccionDelNodo.Separador(),
             AccionDeVerDependencias(contexto, tabla),
             AccionDeRenombrar(contexto, tabla),
             new AccionDelNodo("Ver fragmentación de índices", ComandoSeguro("Ver fragmentación de índices", contexto,
                 () => _acciones.AbrirNuevaConsultaAsync(contexto, _generadorDeScripts.GenerarConsultaDeFragmentacion(baseDeDatos, tabla), ejecutarAlAbrir: true))),
+            AccionDelNodo.Separador(),
             new AccionDelNodo("Propiedades", ComandoSeguro("Ver propiedades de la tabla", contexto, () => _acciones.MostrarPropiedadesDeTablaAsync(contexto, tabla))),
             AccionDeActualizar(nodo));
 

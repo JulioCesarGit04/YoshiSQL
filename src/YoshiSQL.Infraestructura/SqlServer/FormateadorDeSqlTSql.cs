@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
+using YoshiSQL.Dominio.Consultas;
 using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Errores;
 
@@ -11,6 +12,9 @@ namespace YoshiSQL.Infraestructura.SqlServer;
 public sealed partial class FormateadorDeSqlTSql : IFormateadorDeSql
 {
     private const int TamanoDeSangria = 4;
+
+    // Con un error grave el analizador puede reportar cientos en cadena; los primeros bastan para orientar
+    private const int MaximoDeErroresDeSintaxis = 50;
 
     private static readonly SqlScriptGeneratorOptions OpcionesDeFormato = new()
     {
@@ -48,6 +52,17 @@ public sealed partial class FormateadorDeSqlTSql : IFormateadorDeSql
 
         new Sql170ScriptGenerator(OpcionesDeFormato).GenerateScript(arbolDelScript, out var codigoFormateado);
         return NormalizarSeparadores(codigoFormateado);
+    }
+
+    public IReadOnlyList<ErrorDeSintaxis> BuscarErroresDeSintaxis(string textoSql)
+    {
+        var analizador = new TSql170Parser(initialQuotedIdentifiers: true);
+        analizador.Parse(new StringReader(textoSql), out var erroresDeSintaxis);
+
+        return erroresDeSintaxis
+            .Take(MaximoDeErroresDeSintaxis)
+            .Select(error => new ErrorDeSintaxis(error.Offset, error.Line, error.Column, error.Message))
+            .ToList();
     }
 
     private static bool TieneComentarios(TSqlFragment arbolDelScript) =>

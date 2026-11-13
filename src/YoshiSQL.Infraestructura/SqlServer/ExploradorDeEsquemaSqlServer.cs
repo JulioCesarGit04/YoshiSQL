@@ -17,6 +17,10 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
     // o en servidores ocupados: el explorador y el autocompletado fallaban con "tardó demasiado"
     private const int SegundosParaConsultasDeCatalogo = 120;
 
+    private const string RolPublico = "public";
+
+    private static readonly HashSet<string> UsuariosQueSiempreExisten = new(StringComparer.OrdinalIgnoreCase) { "dbo", "guest" };
+
     public async Task<Servidor> ObtenerServidorAsync(DatosDeAcceso datosDeAcceso, CancellationToken tokenDeCancelacion)
     {
         var servidores = await LeerFilasAsync(
@@ -390,6 +394,83 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                 AdmiteNulos: lector.GetBoolean(6)),
             tokenDeCancelacion);
 
+    public async Task<SeguridadDeLaBaseDeDatos> ObtenerSeguridadAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion)
+    {
+        var usuarios = await ObtenerUsuariosAsync(datosDeAcceso, baseDeDatos, tokenDeCancelacion);
+        var roles = await ObtenerRolesAsync(datosDeAcceso, baseDeDatos, tokenDeCancelacion);
+
+        var miembros = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarMiembrosDeRoles", parametros: [],
+            lector => new MiembroDeRol(lector.GetString(0), lector.GetString(1)),
+            tokenDeCancelacion);
+
+        var permisos = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarPermisos", parametros: [],
+            lector => new PermisoDeBaseDeDatos(
+                EsDenegacion: lector.GetBoolean(0),
+                Permiso: lector.GetString(1),
+                Esquema: LeerTextoOpcional(lector, 2),
+                Objeto: LeerTextoOpcional(lector, 3),
+                Columna: LeerTextoOpcional(lector, 4),
+                Beneficiario: lector.GetString(5),
+                PuedeOtorgarlo: lector.GetBoolean(6)),
+            tokenDeCancelacion);
+
+        // dbo y guest existen en toda base, y los roles fijos (db_owner...) también: no se crean
+        return new SeguridadDeLaBaseDeDatos(
+            usuarios.Where(usuario => !UsuariosQueSiempreExisten.Contains(usuario.Nombre)).ToList(),
+            roles.Where(rol => !rol.EsFijo && !string.Equals(rol.Nombre, RolPublico, StringComparison.OrdinalIgnoreCase)).ToList(),
+            miembros,
+            permisos);
+    }
+
+    public Task<IReadOnlyList<ValorPredeterminado>> ObtenerValoresPredeterminadosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarValoresPredeterminadosDeTabla",
+            CrearParametrosDelObjeto(tabla),
+            lector => new ValorPredeterminado(
+                new Tabla(lector.GetString(0), lector.GetString(1)),
+                Columna: lector.GetString(2),
+                Nombre: LeerTextoOpcional(lector, 3),
+                Definicion: lector.GetString(4)),
+            tokenDeCancelacion);
+
+    public Task<IReadOnlyList<ObjetoEncontrado>> BuscarObjetosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        string texto,
+        CancellationToken tokenDeCancelacion) =>
+        LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "BuscarObjetos",
+            [new SqlParameter("@patron", $"%{EscaparComodines(texto)}%")],
+            lector => new ObjetoEncontrado(
+                CrearObjeto(lector.GetString(0), lector.GetString(1), lector.GetString(2)),
+                Columna: LeerTextoOpcional(lector, 3),
+                Coincidencia: (TipoDeCoincidencia)lector.GetInt32(4)),
+            tokenDeCancelacion);
+
+    // Lo que escribe el usuario se busca tal cual: un "_" o un "%" suyos no deben actuar como comodines de LIKE
+    private static string EscaparComodines(string texto) =>
+        texto.Replace("[", "[[]", StringComparison.Ordinal)
+            .Replace("%", "[%]", StringComparison.Ordinal)
+            .Replace("_", "[_]", StringComparison.Ordinal);
+
+    /// <param name="tipo">Código de sys.objects.type: U tabla, V vista, P procedimiento, FN/IF/TF función.</param>
+    private static ObjetoDeEsquema CrearObjeto(string tipo, string esquema, string nombre) => tipo switch
+    {
+        "U" => new Tabla(esquema, nombre),
+        "V" => new Vista(esquema, nombre),
+        "P" => new ProcedimientoAlmacenado(esquema, nombre),
+        _ => new Funcion(esquema, nombre)
+    };
+
     public async Task<DetallesDelEsquema> ObtenerDetallesDelEsquemaAsync(
         DatosDeAcceso datosDeAcceso,
         string baseDeDatos,
@@ -467,6 +548,22 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             lector => new Sinonimo(lector.GetString(0), lector.GetString(1), lector.GetString(2)),
             tokenDeCancelacion);
 
+        var propiedades = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarPropiedadesExtendidas", parametros: [],
+            lector => new PropiedadExtendida(
+                Nombre: lector.GetString(0),
+                Valor: lector.GetString(1),
+                Esquema: lector.GetString(2),
+                Objeto: lector.GetString(3),
+                TipoDelObjeto: lector.GetString(4),
+                Columna: LeerTextoOpcional(lector, 5)),
+            tokenDeCancelacion);
+
+        var disparadoresDeBaseDeDatos = await LeerFilasAsync(
+            datosDeAcceso, baseDeDatos, "ListarDisparadoresDeBaseDeDatos", parametros: [],
+            lector => new DisparadorDeBaseDeDatos(lector.GetString(0), LeerTextoOpcional(lector, 1), lector.GetBoolean(2)),
+            tokenDeCancelacion);
+
         return new DetallesDelEsquema(
             valoresPredeterminados,
             restricciones,
@@ -477,7 +574,9 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
             await ObtenerTiposDeTablaAsync(datosDeAcceso, baseDeDatos, tokenDeCancelacion),
             dependencias,
             identidades,
-            sinonimos);
+            sinonimos,
+            propiedades,
+            disparadoresDeBaseDeDatos);
     }
 
     private static async Task<IReadOnlyList<IndiceDeTabla>> ObtenerIndicesDeTodasLasTablasAsync(
@@ -497,7 +596,8 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                 Columna = lector.GetString(6),
                 EsDescendente = lector.GetBoolean(7),
                 EsIncluida = lector.GetBoolean(8),
-                Filtro = LeerTextoOpcional(lector, 9)
+                Filtro = LeerTextoOpcional(lector, 9),
+                EsColumnar = lector.GetBoolean(10)
             },
             tokenDeCancelacion);
 
@@ -514,7 +614,8 @@ public sealed class ExploradorDeEsquemaSqlServer : IExploradorDeEsquema
                     primeraFila.EsAgrupado,
                     grupo.Where(fila => !fila.EsIncluida).Select(fila => new ColumnaDeIndice(fila.Columna, fila.EsDescendente)).ToList(),
                     grupo.Where(fila => fila.EsIncluida).Select(fila => fila.Columna).ToList(),
-                    primeraFila.Filtro);
+                    primeraFila.Filtro,
+                    primeraFila.EsColumnar);
             })
             .ToList();
     }

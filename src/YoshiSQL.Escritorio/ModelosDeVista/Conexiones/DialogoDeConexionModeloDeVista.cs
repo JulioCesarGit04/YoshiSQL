@@ -43,7 +43,7 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
     public partial PerfilDeConexion? PerfilSeleccionado { get; set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ConectarCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ConectarCommand), nameof(ProbarConexionCommand))]
     public partial string Servidor { get; set; } = ServidorPredeterminado;
 
     [ObservableProperty]
@@ -72,11 +72,23 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
     public partial OpcionDeColor ColorSeleccionado { get; set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ConectarCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ConectarCommand), nameof(ProbarConexionCommand))]
     public partial bool EstaConectando { get; private set; }
 
     [ObservableProperty]
     public partial string? MensajeDeError { get; private set; }
+
+    /// <summary>Resultado de "Probar conexión" cuando funcionó.</summary>
+    [ObservableProperty]
+    public partial string? MensajeDeExito { get; private set; }
+
+    /// <summary>Nombre opcional de la conexión, ej. "Ventas".</summary>
+    [ObservableProperty]
+    public partial string Nombre { get; set; } = string.Empty;
+
+    /// <summary>Grupo opcional para ordenar las conexiones guardadas, ej. "Producción".</summary>
+    [ObservableProperty]
+    public partial string Grupo { get; set; } = string.Empty;
 
     /// <summary>
     /// Se dispara cuando la ventana debe cerrarse; lleva el servidor conectado o null si se canceló.
@@ -98,14 +110,18 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
             return;
         }
 
-        foreach (var perfil in perfiles)
+        // Se muestran juntas las de un mismo grupo (las que no tienen grupo, al final); dentro de cada grupo
+        // se conserva el orden en que llegan, con la más reciente primero
+        foreach (var perfil in perfiles.OrderBy(perfil => string.IsNullOrWhiteSpace(perfil.Grupo)).ThenBy(perfil => perfil.Grupo, StringComparer.CurrentCultureIgnoreCase))
         {
             PerfilesGuardados.Add(perfil);
         }
 
         OnPropertyChanged(nameof(TienePerfilesGuardados));
+
+        // Por defecto se elige la usada más recientemente, aunque no quede primera en la lista
         PerfilSeleccionado = PerfilesGuardados.FirstOrDefault(perfil => perfil.Id == idDelPerfilSugerido)
-            ?? PerfilesGuardados.FirstOrDefault();
+            ?? perfiles.FirstOrDefault();
     }
 
     partial void OnPerfilSeleccionadoChanged(PerfilDeConexion? value)
@@ -116,12 +132,45 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
         }
     }
 
+    /// <summary>
+    /// Comprueba servidor, usuario y contraseña sin cerrar la ventana ni guardar la conexión.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(PuedeConectar))]
+    private async Task ProbarConexionAsync()
+    {
+        _cancelacionDeLaConexion = new CancellationTokenSource();
+        EstaConectando = true;
+        MensajeDeError = null;
+        MensajeDeExito = null;
+
+        try
+        {
+            await _servicioDeConexiones.ProbarAsync(CrearPerfil(), Contrasena, _cancelacionDeLaConexion.Token);
+            MensajeDeExito = "La conexión funciona.";
+        }
+        catch (OperationCanceledException)
+        {
+            MensajeDeError = null;
+        }
+        catch (Exception error)
+        {
+            MensajeDeError = _servicioDeErrores.RegistrarYDescribir(error, new ContextoDeError("Probar la conexión", Servidor));
+        }
+        finally
+        {
+            EstaConectando = false;
+            _cancelacionDeLaConexion.Dispose();
+            _cancelacionDeLaConexion = null;
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(PuedeConectar))]
     private async Task ConectarAsync()
     {
         _cancelacionDeLaConexion = new CancellationTokenSource();
         EstaConectando = true;
         MensajeDeError = null;
+        MensajeDeExito = null;
 
         try
         {
@@ -190,6 +239,9 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
     private async Task LlenarConPerfilAsync(PerfilDeConexion perfil)
     {
         _idDelPerfilEnEdicion = perfil.Id;
+        MensajeDeExito = null;
+        Nombre = perfil.Nombre ?? string.Empty;
+        Grupo = perfil.Grupo ?? string.Empty;
         Servidor = perfil.Servidor;
         Puerto = perfil.Puerto;
         AutenticacionSeleccionada = OpcionesDeAutenticacion.First(opcion => opcion.Tipo == perfil.TipoDeAutenticacion);
@@ -221,6 +273,8 @@ public sealed partial class DialogoDeConexionModeloDeVista : ModeloDeVistaBase
     private PerfilDeConexion CrearPerfil() => new()
     {
         Id = ObtenerIdDelPerfil(),
+        Nombre = string.IsNullOrWhiteSpace(Nombre) ? null : Nombre.Trim(),
+        Grupo = string.IsNullOrWhiteSpace(Grupo) ? null : Grupo.Trim(),
         Servidor = Servidor.Trim(),
         Puerto = Puerto,
         TipoDeAutenticacion = AutenticacionSeleccionada.Tipo,

@@ -23,7 +23,7 @@
 
         <Grid Margin="24,18,24,8"
               ColumnDefinitions="140,*"
-              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
               RowSpacing="10">
 
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Conexión guardada" VerticalAlignment="Center"
@@ -36,8 +36,8 @@
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="conexiones:PerfilDeConexion">
                             <TextBlock>
-                                <Run Text="{Binding NombreVisible}" />
-                                <Run Text="{Binding Usuario}" Foreground="{DynamicResource PincelDeTextoSecundario}" />
+                                <Run Text="{Binding Titulo}" />
+                                <Run Text="{Binding Detalle}" Foreground="{DynamicResource PincelDeTextoSecundario}" />
                             </TextBlock>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
@@ -69,6 +69,7 @@
 
             <TextBlock Grid.Row="4" Grid.Column="0" Text="Contraseña" VerticalAlignment="Center" />
             <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Contrasena}" PasswordChar="•"
+                     Classes="revealPasswordButton"
                      IsEnabled="{Binding UsaAutenticacionDeSqlServer}" />
 
             <TextBlock Grid.Row="5" Grid.Column="0" Text="Base de datos" VerticalAlignment="Center" />
@@ -79,6 +80,14 @@
                 <CheckBox Content="Confiar en el certificado del servidor" IsChecked="{Binding ConfiarEnCertificadoDelServidor}"
                           ToolTip.Tip="Necesario para instalaciones locales que usan un certificado autofirmado" />
             </StackPanel>
+
+            <TextBlock Grid.Row="8" Grid.Column="0" Text="Nombre" VerticalAlignment="Center" />
+            <Grid Grid.Row="8" Grid.Column="1" ColumnDefinitions="*,130" ColumnSpacing="6">
+                <TextBox Text="{Binding Nombre}" PlaceholderText="Opcional, ej. Ventas"
+                         ToolTip.Tip="Con qué nombre aparece esta conexión en la lista de guardadas" />
+                <TextBox Grid.Column="1" Text="{Binding Grupo}" PlaceholderText="Grupo"
+                         ToolTip.Tip="Opcional: agrupa las conexiones guardadas, ej. Producción o Desarrollo" />
+            </Grid>
 
             <TextBlock Grid.Row="7" Grid.Column="0" Text="Color" VerticalAlignment="Center" />
             <ComboBox Grid.Row="7" Grid.Column="1" HorizontalAlignment="Stretch"
@@ -103,13 +112,22 @@
                    Text="{Binding MensajeDeError}"
                    IsVisible="{Binding MensajeDeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
+        <TextBlock Margin="24,0,24,8" TextWrapping="Wrap"
+                   Foreground="{DynamicResource PincelDeAcento}"
+                   Text="{Binding MensajeDeExito}"
+                   IsVisible="{Binding MensajeDeExito, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
         <ProgressBar Margin="24,0" IsIndeterminate="True" IsVisible="{Binding EstaConectando}" />
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="24,12,24,20">
-            <Button Classes="Primario" Content="Conectar" IsDefault="True" MinWidth="100"
-                    Command="{Binding ConectarCommand}" />
-            <Button Content="Cancelar" IsCancel="True" MinWidth="100"
-                    Command="{Binding CancelarCommand}" />
-        </StackPanel>
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,12,24,20">
+            <Button Content="Probar conexión" Command="{Binding ProbarConexionCommand}"
+                    ToolTip.Tip="Comprueba servidor, usuario y contraseña sin conectarse" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                <Button Classes="Primario" Content="Conectar" IsDefault="True" MinWidth="100"
+                        Command="{Binding ConectarCommand}" />
+                <Button Content="Cancelar" IsCancel="True" MinWidth="100"
+                        Command="{Binding CancelarCommand}" />
+            </StackPanel>
+        </Grid>
     </StackPanel>
 </Window>

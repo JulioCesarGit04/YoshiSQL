@@ -18,6 +18,7 @@
             <SolidColorBrush x:Key="PincelDeTextoSobreAcento" Color="#10130F" />
             <SolidColorBrush x:Key="PincelDeError" Color="#F07178" />
             <SolidColorBrush x:Key="PincelDeAdvertencia" Color="#E5C07B" />
+            <SolidColorBrush x:Key="PincelDeObjeto" Color="#61AFEF" />
             <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#30353C" />
             <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#3C4148" />
             <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#C08B93A0" />
@@ -38,6 +39,7 @@
             <SolidColorBrush x:Key="PincelDeTextoSobreAcento" Color="#FFFFFF" />
             <SolidColorBrush x:Key="PincelDeError" Color="#C8323C" />
             <SolidColorBrush x:Key="PincelDeAdvertencia" Color="#9A6700" />
+            <SolidColorBrush x:Key="PincelDeObjeto" Color="#0A66C2" />
             <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#E8EBEF" />
             <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#C9CED6" />
             <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#B05F6672" />
@@ -55,4 +57,5 @@
     <sys:Double x:Key="TamanoDeLetraDelEditor">14</sys:Double>
     <sys:Boolean x:Key="MostrarNumerosDeLinea">True</sys:Boolean>
     <sys:Boolean x:Key="AjustarLineasLargas">False</sys:Boolean>
+    <sys:Boolean x:Key="SubrayarErroresDeSintaxis">True</sys:Boolean>
 </ResourceDictionary>

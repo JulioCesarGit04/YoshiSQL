@@ -27,14 +27,20 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     private readonly IServicioDelSistemaOperativo _sistemaOperativo;
     private readonly ServicioDeRespaldos _servicioDeRespaldos;
     private readonly ServicioDePreferencias _servicioDePreferencias;
+    private readonly DisposicionDeLaInterfaz _disposicion;
+
+    // Por debajo de esto un diálogo queda inservible; un tamaño guardado menor (archivo editado a mano) se ignora
+    private const double LadoMinimoDeUnDialogo = 200;
 
     public ServicioDeDialogos(
         ServicioDeConexiones servicioDeConexiones,
         IServicioDeErrores servicioDeErrores,
         IServicioDelSistemaOperativo sistemaOperativo,
         ServicioDeRespaldos servicioDeRespaldos,
-        ServicioDePreferencias servicioDePreferencias)
+        ServicioDePreferencias servicioDePreferencias,
+        DisposicionDeLaInterfaz disposicion)
     {
+        _disposicion = disposicion;
         _servicioDeRespaldos = servicioDeRespaldos;
         _servicioDePreferencias = servicioDePreferencias;
         _servicioDeConexiones = servicioDeConexiones;
@@ -102,7 +108,30 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     }
 
     public Task MostrarTextoAsync(string titulo, string texto) =>
-        new DialogoDeTexto(titulo, texto).ShowDialog(ObtenerVentanaActiva());
+        ConTamanoRecordado(new DialogoDeTexto(titulo, texto)).ShowDialog(ObtenerVentanaActiva());
+
+    /// <summary>
+    /// Abre el diálogo con el tamaño que el usuario le dejó la última vez y lo recuerda al cerrarlo.
+    /// Se guarda en disco junto con la disposición de la ventana principal, al salir de YoshiSQL.
+    /// </summary>
+    private T ConTamanoRecordado<T>(T dialogo)
+        where T : Window
+    {
+        var nombre = typeof(T).Name;
+
+        if (_disposicion.Dialogos.TryGetValue(nombre, out var tamano)
+            && tamano.Ancho >= LadoMinimoDeUnDialogo && tamano.Alto >= LadoMinimoDeUnDialogo)
+        {
+            dialogo.SizeToContent = SizeToContent.Manual;
+            dialogo.Width = tamano.Ancho;
+            dialogo.Height = tamano.Alto;
+        }
+
+        dialogo.Closing += (_, _) =>
+            _disposicion.Dialogos[nombre] = new Dominio.Preferencias.TamanoDeVentana(dialogo.ClientSize.Width, dialogo.ClientSize.Height);
+
+        return dialogo;
+    }
 
     public async Task<bool> EjecutarConProgresoAsync(string titulo, Func<IProgress<string>, CancellationToken, Task> tarea)
     {
@@ -147,7 +176,7 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     public async Task MostrarRespaldoAsync(ServidorConectado servidor, string baseDeDatos)
     {
         var modelo = new DialogoDeRespaldoModeloDeVista(servidor, baseDeDatos, _servicioDeRespaldos, _servicioDeErrores);
-        var dialogo = new DialogoDeRespaldo { DataContext = modelo };
+        var dialogo = ConTamanoRecordado(new DialogoDeRespaldo { DataContext = modelo });
         dialogo.Opened += async (_, _) => await modelo.InicializarAsync();
         await dialogo.ShowDialog(ObtenerVentanaPrincipal());
     }
@@ -155,7 +184,7 @@ public sealed class ServicioDeDialogos : IServicioDeDialogos
     public async Task<bool> MostrarRestauracionAsync(ServidorConectado servidor)
     {
         var modelo = new DialogoDeRestauracionModeloDeVista(servidor, _servicioDeRespaldos, this, _servicioDeErrores);
-        var dialogo = new DialogoDeRestauracion { DataContext = modelo };
+        var dialogo = ConTamanoRecordado(new DialogoDeRestauracion { DataContext = modelo });
         dialogo.Opened += async (_, _) => await modelo.InicializarAsync();
         await dialogo.ShowDialog(ObtenerVentanaPrincipal());
         return modelo.TerminoCorrectamente;

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,12 @@ namespace YoshiSQL.Infraestructura.Persistencia;
 public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
 {
     private static readonly JsonSerializerOptions OpcionesDeJson = new() { WriteIndented = true };
+
+    private const char SeparadorDeLaMarca = ';';
+
+    // En Linux la hora de arranque se calcula a partir de contadores del sistema y puede variar unos milisegundos
+    // entre una lectura y otra: se toleran diferencias pequeñas
+    private static readonly TimeSpan ToleranciaDelInicio = TimeSpan.FromSeconds(1);
 
     private readonly RutasDeLaAplicacion _rutas;
     private readonly ILogger<RepositorioDeSesionJson> _registro;
@@ -75,7 +82,7 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
     {
         var hayMarca = File.Exists(_rutas.ArchivoDeEjecucionEnCurso);
 
-        if (hayMarca && OtraInstanciaSigueAbierta(await File.ReadAllTextAsync(_rutas.ArchivoDeEjecucionEnCurso, tokenDeCancelacion)))
+        if (hayMarca && OtraInstanciaSigueAbierta(await File.ReadAllTextAsync(_rutas.ArchivoDeEjecucionEnCurso, tokenDeCancelacion), Environment.ProcessId))
         {
             // La marca es de otro YoshiSQL que sigue abierto: no se toca, y esta ventana no guarda sesión
             EsInstanciaSecundaria = true;
@@ -85,7 +92,7 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
         var seCerroIncorrectamente = hayMarca;
 
         _rutas.AsegurarQueExistaLaCarpetaDeEstado();
-        var marca = Encoding.UTF8.GetBytes(Environment.ProcessId.ToString());
+        var marca = Encoding.UTF8.GetBytes(CrearMarcaDeEsteProceso());
         await EscritorDeArchivosSeguro.EscribirAsync(_rutas.ArchivoDeEjecucionEnCurso, marca, tokenDeCancelacion);
 
         return seCerroIncorrectamente;
@@ -137,11 +144,27 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
     }
 
     /// <summary>
+    /// La marca identifica al proceso por su número y por el momento en que arrancó: el número solo no basta,
+    /// porque el sistema lo reutiliza (en Linux muy rápido) y otro programa podía heredarlo.
+    /// </summary>
+    internal static string CrearMarca(int idDelProceso, DateTime inicioDelProceso) =>
+        string.Create(CultureInfo.InvariantCulture, $"{idDelProceso}{SeparadorDeLaMarca}{inicioDelProceso.ToUniversalTime().Ticks}");
+
+    private static string CrearMarcaDeEsteProceso()
+    {
+        using var esteProceso = Process.GetCurrentProcess();
+        return CrearMarca(esteProceso.Id, esteProceso.StartTime);
+    }
+
+    /// <summary>
     /// Si la marca pertenece a un YoshiSQL que todavía está abierto, no hubo un cierre inesperado.
     /// </summary>
-    private static bool OtraInstanciaSigueAbierta(string contenidoDeLaMarca)
+    /// <param name="idDeEsteProceso">Proceso actual; una marca suya no cuenta como "otra" instancia.</param>
+    internal static bool OtraInstanciaSigueAbierta(string contenidoDeLaMarca, int idDeEsteProceso)
     {
-        if (!int.TryParse(contenidoDeLaMarca, out var idDelProceso) || idDelProceso == Environment.ProcessId)
+        var partes = contenidoDeLaMarca.Trim().Split(SeparadorDeLaMarca);
+
+        if (!int.TryParse(partes[0], CultureInfo.InvariantCulture, out var idDelProceso) || idDelProceso == idDeEsteProceso)
         {
             return false;
         }
@@ -149,15 +172,26 @@ public sealed class RepositorioDeSesionJson : IRepositorioDeSesion
         try
         {
             using var proceso = Process.GetProcessById(idDelProceso);
-            using var esteProceso = Process.GetCurrentProcess();
 
-            // El sistema reutiliza los números de proceso: tras un cierre inesperado ese número puede ser ya de otro programa
-            return !proceso.HasExited
-                && string.Equals(proceso.ProcessName, esteProceso.ProcessName, StringComparison.OrdinalIgnoreCase);
+            if (proceso.HasExited)
+            {
+                return false;
+            }
+
+            // Marca nueva: sigue abierto solo si es el mismo proceso que la escribió (mismo número y mismo arranque)
+            if (partes.Length > 1 && long.TryParse(partes[1], CultureInfo.InvariantCulture, out var inicioRegistrado))
+            {
+                var diferencia = Math.Abs(proceso.StartTime.ToUniversalTime().Ticks - inicioRegistrado);
+                return diferencia <= ToleranciaDelInicio.Ticks;
+            }
+
+            // Marca de una versión anterior (solo el número): se compara el nombre del programa
+            using var esteProceso = Process.GetCurrentProcess();
+            return string.Equals(proceso.ProcessName, esteProceso.ProcessName, StringComparison.OrdinalIgnoreCase);
         }
-        catch (Exception error) when (error is ArgumentException or InvalidOperationException)
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
-            // El proceso ya no existe
+            // El proceso ya no existe, o no se puede consultar (es de otro usuario): no es este YoshiSQL
             return false;
         }
     }

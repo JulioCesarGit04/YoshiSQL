@@ -28,11 +28,16 @@ public sealed class ServicioDeDisenoDeTablas
     {
         var columnas = await _proveedor.Explorador.ObtenerColumnasAsync(servidor.DatosDeAcceso, baseDeDatos, tabla, tokenDeCancelacion);
         var indices = await _proveedor.Explorador.ObtenerIndicesAsync(servidor.DatosDeAcceso, baseDeDatos, tabla, tokenDeCancelacion);
+        var predeterminados = await _proveedor.Explorador.ObtenerValoresPredeterminadosAsync(servidor.DatosDeAcceso, baseDeDatos, tabla, tokenDeCancelacion);
+        var predeterminadoPorColumna = predeterminados.ToDictionary(valor => valor.Columna, valor => valor.Definicion, StringComparer.OrdinalIgnoreCase);
 
         return new DefinicionDeTabla(
             tabla.Esquema,
             tabla.Nombre,
-            columnas.OrderBy(columna => columna.Posicion).Select(DefinicionDeColumna.DesdeColumnaExistente).ToList(),
+            columnas
+                .OrderBy(columna => columna.Posicion)
+                .Select(columna => DefinicionDeColumna.DesdeColumnaExistente(columna, predeterminadoPorColumna.GetValueOrDefault(columna.Nombre)))
+                .ToList(),
             indices.FirstOrDefault(indice => indice.EsLlavePrimaria)?.Nombre);
     }
 

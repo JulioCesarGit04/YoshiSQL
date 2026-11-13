@@ -13,10 +13,29 @@ public sealed class RutasDeLaAplicacion
     private const string NombreDeLaCarpetaEnWindows = "YoshiSQL";
     private const string VariableDeCarpetaDeEstado = "XDG_STATE_HOME";
 
+    /// <summary>
+    /// Si esta variable de entorno tiene una carpeta, YoshiSQL guarda ahí TODO (conexiones, sesión, historial...)
+    /// en vez de las carpetas del usuario. Sirve para abrir una copia de prueba sin que restaure ni modifique
+    /// las pestañas y conexiones reales, y para llevar YoshiSQL en una memoria USB.
+    /// </summary>
+    public const string VariableDeCarpetaDeDatos = "YOSHISQL_CARPETA_DE_DATOS";
+
     public RutasDeLaAplicacion()
-        : this(ObtenerCarpetaDeConfiguracionDelSistema(), ObtenerCarpetaDeEstadoDelSistema())
+        : this(ObtenerCarpetaDeConfiguracion(), ObtenerCarpetaDeEstado())
     {
     }
+
+    private static string? ObtenerCarpetaDeDatosAlternativa()
+    {
+        var carpeta = Environment.GetEnvironmentVariable(VariableDeCarpetaDeDatos);
+        return string.IsNullOrWhiteSpace(carpeta) ? null : Path.GetFullPath(carpeta);
+    }
+
+    private static string ObtenerCarpetaDeConfiguracion() =>
+        ObtenerCarpetaDeDatosAlternativa() is { } carpeta ? Path.Combine(carpeta, "configuracion") : ObtenerCarpetaDeConfiguracionDelSistema();
+
+    private static string ObtenerCarpetaDeEstado() =>
+        ObtenerCarpetaDeDatosAlternativa() is { } carpeta ? Path.Combine(carpeta, "estado") : ObtenerCarpetaDeEstadoDelSistema();
 
     /// <param name="carpetaDeEstado">Si es nula, el estado se guarda dentro de la carpeta de configuración.</param>
     public RutasDeLaAplicacion(string carpetaDeConfiguracion, string? carpetaDeEstado = null)
@@ -36,6 +55,8 @@ public sealed class RutasDeLaAplicacion
     public string ArchivoDeEjecucionEnCurso => Path.Combine(CarpetaDeEstado, "en-ejecucion");
 
     public string ArchivoDeHistorial => Path.Combine(CarpetaDeEstado, "historial.json");
+
+    public string ArchivoDeDisposicion => Path.Combine(CarpetaDeEstado, "ventana.json");
 
     public string ArchivoDePreferencias => Path.Combine(CarpetaDeConfiguracion, "preferencias.json");
 

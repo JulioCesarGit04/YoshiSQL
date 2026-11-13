@@ -30,6 +30,12 @@ public sealed class ServicioDeConexiones
         _almacenDeCredenciales.ObtenerContrasenaAsync(perfil.Id, tokenDeCancelacion);
 
     /// <summary>
+    /// Solo comprueba que se puede conectar con esos datos; no guarda nada ni deja la conexión abierta.
+    /// </summary>
+    public Task ProbarAsync(PerfilDeConexion perfil, string contrasena, CancellationToken tokenDeCancelacion) =>
+        _proveedor.ProbarConexionAsync(new DatosDeAcceso(perfil, contrasena), tokenDeCancelacion);
+
+    /// <summary>
     /// Prueba la conexión y, si funciona, guarda el perfil para la próxima vez.
     /// </summary>
     public async Task<ServidorConectado> ConectarAsync(

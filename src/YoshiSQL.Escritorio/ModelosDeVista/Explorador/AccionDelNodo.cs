@@ -24,7 +24,16 @@ public sealed class AccionDelNodo
         Comando = comando;
     }
 
+    // Avalonia dibuja como línea separadora cualquier opción de menú cuyo texto sea un guion
+    private const string TextoDeSeparador = "-";
+
+    /// <summary>Línea que separa grupos de opciones en el menú.</summary>
+    public static AccionDelNodo Separador() => new(TextoDeSeparador, new CommunityToolkit.Mvvm.Input.RelayCommand(() => { }));
+
     public string Texto => _obtenerTexto();
+
+    /// <summary>Icono que acompaña a la opción en el menú; nulo en los separadores y en las opciones sin uno asignado.</summary>
+    public Avalonia.Media.Geometry? Icono => Texto == TextoDeSeparador ? null : Controles.IconosDeAcciones.Buscar(Texto);
 
     public ICommand Comando { get; }
 }

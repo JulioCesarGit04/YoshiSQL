@@ -53,6 +53,11 @@
                                     <Style Selector="MenuItem" x:DataType="vm:AccionDelNodo">
                                         <Setter Property="Header" Value="{Binding Texto}" />
                                         <Setter Property="Command" Value="{Binding Comando}" />
+                                        <Setter Property="Icon">
+                                            <Template>
+                                                <Path x:DataType="vm:AccionDelNodo" Classes="Icono IconoBarra" Data="{Binding Icono}" />
+                                            </Template>
+                                        </Setter>
                                     </Style>
                                 </ContextMenu.Styles>
                             </ContextMenu>

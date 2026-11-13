@@ -139,6 +139,28 @@ public interface IExploradorDeEsquema
         string baseDeDatos,
         CancellationToken tokenDeCancelacion);
 
+    /// <summary>Usuarios, roles propios, pertenencia a roles y permisos de la base, para exportarlos.</summary>
+    Task<SeguridadDeLaBaseDeDatos> ObtenerSeguridadAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>Valores predeterminados (DEFAULT) de las columnas de una tabla, para el diseñador.</summary>
+    Task<IReadOnlyList<ValorPredeterminado>> ObtenerValoresPredeterminadosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        Tabla tabla,
+        CancellationToken tokenDeCancelacion);
+
+    /// <summary>
+    /// Busca un texto en los nombres de objetos, en los nombres de columnas y dentro del código de la base.
+    /// </summary>
+    Task<IReadOnlyList<ObjetoEncontrado>> BuscarObjetosAsync(
+        DatosDeAcceso datosDeAcceso,
+        string baseDeDatos,
+        string texto,
+        CancellationToken tokenDeCancelacion);
+
     /// <summary>
     /// Lo que acompaña a las tablas de toda la base (valores predeterminados, restricciones, índices, columnas calculadas,
     /// disparadores, secuencias, tipos tabla y dependencias), leído de una vez para exportar la base completa.

@@ -68,6 +68,9 @@
         <KeyBinding Gesture="Ctrl+L" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}" />
         <KeyBinding Gesture="Ctrl+M" Command="{Binding ConsultaSeleccionada.ConmutarPlanRealCommand}" />
         <KeyBinding Gesture="Ctrl+T" Command="{Binding ConsultaSeleccionada.ConmutarResultadosEnTextoCommand}" />
+        <KeyBinding Gesture="Ctrl+B" Command="{Binding ConmutarExploradorCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+O" Command="{Binding BuscarEnLaBaseDeDatosCommand}" />
+        <KeyBinding Gesture="Ctrl+R" Command="{Binding ConmutarPanelDeResultadosCommand}" />
     </Window.KeyBindings>
 
     <DockPanel>
@@ -107,8 +110,17 @@
                 <MenuItem Header="Formatear SQL" InputGesture="Ctrl+Shift+F" Command="{Binding ConsultaSeleccionada.FormatearCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
                 <Separator />
+                <MenuItem Header="Buscar en la base de datos..." InputGesture="Ctrl+Shift+O" Command="{Binding BuscarEnLaBaseDeDatosCommand}" />
                 <MenuItem Header="Guardar como favorito..." Command="{Binding GuardarComoFavoritoCommand}"
                           IsEnabled="{Binding HayConsultaSeleccionada}" />
+            </MenuItem>
+            <MenuItem Header="_Ver">
+                <MenuItem Header="Explorador" InputGesture="Ctrl+B" ToggleType="CheckBox"
+                          IsChecked="{Binding Disposicion.ExploradorVisible}" />
+                <MenuItem Header="Panel de resultados" InputGesture="Ctrl+R" ToggleType="CheckBox"
+                          IsChecked="{Binding Disposicion.ResultadosVisibles}" />
+                <Separator />
+                <MenuItem Header="Diagrama de la base actual" Command="{Binding VerDiagramaDeLaBaseActualCommand}" />
             </MenuItem>
             <MenuItem Header="_Consulta">
                 <MenuItem Header="Ejecutar" InputGesture="F5" Command="{Binding ConsultaSeleccionada.EjecutarCommand}" />
@@ -122,6 +134,7 @@
                 <MenuItem Header="Resultados en texto" InputGesture="Ctrl+T" Command="{Binding ConsultaSeleccionada.ConmutarResultadosEnTextoCommand}" />
             </MenuItem>
             <MenuItem Header="A_yuda">
+                <MenuItem Header="Fragmentos de código (Tab)..." Command="{Binding MostrarFragmentosCommand}" />
                 <MenuItem Header="Abrir carpeta de registros" Command="{Binding AbrirCarpetaDeRegistrosCommand}" />
                 <Separator />
                 <MenuItem Header="Acerca de YoshiSQL" Command="{Binding MostrarAcercaDeCommand}" />
@@ -135,23 +148,23 @@
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
             <StackPanel Orientation="Horizontal" Spacing="2">
-                <Button Classes="Herramienta" Command="{Binding ConectarCommand}" ToolTip.Tip="Conectar al servidor">
+                <Button Classes="Herramienta" Command="{Binding ConectarCommand}" ToolTip.Tip="Conectar al servidor" AutomationProperties.Name="Conectar al servidor">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoBarra" Data="{StaticResource IconoConectar}" />
                         <TextBlock Text="Conectar" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button Classes="Herramienta" Command="{Binding NuevaConsultaCommand}" ToolTip.Tip="Nueva consulta (Ctrl+N)">
+                <Button Classes="Herramienta" Command="{Binding NuevaConsultaCommand}" ToolTip.Tip="Nueva consulta (Ctrl+N)" AutomationProperties.Name="Nueva consulta (Ctrl+N)">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoBarra" Data="{StaticResource IconoNuevaConsulta}" />
                         <TextBlock Text="Nueva" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button Classes="Herramienta" Command="{Binding AbrirArchivoCommand}" ToolTip.Tip="Abrir archivo (Ctrl+O)">
+                <Button Classes="Herramienta" Command="{Binding AbrirArchivoCommand}" ToolTip.Tip="Abrir archivo (Ctrl+O)" AutomationProperties.Name="Abrir archivo (Ctrl+O)">
                     <Path Classes="Icono IconoBarra" Data="{StaticResource IconoAbrir}" />
                 </Button>
                 <Button Classes="Herramienta" Command="{Binding GuardarCommand}" IsEnabled="{Binding HayConsultaSeleccionada}"
-                        ToolTip.Tip="Guardar (Ctrl+S)">
+                        ToolTip.Tip="Guardar (Ctrl+S)" AutomationProperties.Name="Guardar (Ctrl+S)">
                     <Path Classes="Icono IconoBarra" Data="{StaticResource IconoGuardar}" />
                 </Button>
 
@@ -165,14 +178,14 @@
                           ToolTip.Tip="Base de datos de la pestaña actual" />
 
                 <Button Classes="Herramienta Ejecutar" Command="{Binding ConsultaSeleccionada.EjecutarCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Ejecutar (F5)">
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Ejecutar (F5)" AutomationProperties.Name="Ejecutar (F5)">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoEjecutar" Data="{StaticResource IconoEjecutar}" />
                         <TextBlock Text="Ejecutar" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.CancelarCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Cancelar ejecución (Alt+Pause)">
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Cancelar ejecución (Alt+Pause)" AutomationProperties.Name="Cancelar ejecución (Alt+Pause)">
                     <Path Classes="Icono IconoBarra" Data="{StaticResource IconoCancelar}" />
                 </Button>
 
@@ -180,27 +193,43 @@
 
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.MostrarPlanEstimadoCommand}"
                         IsEnabled="{Binding HayConsultaSeleccionada}"
-                        ToolTip.Tip="Ver el plan estimado sin ejecutar (Ctrl+L)">
+                        ToolTip.Tip="Ver el plan estimado sin ejecutar (Ctrl+L)" AutomationProperties.Name="Ver el plan estimado sin ejecutar (Ctrl+L)">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoBarra" Data="{StaticResource IconoPlan}" />
                         <TextBlock Text="Plan" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <ToggleButton Classes="Herramienta" Content="Plan real"
+                <ToggleButton Classes="Herramienta"
                               IsChecked="{Binding ConsultaSeleccionada.IncluirPlanReal, FallbackValue=False}"
                               IsEnabled="{Binding HayConsultaSeleccionada}"
-                              ToolTip.Tip="Incluir el plan real al ejecutar (Ctrl+M)" />
+                              ToolTip.Tip="Incluir el plan real al ejecutar (Ctrl+M)" AutomationProperties.Name="Incluir el plan real al ejecutar (Ctrl+M)">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <Path Classes="Icono IconoBarra" Data="{StaticResource IconoPlanReal}" />
+                        <TextBlock Text="Plan real" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ToggleButton>
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.FormatearCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Formatear SQL (Ctrl+Shift+F)">
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Formatear SQL (Ctrl+Shift+F)" AutomationProperties.Name="Formatear SQL (Ctrl+Shift+F)">
                     <Path Classes="Icono IconoBarra" Data="{StaticResource IconoFormatear}" />
                 </Button>
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.ComentarCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Comentar la selección">
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Comentar la selección" AutomationProperties.Name="Comentar la selección">
                     <Path Classes="Icono IconoBarra" Data="{StaticResource IconoComentar}" />
                 </Button>
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.DescomentarCommand}"
-                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Descomentar la selección">
+                        IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Descomentar la selección" AutomationProperties.Name="Descomentar la selección">
                     <Path Classes="Icono IconoBarra" Data="{StaticResource IconoDescomentar}" />
+                </Button>
+
+                <Rectangle Width="1" Margin="8,4" Fill="{DynamicResource PincelDeBorde}" />
+
+                <Button Classes="Herramienta" Command="{Binding ConmutarExploradorCommand}"
+                        ToolTip.Tip="Mostrar u ocultar el explorador (Ctrl+B)" AutomationProperties.Name="Mostrar u ocultar el explorador (Ctrl+B)">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoPanelLateral}" />
+                </Button>
+                <Button Classes="Herramienta" Command="{Binding ConmutarPanelDeResultadosCommand}"
+                        ToolTip.Tip="Mostrar u ocultar el panel de resultados (Ctrl+R)" AutomationProperties.Name="Mostrar u ocultar el panel de resultados (Ctrl+R)">
+                    <Path Classes="Icono IconoBarra" Data="{StaticResource IconoPanelInferior}" />
                 </Button>
             </StackPanel>
         </Border>
@@ -216,9 +245,14 @@
             <Border DockPanel.Dock="Left" Width="4"
                     Background="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static conv:CadenaHexAPincel.Instancia}}"
                     IsVisible="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" Margin="12,4">
-                <Ellipse Grid.Column="0" Width="8" Height="8" Margin="0,0,8,0"
-                         Fill="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static conv:CadenaHexAPincel.Instancia}, FallbackValue={DynamicResource PincelDeAcento}, TargetNullValue={DynamicResource PincelDeAcento}}" />
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" Margin="12,4">
+                <!-- Punto de estado: gris sin pestañas, verde con conexión, o el color elegido para esa conexión -->
+                <Panel Grid.Column="0" Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
+                    <Ellipse Fill="{DynamicResource PincelDeTextoSecundario}" IsVisible="{Binding NoHayDocumentosAbiertos}" />
+                    <Ellipse Fill="{DynamicResource PincelDeAcento}" IsVisible="{Binding HayDocumentosAbiertos}" />
+                    <Ellipse Fill="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static conv:CadenaHexAPincel.Instancia}}"
+                             IsVisible="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </Panel>
                 <TextBlock Grid.Column="1" Text="{Binding DocumentoSeleccionado.TextoDeEstado, FallbackValue='Sin conexión'}" />
                 <TextBlock Grid.Column="2" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding DocumentoSeleccionado.DescripcionDeLaConexion, FallbackValue=''}" />
@@ -228,14 +262,16 @@
                            Text="{Binding ConsultaSeleccionada.DuracionVisible, FallbackValue=''}" />
                 <TextBlock Grid.Column="5" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding ConsultaSeleccionada.TotalDeFilas, StringFormat='{}{0} filas', FallbackValue=''}" />
+                <TextBlock Grid.Column="6" Margin="24,0,0,0" MinWidth="96" Foreground="{DynamicResource PincelDeTextoSecundario}"
+                           Text="{Binding ConsultaSeleccionada.PosicionDelCursor, FallbackValue=''}" />
             </Grid>
           </DockPanel>
         </Border>
 
         <!-- Explorador a la izquierda, documentos a la derecha -->
-        <Grid ColumnDefinitions="300,1,*">
+        <Grid x:Name="CuadriculaPrincipal" ColumnDefinitions="320,5,*">
             <TabControl Grid.Column="0" Classes="Laterales" Padding="0" Background="{DynamicResource PincelDePanel}">
-                <TabItem>
+                <TabItem AutomationProperties.Name="Explorador">
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="7">
                             <Path Classes="Icono IconoBarra" Data="{StaticResource IconoExplorador}" />
@@ -244,7 +280,7 @@
                     </TabItem.Header>
                     <vistasExplorador:PanelDelExplorador DataContext="{Binding Explorador}" />
                 </TabItem>
-                <TabItem>
+                <TabItem AutomationProperties.Name="Historial">
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="7">
                             <Path Classes="Icono IconoBarra" Data="{StaticResource IconoHistorial}" />
@@ -253,7 +289,7 @@
                     </TabItem.Header>
                     <vistasHistorial:PanelDelHistorial DataContext="{Binding Historial}" />
                 </TabItem>
-                <TabItem>
+                <TabItem AutomationProperties.Name="Favoritos">
                     <TabItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="7">
                             <Path Classes="Icono IconoBarra" Data="{StaticResource IconoFavoritos}" />
@@ -264,7 +300,8 @@
                 </TabItem>
             </TabControl>
 
-            <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+            <Border Grid.Column="1" Classes="LineaDivisoria" Width="1" HorizontalAlignment="Left" />
+            <GridSplitter x:Name="SeparadorDelExplorador" Grid.Column="1" ResizeDirection="Columns" />
 
             <Panel Grid.Column="2">
                 <StackPanel IsVisible="{Binding NoHayDocumentosAbiertos}"
@@ -286,13 +323,30 @@
                             ItemsSource="{Binding Documentos}"
                             SelectedItem="{Binding DocumentoSeleccionado}"
                             Padding="0">
+                    <!-- Sin esto, un lector de pantalla anuncia cada pestaña con el nombre interno de su clase -->
+                    <TabControl.Styles>
+                        <Style Selector="TabItem" x:DataType="vm:DocumentoModeloDeVista">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding Titulo}" />
+                        </Style>
+                    </TabControl.Styles>
                     <TabControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:DocumentoModeloDeVista">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center"
-                                           ToolTip.Tip="{Binding InformacionAdicional}" />
+                            <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent"
+                                        PointerPressed="AlPresionarPestana"
+                                        ToolTip.Tip="{Binding DescripcionParaLaPestana}">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Cerrar" InputGesture="Ctrl+W" Click="AlCerrarEstaPestana" />
+                                        <MenuItem Header="Cerrar las demás" Click="AlCerrarLasDemasPestanas" />
+                                        <MenuItem Header="Cerrar todas" Click="AlCerrarTodasLasPestanas" />
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <!-- Punto verde mientras la pestaña ejecuta, para verlo aunque se esté en otra -->
+                                <Ellipse Width="7" Height="7" VerticalAlignment="Center"
+                                         Fill="{DynamicResource PincelDeAcento}" IsVisible="{Binding EstaOcupado}" />
+                                <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" />
                                 <Button Classes="Herramienta" Padding="4"
-                                        ToolTip.Tip="Cerrar (Ctrl+W)"
+                                        ToolTip.Tip="Cerrar (Ctrl+W)" AutomationProperties.Name="Cerrar (Ctrl+W)"
                                         Command="{Binding $parent[TabControl].((vm:VentanaPrincipalModeloDeVista)DataContext).CerrarPestanaCommand}"
                                         CommandParameter="{Binding}">
                                     <Path Data="M3,3 L9,9 M9,3 L3,9" Stroke="{DynamicResource PincelDeTextoSecundario}"

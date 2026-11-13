@@ -8,10 +8,12 @@ public sealed record CambiosDeTabla(
     IReadOnlyList<DefinicionDeColumna> ColumnasEliminadas,
     IReadOnlyList<DefinicionDeColumna> ColumnasRenombradas,
     IReadOnlyList<DefinicionDeColumna> ColumnasModificadas,
-    bool CambiaLaLlavePrimaria)
+    bool CambiaLaLlavePrimaria,
+    IReadOnlyList<DefinicionDeColumna> ColumnasConOtroValorPredeterminado)
 {
     public bool HayCambios =>
-        ColumnasNuevas.Count > 0
+        ColumnasConOtroValorPredeterminado.Count > 0
+        || ColumnasNuevas.Count > 0
         || ColumnasEliminadas.Count > 0
         || ColumnasRenombradas.Count > 0
         || ColumnasModificadas.Count > 0
@@ -32,12 +34,22 @@ public sealed record CambiosDeTabla(
                 && (columnaOriginal.TipoDeDato != columna.TipoDeDato || columnaOriginal.AdmiteNulos != columna.AdmiteNulos))
             .ToList();
 
+        // Se compara el texto tal cual: lo que no se tocó vuelve idéntico a como vino del catálogo
+        var columnasConOtroValorPredeterminado = columnasConservadas
+            .Where(columna => columnasOriginalesPorNombre.TryGetValue(columna.NombreOriginal!, out var columnaOriginal)
+                && !string.Equals(
+                    (columnaOriginal.ValorPredeterminado ?? string.Empty).Trim(),
+                    (columna.ValorPredeterminado ?? string.Empty).Trim(),
+                    StringComparison.Ordinal))
+            .ToList();
+
         return new CambiosDeTabla(
             nueva.Columnas.Where(columna => columna.EsNueva).ToList(),
             columnasEliminadas,
             columnasConservadas.Where(columna => columna.FueRenombrada).ToList(),
             columnasModificadas,
-            CalcularSiCambiaLaLlavePrimaria(original, nueva, columnasModificadas));
+            CalcularSiCambiaLaLlavePrimaria(original, nueva, columnasModificadas),
+            columnasConOtroValorPredeterminado);
     }
 
     /// <summary>

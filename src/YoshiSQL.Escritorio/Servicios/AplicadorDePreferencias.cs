@@ -17,6 +17,7 @@ public sealed class AplicadorDePreferencias
     public const string ClaveDelTamanoDeLetraDelEditor = "TamanoDeLetraDelEditor";
     public const string ClaveDeMostrarNumerosDeLinea = "MostrarNumerosDeLinea";
     public const string ClaveDeAjustarLineasLargas = "AjustarLineasLargas";
+    public const string ClaveDeSubrayarErroresDeSintaxis = "SubrayarErroresDeSintaxis";
 
     public AplicadorDePreferencias(ServicioDePreferencias servicioDePreferencias)
     {
@@ -42,5 +43,6 @@ public sealed class AplicadorDePreferencias
         aplicacion.Resources[ClaveDelTamanoDeLetraDelEditor] = preferencias.TamanoDeLetraDelEditor;
         aplicacion.Resources[ClaveDeMostrarNumerosDeLinea] = preferencias.MostrarNumerosDeLinea;
         aplicacion.Resources[ClaveDeAjustarLineasLargas] = preferencias.AjustarLineasLargas;
+        aplicacion.Resources[ClaveDeSubrayarErroresDeSintaxis] = preferencias.SubrayarErroresDeSintaxis;
     }
 }

@@ -69,8 +69,8 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
 
         destino.WriteLine($"-- Script de la base de datos {baseDeDatos}");
         destino.WriteLine($"-- Generado por YoshiSQL el {_reloj.GetLocalNow():yyyy-MM-dd HH:mm}");
-        destino.WriteLine("-- No incluye: usuarios y permisos, índices columnstore/XML/espaciales/de texto completo,");
-        destino.WriteLine("-- colecciones de esquemas XML, objetos de ensamblados CLR ni propiedades extendidas.");
+        destino.WriteLine("-- No incluye: índices XML/espaciales/de texto completo, colecciones de esquemas XML");
+        destino.WriteLine("-- ni objetos de ensamblados CLR. Los usuarios y permisos solo van si se eligió esa opción.");
         destino.WriteLine();
         AgregarLote(destino, _generador.GenerarUso(baseDeDatos));
 
@@ -142,9 +142,57 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
             AgregarDisparadores(destino, advertencias, tablas, opciones, detalles.Disparadores);
         }
 
+        // Al final: cada descripción necesita que su tabla, vista, procedimiento o función ya exista
+        AgregarSeccion(
+            destino,
+            "Descripciones y otras propiedades extendidas",
+            detalles.PropiedadesExtendidas.Where(propiedad => SeExportaSuObjeto(propiedad, opciones)).Select(_generador.GenerarPropiedadExtendida));
+
+        if (opciones.UsuariosYPermisos)
+        {
+            await AgregarSeguridadAsync(destino, acceso, baseDeDatos, opciones, tokenDeCancelacion);
+        }
+
+        if (opciones.EstructuraDeTablas)
+        {
+            AgregarDisparadoresDeBaseDeDatos(destino, advertencias, detalles.DisparadoresDeBaseDeDatos);
+        }
+
         await destino.FlushAsync(tokenDeCancelacion);
         return advertencias;
     }
+
+    /// <summary>
+    /// Usuarios y roles primero, luego quién pertenece a cada rol y al final los permisos,
+    /// cuando los objetos sobre los que se conceden ya existen.
+    /// </summary>
+    private async Task AgregarSeguridadAsync(
+        TextWriter destino,
+        DatosDeAcceso acceso,
+        string baseDeDatos,
+        OpcionesDeExportacion opciones,
+        CancellationToken tokenDeCancelacion)
+    {
+        var seguridad = await _explorador.ObtenerSeguridadAsync(acceso, baseDeDatos, tokenDeCancelacion);
+
+        // Un permiso sobre un objeto solo se puede conceder si ese tipo de objeto va en el script;
+        // como no se sabe aquí de qué tipo es cada uno, se incluyen cuando se exporta la base completa
+        var seExportanTodosLosObjetos = opciones.EstructuraDeTablas && opciones.Vistas && opciones.Procedimientos && opciones.Funciones;
+        var permisos = seguridad.Permisos.Where(permiso => permiso.Objeto is null || seExportanTodosLosObjetos);
+
+        AgregarSeccion(destino, "Usuarios", seguridad.Usuarios.Select(_generador.GenerarCreacionDeUsuarioExistente));
+        AgregarSeccion(destino, "Roles", seguridad.Roles.Select(_generador.GenerarCreacionDeRol));
+        AgregarSeccion(destino, "Miembros de los roles", seguridad.Miembros.Select(_generador.GenerarMiembroDeRol));
+        AgregarSeccion(destino, "Permisos", permisos.Select(_generador.GenerarPermiso));
+    }
+
+    private static bool SeExportaSuObjeto(PropiedadExtendida propiedad, OpcionesDeExportacion opciones) => propiedad.TipoDelObjeto switch
+    {
+        PropiedadExtendida.TipoTabla => opciones.EstructuraDeTablas,
+        PropiedadExtendida.TipoVista => opciones.Vistas,
+        PropiedadExtendida.TipoProcedimiento => opciones.Procedimientos,
+        _ => opciones.Funciones
+    };
 
     private async Task AgregarEsquemasYTiposAsync(
         TextWriter destino,
@@ -296,6 +344,34 @@ public sealed class ServicioDeExportacionDeBaseDeDatos
         }
 
         AgregarLote(destino, definicion.Trim());
+    }
+
+    /// <summary>
+    /// Van lo último de todo: reaccionan a cada CREATE o ALTER, y creados antes se dispararían
+    /// (o incluso bloquearían) con el resto del propio script.
+    /// </summary>
+    private void AgregarDisparadoresDeBaseDeDatos(
+        TextWriter destino,
+        List<string> advertencias,
+        IReadOnlyList<DisparadorDeBaseDeDatos> disparadores)
+    {
+        if (disparadores.Count == 0)
+        {
+            return;
+        }
+
+        destino.WriteLine("-- Disparadores de base de datos (DDL)");
+        destino.WriteLine();
+
+        foreach (var disparador in disparadores)
+        {
+            AgregarDefinicion(destino, advertencias, $"Disparador de base de datos {disparador.Nombre}", disparador.Definicion);
+
+            if (disparador.EstaDeshabilitado && !string.IsNullOrWhiteSpace(disparador.Definicion))
+            {
+                AgregarLote(destino, _generador.GenerarDeshabilitacionDeDisparadorDeBaseDeDatos(disparador));
+            }
+        }
     }
 
     private void AgregarDisparadores(

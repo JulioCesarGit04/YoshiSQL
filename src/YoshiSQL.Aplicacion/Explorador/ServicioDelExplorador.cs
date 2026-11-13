@@ -67,6 +67,13 @@ public sealed class ServicioDelExplorador
         CancellationToken tokenDeCancelacion) =>
         _exploradorDeEsquema.ObtenerPropiedadesDeBaseDeDatosAsync(servidor.DatosDeAcceso, baseDeDatos, tokenDeCancelacion);
 
+    public Task<IReadOnlyList<ObjetoEncontrado>> BuscarObjetosAsync(
+        ServidorConectado servidor,
+        string baseDeDatos,
+        string texto,
+        CancellationToken tokenDeCancelacion) =>
+        _exploradorDeEsquema.BuscarObjetosAsync(servidor.DatosDeAcceso, baseDeDatos, texto, tokenDeCancelacion);
+
     public Task<IReadOnlyList<DependenciaDeObjeto>> ObtenerDependenciasAsync(
         ServidorConectado servidor,
         string baseDeDatos,

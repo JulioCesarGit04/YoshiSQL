@@ -37,6 +37,7 @@
             <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
                 <CheckBox Content="Mostrar números de línea" IsChecked="{Binding MostrarNumerosDeLinea}" />
                 <CheckBox Content="Ajustar líneas largas al ancho del editor" IsChecked="{Binding AjustarLineasLargas}" />
+                <CheckBox Content="Subrayar errores de sintaxis mientras escribo" IsChecked="{Binding SubrayarErroresDeSintaxis}" />
             </StackPanel>
 
             <TextBlock Grid.Row="4" Text="Filas al seleccionar" VerticalAlignment="Center" />

@@ -45,6 +45,7 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private readonly ServiciosDeDiseno _serviciosDeDiseno;
     private readonly ServicioDeMonitor _servicioDeMonitor;
     private readonly ServicioDeEliminacionDeBaseDeDatos _servicioDeEliminacionDeBaseDeDatos;
+    private readonly Dominio.Contratos.IEscritorDePdf _escritorDePdf;
     private int _contadorDeConsultasNuevas;
 
     public VentanaPrincipalModeloDeVista(
@@ -63,8 +64,12 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
         ServiciosDeDiseno serviciosDeDiseno,
         ServicioDeMonitor servicioDeMonitor,
         ServicioDeEliminacionDeBaseDeDatos servicioDeEliminacionDeBaseDeDatos,
-        ServicioDePreferencias servicioDePreferencias)
+        ServicioDePreferencias servicioDePreferencias,
+        DisposicionDeLaInterfaz disposicion,
+        Dominio.Contratos.IEscritorDePdf escritorDePdf)
     {
+        _escritorDePdf = escritorDePdf;
+        Disposicion = disposicion;
         _servicioDeEliminacionDeBaseDeDatos = servicioDeEliminacionDeBaseDeDatos;
         _servicioDeMonitor = servicioDeMonitor;
         _serviciosDeDiseno = serviciosDeDiseno;
@@ -89,6 +94,9 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     }
 
     public ExploradorModeloDeVista Explorador { get; }
+
+    /// <summary>Tamaño y visibilidad de los paneles; lo usan la ventana y las vistas de consulta.</summary>
+    public DisposicionDeLaInterfaz Disposicion { get; }
 
     public FavoritosModeloDeVista Favoritos { get; }
 
@@ -133,6 +141,12 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             new("Guardar como...", "Ctrl+Shift+S", GuardarComoCommand),
             new("Conectar al servidor...", string.Empty, ConectarCommand),
             new("Cerrar pestaña", "Ctrl+W", CerrarPestanaCommand),
+            new("Cerrar todas las pestañas", string.Empty, CerrarTodasLasPestanasCommand),
+            new("Mostrar u ocultar el explorador", "Ctrl+B", ConmutarExploradorCommand),
+            new("Mostrar u ocultar el panel de resultados", "Ctrl+R", ConmutarPanelDeResultadosCommand),
+            new("Fragmentos de código (Tab)...", string.Empty, MostrarFragmentosCommand),
+            new("Buscar en la base de datos...", "Ctrl+Shift+O", BuscarEnLaBaseDeDatosCommand),
+            new("Ver diagrama de la base actual", string.Empty, VerDiagramaDeLaBaseActualCommand),
             new("Guardar consulta como favorito...", string.Empty, GuardarComoFavoritoCommand),
             new("Preferencias...", "Ctrl+,", MostrarPreferenciasCommand),
             new("Abrir carpeta de registros", string.Empty, AbrirCarpetaDeRegistrosCommand),
@@ -255,6 +269,176 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
     private Task MostrarAcercaDeAsync() => _servicioDeDialogos.MostrarAcercaDeAsync();
 
     [RelayCommand]
+    private Task MostrarFragmentosAsync() =>
+        _servicioDeDialogos.MostrarTextoAsync("Fragmentos de código", Controles.FragmentosDeTSql.DescribirTodos());
+
+    /// <summary>
+    /// Busca un texto en toda la base (nombres de objetos, columnas y código) y abre lo que el usuario elija.
+    /// El filtro del explorador solo ve lo que ya se desplegó en el árbol; esto consulta el catálogo completo.
+    /// </summary>
+    [RelayCommand]
+    private async Task BuscarEnLaBaseDeDatosAsync()
+    {
+        const string Titulo = "Buscar en la base de datos";
+
+        var contexto = ConsultaSeleccionada is { } consulta
+            ? new ContextoDelNodo(consulta.Servidor, consulta.BaseDeDatosActual)
+            : await ObtenerOSolicitarContextoAsync();
+
+        if (contexto is null)
+        {
+            return;
+        }
+
+        var baseDeDatos = contexto.BaseDeDatosOPredeterminada;
+        var texto = await _servicioDeDialogos.PedirTextoAsync(
+            Titulo,
+            $"Texto a buscar en \"{baseDeDatos}\": nombre de tabla, columna, procedimiento, o algo escrito dentro del código.",
+            string.Empty);
+
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return;
+        }
+
+        try
+        {
+            var encontrados = await _servicioDelExplorador.BuscarObjetosAsync(contexto.Servidor, baseDeDatos, texto, CancellationToken.None);
+
+            if (encontrados.Count == 0)
+            {
+                await _servicioDeDialogos.MostrarInformacionAsync(Titulo, $"No se encontró \"{texto}\" en la base \"{baseDeDatos}\".");
+                return;
+            }
+
+            var contextoDeLaBase = contexto.EnBaseDeDatos(baseDeDatos);
+            var opciones = encontrados
+                .Select(encontrado => new Paleta.ComandoDePaleta(
+                    DescribirEncontrado(encontrado),
+                    DescribirTipo(encontrado),
+                    new AsyncRelayCommand(() => AbrirEncontradoAsync(contextoDeLaBase, encontrado.Objeto))))
+                .ToList();
+
+            var elegido = await _servicioDeDialogos.MostrarPaletaDeComandosAsync(opciones);
+            elegido?.Comando.Execute(null);
+        }
+        catch (Exception error)
+        {
+            await _servicioDeErrores.RegistrarYMostrarAsync(error, new ContextoDeError(Titulo, contexto.Servidor.Perfil.NombreVisible, baseDeDatos));
+        }
+    }
+
+    private static string DescribirEncontrado(ObjetoEncontrado encontrado) => encontrado.Coincidencia switch
+    {
+        TipoDeCoincidencia.EnUnaColumna => $"{encontrado.Objeto.NombreCompleto}.{encontrado.Columna}",
+        _ => encontrado.Objeto.NombreCompleto
+    };
+
+    private static string DescribirTipo(ObjetoEncontrado encontrado)
+    {
+        var tipo = encontrado.Objeto.Tipo switch
+        {
+            TipoDeObjeto.Tabla => "tabla",
+            TipoDeObjeto.Vista => "vista",
+            TipoDeObjeto.ProcedimientoAlmacenado => "procedimiento",
+            _ => "función"
+        };
+
+        return encontrado.Coincidencia switch
+        {
+            TipoDeCoincidencia.EnUnaColumna => $"columna de {tipo}",
+            TipoDeCoincidencia.EnElCodigo => $"dentro del código · {tipo}",
+            _ => tipo
+        };
+    }
+
+    /// <summary>
+    /// Una tabla se abre mostrando sus primeras filas; lo demás, con su código listo para modificar.
+    /// </summary>
+    private async Task AbrirEncontradoAsync(ContextoDelNodo contexto, ObjetoDeEsquema objeto)
+    {
+        try
+        {
+            if (objeto is Tabla)
+            {
+                var seleccion = _servicioDeGeneracionDeScripts.GenerarSeleccionDeFilas(contexto.BaseDeDatosOPredeterminada, objeto);
+                await AbrirNuevaConsultaAsync(contexto, seleccion, ejecutarAlAbrir: true);
+                return;
+            }
+
+            var codigo = await _servicioDeGeneracionDeScripts.GenerarModificacionAsync(
+                contexto.Servidor, contexto.BaseDeDatosOPredeterminada, objeto, CancellationToken.None);
+            await AbrirNuevaConsultaAsync(contexto, codigo, ejecutarAlAbrir: false);
+        }
+        catch (Exception error)
+        {
+            await _servicioDeErrores.RegistrarYMostrarAsync(error, new ContextoDeError("Abrir el objeto encontrado", contexto.Servidor.Perfil.NombreVisible, contexto.BaseDeDatos));
+        }
+    }
+
+    /// <summary>
+    /// Abre el diagrama de la base de la pestaña actual, sin tener que buscarla en el árbol del explorador.
+    /// </summary>
+    [RelayCommand]
+    private async Task VerDiagramaDeLaBaseActualAsync()
+    {
+        var contexto = DocumentoSeleccionado switch
+        {
+            PestanaDeConsultaModeloDeVista consulta => new ContextoDelNodo(consulta.Servidor, consulta.BaseDeDatosActual),
+            _ => await ObtenerOSolicitarContextoAsync()
+        };
+
+        if (contexto is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await AbrirDiagramaAsync(contexto);
+        }
+        catch (Exception error)
+        {
+            await _servicioDeErrores.RegistrarYMostrarAsync(error, new ContextoDeError("Abrir diagrama", contexto.Servidor.Perfil.NombreVisible, contexto.BaseDeDatos));
+        }
+    }
+
+    [RelayCommand]
+    private void ConmutarExplorador() => Disposicion.ExploradorVisible = !Disposicion.ExploradorVisible;
+
+    [RelayCommand]
+    private void ConmutarPanelDeResultados() => Disposicion.ResultadosVisibles = !Disposicion.ResultadosVisibles;
+
+    [RelayCommand]
+    private Task CerrarOtrasPestanasAsync(DocumentoModeloDeVista? conservada) => CerrarVariasPestanasAsync(conservada);
+
+    [RelayCommand]
+    private Task CerrarTodasLasPestanasAsync() => CerrarVariasPestanasAsync(conservada: null);
+
+    /// <summary>
+    /// Cierra las pestañas una por una preguntando por los cambios sin guardar; si el usuario cancela alguna, se detiene.
+    /// </summary>
+    private async Task CerrarVariasPestanasAsync(DocumentoModeloDeVista? conservada)
+    {
+        foreach (var documento in Documentos.Where(documento => documento != conservada).ToList())
+        {
+            DocumentoSeleccionado = documento;
+
+            if (!await ConfirmarCierreAsync(documento))
+            {
+                return;
+            }
+
+            await QuitarDocumentoAsync(documento);
+        }
+
+        if (conservada is not null)
+        {
+            DocumentoSeleccionado = conservada;
+        }
+    }
+
+    [RelayCommand]
     private Task MostrarPreferenciasAsync() => _servicioDeDialogos.MostrarPreferenciasAsync();
 
     [RelayCommand]
@@ -328,7 +512,8 @@ public sealed partial class VentanaPrincipalModeloDeVista : ModeloDeVistaBase, I
             return;
         }
 
-        var diagrama = new PestanaDeDiagramaModeloDeVista(contexto.Servidor, baseDeDatos, _servicioDeDiagramas, _servicioDeErrores);
+        var diagrama = new PestanaDeDiagramaModeloDeVista(
+            contexto.Servidor, baseDeDatos, _servicioDeDiagramas, _servicioDeErrores, _servicioDeDialogos, _escritorDePdf);
         AgregarDocumento(diagrama);
         await diagrama.CargarCommand.ExecuteAsync(null);
     }

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using YoshiSQL.Aplicacion.Conexiones;
 using YoshiSQL.Aplicacion.Diagramas;
 using YoshiSQL.Aplicacion.Errores;
+using YoshiSQL.Dominio.Contratos;
 using YoshiSQL.Dominio.Diagramas;
 using YoshiSQL.Dominio.Sesion;
 using YoshiSQL.Escritorio.Servicios;
@@ -24,20 +25,204 @@ public sealed partial class PestanaDeDiagramaModeloDeVista : DocumentoModeloDeVi
 
     private readonly ServicioDeDiagramas _servicioDeDiagramas;
     private readonly IServicioDeErrores _servicioDeErrores;
+    private readonly IServicioDeDialogos _servicioDeDialogos;
+    private readonly IEscritorDePdf _escritorDePdf;
     private Diagrama? _diagrama;
     private int _ultimoOrdenDeDibujo;
+    private TablaDelDiagramaModeloDeVista? _ultimaTablaEncontrada;
 
     public PestanaDeDiagramaModeloDeVista(
         ServidorConectado servidor,
         string baseDeDatos,
         ServicioDeDiagramas servicioDeDiagramas,
-        IServicioDeErrores servicioDeErrores)
+        IServicioDeErrores servicioDeErrores,
+        IServicioDeDialogos servicioDeDialogos,
+        IEscritorDePdf escritorDePdf)
         : base(servidor)
     {
         BaseDeDatos = baseDeDatos;
         _servicioDeDiagramas = servicioDeDiagramas;
         _servicioDeErrores = servicioDeErrores;
+        _servicioDeDialogos = servicioDeDialogos;
+        _escritorDePdf = escritorDePdf;
     }
+
+    /// <summary>Pide a la vista desplazarse hasta una tabla (después de buscarla).</summary>
+    public event EventHandler<TablaDelDiagramaModeloDeVista>? TablaEnfocada;
+
+    /// <summary>Nombre de lo seleccionado (una relación o una tabla); nulo si no hay nada seleccionado.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HaySeleccion))]
+    public partial string? TituloDeLaSeleccion { get; private set; }
+
+    /// <summary>Explicación en palabras de lo seleccionado: de dónde sale el dato y adónde va.</summary>
+    [ObservableProperty]
+    public partial string? DetalleDeLaSeleccion { get; private set; }
+
+    public bool HaySeleccion => TituloDeLaSeleccion is not null;
+
+    /// <summary>Texto para buscar una tabla por su nombre; mientras se escribe se va seleccionando la primera que coincide.</summary>
+    [ObservableProperty]
+    public partial string TextoDeBusqueda { get; set; } = string.Empty;
+
+    partial void OnTextoDeBusquedaChanged(string value)
+    {
+        _ultimaTablaEncontrada = null;
+        BuscarSiguienteTabla();
+    }
+
+    /// <summary>Tamaño de lo dibujado, sin el espacio libre que se deja alrededor para poder mover tablas.</summary>
+    public double AnchoDelContenido => Math.Max(0, AnchoDelLienzo - EspacioExtraDelLienzo);
+
+    public double AltoDelContenido => Math.Max(0, AltoDelLienzo - EspacioExtraDelLienzo);
+
+    /// <summary>
+    /// Al tocar una línea: se destaca esa relación, sus dos tablas y las columnas que une, y se apaga todo lo demás.
+    /// </summary>
+    public void SeleccionarRelacion(RelacionDelDiagramaModeloDeVista relacion)
+    {
+        ResaltarRelaciones([relacion], tablaPrincipal: null);
+        TituloDeLaSeleccion = $"{relacion.Nombre}:  {relacion.TablaOrigen.Titulo} ({string.Join(", ", relacion.ColumnasOrigen)})  →  "
+            + $"{relacion.TablaDestino.Titulo} ({string.Join(", ", relacion.ColumnasDestino)})";
+        DetalleDeLaSeleccion = relacion.Explicacion;
+    }
+
+    /// <summary>
+    /// Al tocar una tabla: se destacan todas sus relaciones, las que salen de ella y las que llegan.
+    /// </summary>
+    public void SeleccionarTabla(TablaDelDiagramaModeloDeVista tabla)
+    {
+        var suyas = Relaciones.Where(relacion => relacion.TablaOrigen == tabla || relacion.TablaDestino == tabla).ToList();
+        ResaltarRelaciones(suyas, tabla);
+
+        var apuntaA = suyas.Where(relacion => relacion.TablaOrigen == tabla).Select(relacion => relacion.TablaDestino.Titulo).Distinct().ToList();
+        var laUsan = suyas.Where(relacion => relacion.TablaDestino == tabla && relacion.TablaOrigen != tabla).Select(relacion => relacion.TablaOrigen.Titulo).Distinct().ToList();
+
+        TituloDeLaSeleccion = tabla.Titulo;
+        DetalleDeLaSeleccion =
+            $"Toma datos de {DescribirLista(apuntaA)}.\n"
+            + $"La usan {DescribirLista(laUsan)}.";
+    }
+
+    private static string DescribirLista(IReadOnlyList<string> tablas) =>
+        tablas.Count == 0 ? "ninguna tabla" : $"{tablas.Count} tabla(s): {string.Join(", ", tablas)}";
+
+    private void ResaltarRelaciones(IReadOnlyList<RelacionDelDiagramaModeloDeVista> destacadas, TablaDelDiagramaModeloDeVista? tablaPrincipal)
+    {
+        foreach (var tabla in Tablas)
+        {
+            tabla.QuitarResaltado();
+            tabla.EstaAtenuada = true;
+        }
+
+        foreach (var relacion in Relaciones)
+        {
+            var estaDestacada = destacadas.Contains(relacion);
+            relacion.EstaSeleccionada = estaDestacada;
+            relacion.EstaAtenuada = !estaDestacada;
+
+            if (estaDestacada)
+            {
+                relacion.TablaOrigen.Resaltar(relacion.ColumnasOrigen);
+                relacion.TablaDestino.Resaltar(relacion.ColumnasDestino);
+            }
+        }
+
+        // Una tabla sin relaciones también debe quedar destacada al tocarla
+        tablaPrincipal?.Resaltar([]);
+    }
+
+    [RelayCommand]
+    private void QuitarSeleccion()
+    {
+        foreach (var tabla in Tablas)
+        {
+            tabla.QuitarResaltado();
+        }
+
+        foreach (var relacion in Relaciones)
+        {
+            relacion.EstaSeleccionada = false;
+            relacion.EstaAtenuada = false;
+        }
+
+        TituloDeLaSeleccion = null;
+        DetalleDeLaSeleccion = null;
+    }
+
+    /// <summary>
+    /// Selecciona la siguiente tabla cuyo nombre contiene el texto buscado y pide a la vista que la muestre.
+    /// Llamarlo otra vez con el mismo texto pasa a la siguiente coincidencia.
+    /// </summary>
+    [RelayCommand]
+    private void BuscarSiguienteTabla()
+    {
+        var texto = TextoDeBusqueda.Trim();
+
+        if (texto.Length == 0)
+        {
+            return;
+        }
+
+        var coincidencias = Tablas.Where(tabla => tabla.Titulo.Contains(texto, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (coincidencias.Count == 0)
+        {
+            TextoDeEstado = $"Ninguna tabla contiene \"{texto}\".";
+            return;
+        }
+
+        var posicionAnterior = _ultimaTablaEncontrada is null ? -1 : coincidencias.IndexOf(_ultimaTablaEncontrada);
+        var encontrada = coincidencias[(posicionAnterior + 1) % coincidencias.Count];
+
+        _ultimaTablaEncontrada = encontrada;
+        TraerAlFrente(encontrada);
+        SeleccionarTabla(encontrada);
+        TextoDeEstado = $"{coincidencias.IndexOf(encontrada) + 1} de {coincidencias.Count} tablas con \"{texto}\".";
+        TablaEnfocada?.Invoke(this, encontrada);
+    }
+
+    public void EstablecerZoom(double zoom) => AplicarZoom(zoom);
+
+    /// <summary>
+    /// Guarda el diagrama tal como se ve (con las tablas donde el usuario las acomodó) en un archivo PNG.
+    /// </summary>
+    public async Task GuardarComoImagenAsync(byte[] png)
+    {
+        var ruta = await _servicioDeDialogos.SeleccionarArchivoParaGuardarAsync($"Diagrama de {BaseDeDatos}", TipoDeArchivo.ImagenPng);
+
+        if (ruta is null)
+        {
+            return;
+        }
+
+        await File.WriteAllBytesAsync(ruta, png);
+        TextoDeEstado = $"Diagrama guardado en {ruta}";
+    }
+
+    /// <summary>
+    /// Guarda el diagrama tal como se ve en un PDF de una sola página, del tamaño del diagrama.
+    /// </summary>
+    public async Task GuardarComoPdfAsync(ImagenRgb imagen, double anchoEnPuntos, double altoEnPuntos)
+    {
+        var ruta = await _servicioDeDialogos.SeleccionarArchivoParaGuardarAsync($"Diagrama de {BaseDeDatos}", TipoDeArchivo.DocumentoPdf);
+
+        if (ruta is null)
+        {
+            return;
+        }
+
+        await using (var archivo = File.Create(ruta))
+        {
+            await _escritorDePdf.EscribirImagenAsync(archivo, imagen, anchoEnPuntos, altoEnPuntos, CancellationToken.None);
+        }
+
+        TextoDeEstado = $"Diagrama guardado en {ruta}";
+    }
+
+    /// <summary>Un fallo al guardar el diagrama se registra y se muestra en la barra de estado.</summary>
+    public void InformarErrorAlGuardar(Exception error) =>
+        TextoDeEstado = _servicioDeErrores.RegistrarYDescribir(error, CrearContextoDeError("Guardar el diagrama en un archivo"));
 
     public string BaseDeDatos { get; }
 
@@ -64,9 +249,11 @@ public sealed partial class PestanaDeDiagramaModeloDeVista : DocumentoModeloDeVi
     public partial double Zoom { get; private set; } = ZoomNormal;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AnchoDelContenido))]
     public partial double AnchoDelLienzo { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AltoDelContenido))]
     public partial double AltoDelLienzo { get; private set; }
 
     public override PestanaGuardada CrearPestanaGuardada() =>
@@ -112,6 +299,9 @@ public sealed partial class PestanaDeDiagramaModeloDeVista : DocumentoModeloDeVi
     public void MostrarDiagrama(Diagrama diagrama)
     {
         _diagrama = diagrama;
+        _ultimaTablaEncontrada = null;
+        TituloDeLaSeleccion = null;
+        DetalleDeLaSeleccion = null;
         OrganizadorDeDiagrama.OrganizarNodosSinPosicion(diagrama, MedirNodo);
 
         Tablas.Clear();

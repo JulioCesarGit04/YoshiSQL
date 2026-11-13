@@ -45,6 +45,47 @@ public sealed partial class TablaDelDiagramaModeloDeVista : ModeloDeVistaBase
     [ObservableProperty]
     public partial int OrdenDeDibujo { get; set; }
 
+    // Lo que no participa de lo seleccionado se ve apagado para que destaque lo que sí
+    private const double OpacidadAtenuada = 0.35;
+    private const double OpacidadNormal = 1;
+
+    /// <summary>Verdadero si es un extremo de la relación seleccionada (o la tabla seleccionada).</summary>
+    [ObservableProperty]
+    public partial bool EstaResaltada { get; private set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Opacidad))]
+    public partial bool EstaAtenuada { get; set; }
+
+    public double Opacidad => EstaAtenuada ? OpacidadAtenuada : OpacidadNormal;
+
+    /// <summary>
+    /// Marca la tabla y, dentro de ella, las columnas que participan en la relación. Se puede llamar varias veces
+    /// (una tabla puede ser extremo de varias relaciones a la vez): las columnas se van sumando.
+    /// </summary>
+    public void Resaltar(IEnumerable<string> columnasDeLaRelacion)
+    {
+        EstaResaltada = true;
+        EstaAtenuada = false;
+        var nombres = columnasDeLaRelacion.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var columna in Columnas.Where(columna => nombres.Contains(columna.Nombre)))
+        {
+            columna.EstaResaltada = true;
+        }
+    }
+
+    public void QuitarResaltado()
+    {
+        EstaResaltada = false;
+        EstaAtenuada = false;
+
+        foreach (var columna in Columnas)
+        {
+            columna.EstaResaltada = false;
+        }
+    }
+
     public static double CalcularAlto(int cantidadDeColumnas) =>
         (GrosorDelBorde * 2) + AlturaDelEncabezado + (cantidadDeColumnas * AlturaDeFila) + RellenoInferior;
 

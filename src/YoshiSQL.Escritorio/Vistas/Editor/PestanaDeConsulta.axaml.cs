@@ -1,18 +1,98 @@
+using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using YoshiSQL.Escritorio.ModelosDeVista;
 using YoshiSQL.Escritorio.ModelosDeVista.Editor;
 using YoshiSQL.Escritorio.ModelosDeVista.Resultados;
+using YoshiSQL.Escritorio.Servicios;
 
 namespace YoshiSQL.Escritorio.Vistas.Editor;
 
 public partial class PestanaDeConsulta : UserControl
 {
+    private const int FilaDelSeparador = 1;
+    private const int FilaDeResultados = 2;
+    private const double AltoDelSeparador = 5;
+
     private PestanaDeConsultaModeloDeVista? _pestanaObservada;
     private ResultadosModeloDeVista? _resultadosObservados;
+    private DisposicionDeLaInterfaz? _disposicion;
 
     public PestanaDeConsulta()
     {
         InitializeComponent();
+        SeparadorDeResultados.DragCompleted += (_, _) => RecordarAltoDeResultados();
+    }
+
+    /// <summary>
+    /// El alto del panel de resultados y si está visible son de toda la aplicación, no de cada pestaña:
+    /// se leen de la ventana principal al mostrarse y se guardan al cerrar YoshiSQL.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs argumentos)
+    {
+        base.OnAttachedToVisualTree(argumentos);
+        _disposicion = (TopLevel.GetTopLevel(this)?.DataContext as VentanaPrincipalModeloDeVista)?.Disposicion;
+
+        if (_disposicion is not null)
+        {
+            _disposicion.PropertyChanged += AlCambiarLaDisposicion;
+            AplicarDisposicionDeResultados();
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs argumentos)
+    {
+        if (_disposicion is not null)
+        {
+            _disposicion.PropertyChanged -= AlCambiarLaDisposicion;
+            _disposicion = null;
+        }
+
+        base.OnDetachedFromVisualTree(argumentos);
+    }
+
+    private void AlCambiarLaDisposicion(object? remitente, PropertyChangedEventArgs argumentos)
+    {
+        if (argumentos.PropertyName == nameof(DisposicionDeLaInterfaz.ResultadosVisibles))
+        {
+            AplicarDisposicionDeResultados();
+        }
+    }
+
+    private void AplicarDisposicionDeResultados()
+    {
+        if (_disposicion is null)
+        {
+            return;
+        }
+
+        var visibles = _disposicion.ResultadosVisibles;
+        var filas = Cuadricula.RowDefinitions;
+
+        filas[FilaDeResultados].Height = new GridLength(visibles ? _disposicion.AltoDeResultados : 0);
+        filas[FilaDelSeparador].Height = new GridLength(visibles ? AltoDelSeparador : 0);
+        SeparadorDeResultados.IsVisible = visibles;
+        PanelDeResultados.IsVisible = visibles;
+    }
+
+    private void RecordarAltoDeResultados()
+    {
+        if (_disposicion is { ResultadosVisibles: true })
+        {
+            _disposicion.AltoDeResultados = Cuadricula.RowDefinitions[FilaDeResultados].ActualHeight;
+        }
+    }
+
+    // Al ejecutar con el panel oculto se vuelve a mostrar: si no, un error pasaría sin verse
+    private void AlCambiarLaPestana(object? remitente, PropertyChangedEventArgs argumentos)
+    {
+        if (argumentos.PropertyName == nameof(PestanaDeConsultaModeloDeVista.EstaEjecutando)
+            && _pestanaObservada is { EstaEjecutando: true }
+            && _disposicion is not null)
+        {
+            _disposicion.ResultadosVisibles = true;
+        }
     }
 
     /// <summary>
@@ -33,6 +113,7 @@ public partial class PestanaDeConsulta : UserControl
             _pestanaObservada.BusquedaSolicitada -= AbrirBusqueda;
             _pestanaObservada.ComentarioSolicitado -= AlComentario;
             _pestanaObservada.CambioDeCapitalizacionSolicitado -= ConvertirSeleccion;
+            _pestanaObservada.PropertyChanged -= AlCambiarLaPestana;
         }
 
         _pestanaObservada = DataContext as PestanaDeConsultaModeloDeVista;
@@ -43,6 +124,7 @@ public partial class PestanaDeConsulta : UserControl
             _pestanaObservada.BusquedaSolicitada += AbrirBusqueda;
             _pestanaObservada.ComentarioSolicitado += AlComentario;
             _pestanaObservada.CambioDeCapitalizacionSolicitado += ConvertirSeleccion;
+            _pestanaObservada.PropertyChanged += AlCambiarLaPestana;
         }
 
         if (_resultadosObservados is not null)

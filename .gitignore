@@ -6,3 +6,6 @@ obj/
 .idea/
 TestResults/
 publicar/
+
+# Paquetes generados por empaquetar-linux.sh
+salida/

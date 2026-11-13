@@ -12,4 +12,7 @@ public sealed class ServicioDeFormatoSql
     }
 
     public string Formatear(string textoSql) => _formateador.Formatear(textoSql);
+
+    public IReadOnlyList<Dominio.Consultas.ErrorDeSintaxis> BuscarErroresDeSintaxis(string textoSql) =>
+        _formateador.BuscarErroresDeSintaxis(textoSql);
 }

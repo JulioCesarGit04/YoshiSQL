@@ -1,6 +1,7 @@
 using YoshiSQL.Dominio.Diseno;
 using YoshiSQL.Dominio.Edicion;
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Seguridad;
 
 namespace YoshiSQL.Dominio.Contratos;
 
@@ -31,6 +32,27 @@ public interface IGeneradorDeScripts
         Indice? llavePrimaria = null,
         IReadOnlyList<ColumnaCalculada>? columnasCalculadas = null,
         IReadOnlyList<IdentidadDeColumna>? identidades = null);
+
+    /// <summary>
+    /// CREATE USER solo si no existe: asociado a su inicio de sesión si ese inicio existe en el servidor donde se
+    /// ejecute el script y, si no, sin inicio de sesión (para que los permisos y la propiedad de objetos no fallen).
+    /// </summary>
+    string GenerarCreacionDeUsuarioExistente(UsuarioDeBaseDeDatos usuario);
+
+    /// <summary>CREATE ROLE, solo si no existe.</summary>
+    string GenerarCreacionDeRol(RolDeBaseDeDatos rol);
+
+    /// <summary>ALTER ROLE ... ADD MEMBER.</summary>
+    string GenerarMiembroDeRol(MiembroDeRol miembro);
+
+    /// <summary>GRANT o DENY sobre la base, un esquema, un objeto o una columna.</summary>
+    string GenerarPermiso(PermisoDeBaseDeDatos permiso);
+
+    /// <summary>DISABLE TRIGGER ... ON DATABASE, para dejar un disparador de base de datos como estaba en la original.</summary>
+    string GenerarDeshabilitacionDeDisparadorDeBaseDeDatos(DisparadorDeBaseDeDatos disparador);
+
+    /// <summary>sp_addextendedproperty para la descripción (u otra propiedad) de un objeto o de una columna.</summary>
+    string GenerarPropiedadExtendida(PropiedadExtendida propiedad);
 
     /// <summary>CREATE SYNONYM, solo si no existe.</summary>
     string GenerarCreacionDeSinonimo(Sinonimo sinonimo);

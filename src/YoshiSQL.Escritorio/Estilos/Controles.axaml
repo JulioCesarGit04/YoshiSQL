@@ -29,6 +29,16 @@
     <Style Selector="Button.Herramienta:disabled /template/ ContentPresenter">
         <Setter Property="Background" Value="Transparent" />
     </Style>
+    <!-- Un botón que no se puede usar debe notarse apagado, icono incluido -->
+    <Style Selector="Button.Herramienta:disabled">
+        <Setter Property="Opacity" Value="0.38" />
+    </Style>
+    <Style Selector="ToggleButton.Herramienta:disabled">
+        <Setter Property="Opacity" Value="0.38" />
+    </Style>
+    <Style Selector="ToggleButton.Herramienta:checked Path.IconoBarra">
+        <Setter Property="Stroke" Value="{DynamicResource PincelDeTextoSobreAcento}" />
+    </Style>
 
     <Style Selector="ToggleButton.Herramienta">
         <Setter Property="Background" Value="Transparent" />
@@ -88,8 +98,23 @@
         <Setter Property="Foreground" Value="{DynamicResource PincelDeError}" />
     </Style>
 
+    <!-- El separador es una zona invisible de 5 px para agarrarlo con comodidad; la línea de 1 px se dibuja aparte -->
     <Style Selector="GridSplitter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="MinWidth" Value="1" />
+        <Setter Property="MinHeight" Value="1" />
+    </Style>
+    <Style Selector="Border.LineaDivisoria">
         <Setter Property="Background" Value="{DynamicResource PincelDeBorde}" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
+    <!-- Cuadrito de color de una leyenda -->
+    <Style Selector="Border.MuestraDeColor">
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Height" Value="10" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style Selector="TabControl.Documentos > TabItem">
@@ -104,10 +129,11 @@
         <Setter Property="Padding" Value="10,0" />
     </Style>
 
+    <!-- Relleno ajustado: con 12 px las tres pestañas no cabían en una fila y "Favoritos" caía a una segunda -->
     <Style Selector="TabControl.Laterales > TabItem">
         <Setter Property="FontSize" Value="12.5" />
         <Setter Property="MinHeight" Value="34" />
-        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Padding" Value="8,0" />
     </Style>
     <!-- Pestaña lateral seleccionada: el icono toma el color de acento -->
     <Style Selector="TabControl.Laterales TabItem:selected Path.IconoBarra">

@@ -15,6 +15,13 @@ public sealed partial class HistorialDeConsultas
 
     private const string TextoOculto = "'***'";
 
+    /// <summary>
+    /// Se agrega al final de un script recortado. Sin esto, al abrirlo desde el historial parecía completo
+    /// y se ejecutaba hasta donde estuviera cortado, a veces en mitad de una instrucción.
+    /// </summary>
+    public const string AvisoDeTextoRecortado =
+        "\n-- [YoshiSQL] SCRIPT INCOMPLETO: el historial solo guarda el comienzo de los scripts muy largos. Abre el archivo original.\n";
+
     private readonly IRepositorioDeHistorial _repositorio;
     private readonly ILogger<HistorialDeConsultas> _registro;
     private readonly List<ConsultaEjecutada> _consultas = [];
@@ -44,7 +51,9 @@ public sealed partial class HistorialDeConsultas
 
     public async Task RegistrarAsync(ConsultaEjecutada consulta)
     {
-        var textoRecortado = consulta.Texto.Length > LargoMaximoDelTexto ? consulta.Texto[..LargoMaximoDelTexto] : consulta.Texto;
+        var textoRecortado = consulta.Texto.Length > LargoMaximoDelTexto
+            ? consulta.Texto[..(LargoMaximoDelTexto - AvisoDeTextoRecortado.Length)] + AvisoDeTextoRecortado
+            : consulta.Texto;
         var consultaRecortada = consulta with { Texto = OcultarContrasenas(textoRecortado) };
 
         lock (_bloqueo)

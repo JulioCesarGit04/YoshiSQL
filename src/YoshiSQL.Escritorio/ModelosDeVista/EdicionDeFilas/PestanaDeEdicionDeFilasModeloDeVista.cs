@@ -48,7 +48,12 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
     public partial IReadOnlyList<Columna> Columnas { get; private set; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TextoDeEliminarFila))]
     public partial FilaEditableModeloDeVista? FilaSeleccionada { get; set; }
+
+    /// <summary>El mismo botón marca la fila para eliminar o le quita la marca; su texto dice cuál de las dos hará.</summary>
+    public string TextoDeEliminarFila =>
+        FilaSeleccionada?.Estado == EstadoDeFila.Eliminada ? "No eliminar fila" : "Eliminar fila";
 
     /// <summary>Filtro rápido del lado del cliente sobre las filas ya cargadas (no vuelve a consultar).</summary>
     [ObservableProperty]
@@ -131,8 +136,10 @@ public sealed partial class PestanaDeEdicionDeFilasModeloDeVista : DocumentoMode
         else
         {
             fila.MarcarParaEliminar();
-            TextoDeEstado = "Fila marcada para eliminar. Pulsa \"Eliminar fila\" otra vez sobre ella para desmarcarla.";
+            TextoDeEstado = "Fila marcada para eliminar. Pulsa \"No eliminar fila\" para desmarcarla.";
         }
+
+        OnPropertyChanged(nameof(TextoDeEliminarFila));
 
         ActualizarTitulo();
     }

@@ -27,6 +27,7 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
         TamanoDeLetraDelEditor = (decimal)actuales.TamanoDeLetraDelEditor;
         MostrarNumerosDeLinea = actuales.MostrarNumerosDeLinea;
         AjustarLineasLargas = actuales.AjustarLineasLargas;
+        SubrayarErroresDeSintaxis = actuales.SubrayarErroresDeSintaxis;
         FilasAlSeleccionar = actuales.FilasAlSeleccionar;
         FilasAlEditar = actuales.FilasAlEditar;
     }
@@ -59,6 +60,9 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
     public partial bool AjustarLineasLargas { get; set; }
 
     [ObservableProperty]
+    public partial bool SubrayarErroresDeSintaxis { get; set; }
+
+    [ObservableProperty]
     public partial decimal? FilasAlSeleccionar { get; set; }
 
     [ObservableProperty]
@@ -82,6 +86,7 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
             TamanoDeLetraDelEditor = (double)(TamanoDeLetraDelEditor ?? (decimal)PreferenciasDelUsuario.Predeterminadas.TamanoDeLetraDelEditor),
             MostrarNumerosDeLinea = MostrarNumerosDeLinea,
             AjustarLineasLargas = AjustarLineasLargas,
+            SubrayarErroresDeSintaxis = SubrayarErroresDeSintaxis,
             FilasAlSeleccionar = (int)(FilasAlSeleccionar ?? PreferenciasDelUsuario.Predeterminadas.FilasAlSeleccionar),
             FilasAlEditar = (int)(FilasAlEditar ?? PreferenciasDelUsuario.Predeterminadas.FilasAlEditar)
         };
@@ -106,6 +111,7 @@ public sealed partial class DialogoDePreferenciasModeloDeVista : ModeloDeVistaBa
         TamanoDeLetraDelEditor = (decimal)predeterminadas.TamanoDeLetraDelEditor;
         MostrarNumerosDeLinea = predeterminadas.MostrarNumerosDeLinea;
         AjustarLineasLargas = predeterminadas.AjustarLineasLargas;
+        SubrayarErroresDeSintaxis = predeterminadas.SubrayarErroresDeSintaxis;
         FilasAlSeleccionar = predeterminadas.FilasAlSeleccionar;
         FilasAlEditar = predeterminadas.FilasAlEditar;
     }

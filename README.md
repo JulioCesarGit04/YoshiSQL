@@ -93,13 +93,43 @@ dotnet publish src/YoshiSQL.Escritorio -c Release -r linux-x64 --self-contained 
 
 Se puede compilar para Windows desde Linux y al revés.
 
+### Instalar en Linux como aplicación (Ubuntu / Debian)
+
+Crea un paquete `.deb` que agrega YoshiSQL al menú de aplicaciones con su ícono y el comando `yoshisql` en la terminal:
+
+```bash
+./empaquetar-linux.sh
+sudo apt install ./salida/yoshisql_0.5.0_amd64.deb
+```
+
+> Este script todavía no se ha probado en un Linux real. Si falla, el mensaje indica en qué paso.
+
+### Probar sin tocar tus datos
+
+Si defines la variable `YOSHISQL_CARPETA_DE_DATOS`, YoshiSQL guarda todo (conexiones, pestañas, historial) en esa
+carpeta en vez de en las del usuario. Sirve para probar una versión nueva sin que abra tus pestañas, o para llevar
+YoshiSQL en una memoria USB:
+
+```bash
+YOSHISQL_CARPETA_DE_DATOS=/tmp/yoshi-prueba dotnet run --project src/YoshiSQL.Escritorio
+```
+
+```powershell
+$env:YOSHISQL_CARPETA_DE_DATOS = "$env:TEMP\yoshi-prueba"; dotnet run --project src/YoshiSQL.Escritorio
+```
+
+### Comprobación automática en Linux y Windows
+
+Cada vez que subes cambios a GitHub, se compila YoshiSQL y se corren todas las pruebas en Ubuntu y en Windows
+(`.github/workflows/compilar-y-probar.yml`). El resultado aparece en la pestaña **Actions** del repositorio.
+
 Al abrir, pulsa **Conectar al servidor** e ingresa los datos de tu SQL Server. En una instalación local:
 
 - **Servidor:** `localhost`
 - **Usuario:** `sa` y la contraseña que definiste al instalar SQL Server
 - Deja marcado **"Confiar en el certificado del servidor"**: las instalaciones locales usan un certificado autofirmado.
 
-En Windows también puedes elegir **Autenticación de Windows** para entrar con tu cuenta de usuario, sin contraseña. Para una instancia con nombre (por ejemplo SQL Server Express), escribe el servidor como `localhost\SQLEXPRESS`.
+En Windows también puedes elegir **Autenticación de Windows** para entrar con tu cuenta de usuario, sin contraseña. En Linux esa opción se llama **Autenticación integrada (Kerberos)** y solo funciona si el equipo está unido a un dominio con Kerberos configurado (`kinit`); lo habitual en Linux es entrar con usuario y contraseña de SQL Server. Para una instancia con nombre (por ejemplo SQL Server Express), escribe el servidor como `localhost\SQLEXPRESS`.
 
 En `ejemplos/PruebaDePlanes.sql` hay una base de datos de prueba con 100.000 filas para practicar con los planes de ejecución.
 
@@ -159,7 +189,7 @@ dotnet test
 Versión **0.5.0**, en desarrollo activo.
 
 Pendiente:
-- Instalador para Linux (`.deb` o AppImage) con ícono en el menú de aplicaciones.
+- Probar en Linux el instalador `.deb` (`empaquetar-linux.sh`) y agregar un AppImage para otras distribuciones.
 - Valores predeterminados (`DEFAULT`) en el diseñador de tablas.
 - Probar a fondo la versión de Windows 11 y agregar soporte para macOS.
 - Soporte para otros motores, como PostgreSQL o MySQL.

@@ -1,4 +1,5 @@
 using YoshiSQL.Dominio.Esquema;
+using YoshiSQL.Dominio.Seguridad;
 using YoshiSQL.Infraestructura.SqlServer;
 
 namespace YoshiSQL.Infraestructura.Pruebas.SqlServer;
@@ -49,6 +50,108 @@ public class GeneracionDeExportacionPruebas
             Ventas, columnas, identidades: [new IdentidadDeColumna(Ventas, "Id", "1000", "5")]);
 
         Assert.Contains("[Id] int IDENTITY(1000,5) NOT NULL", script);
+    }
+
+    // datetime2 guarda hasta 7 decimales de segundo; datetime solo admite 3 en un texto
+    [Fact]
+    public void GenerarInsertDeFilas_FechasSegunElTipoDeLaColumna_NoPierdenNiSobranDecimales()
+    {
+        Columna[] columnas =
+        [
+            new("Precisa", new TipoDeDato("datetime2", 7), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 1),
+            new("Clasica", new TipoDeDato("datetime"), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 2),
+            new("ConZona", new TipoDeDato("datetimeoffset", 7), AdmiteNulos: false, EsLlavePrimaria: false, EsIdentidad: false, Posicion: 3)
+        ];
+        var fecha = new DateTime(2026, 1, 2, 3, 4, 5).AddTicks(1234567);
+        object?[] fila = [fecha, fecha, new DateTimeOffset(fecha, TimeSpan.FromHours(-5))];
+
+        var script = _generador.GenerarInsertDeFilas(Ventas, columnas, [fila]);
+
+        Assert.Contains("VALUES ('2026-01-02T03:04:05.1234567', '2026-01-02T03:04:05.123', '2026-01-02T03:04:05.1234567-05:00');", script);
+    }
+
+    [Fact]
+    public void GenerarPropiedadExtendida_DeUnaColumna_IncluyeLosTresNiveles()
+    {
+        var propiedad = new PropiedadExtendida("MS_Description", "Total de la venta, con IGV", "dbo", "Ventas", PropiedadExtendida.TipoTabla, "Total");
+
+        Assert.Equal(
+            "EXEC sys.sp_addextendedproperty @name = N'MS_Description', @value = N'Total de la venta, con IGV', "
+            + "@level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Ventas', "
+            + "@level2type = N'COLUMN', @level2name = N'Total';",
+            _generador.GenerarPropiedadExtendida(propiedad));
+    }
+
+    [Fact]
+    public void GenerarPropiedadExtendida_DeUnProcedimientoConComilla_LaEscapa()
+    {
+        var propiedad = new PropiedadExtendida("MS_Description", "Lista lo 'pendiente'", "dbo", "usp_Listar", PropiedadExtendida.TipoProcedimiento, Columna: null);
+
+        var script = _generador.GenerarPropiedadExtendida(propiedad);
+
+        Assert.Contains("@value = N'Lista lo ''pendiente'''", script);
+        Assert.EndsWith("@level1type = N'PROCEDURE', @level1name = N'usp_Listar';", script);
+    }
+
+    [Fact]
+    public void GenerarCreacionDeIndice_ColumnarAgrupado_NoListaColumnas()
+    {
+        var indice = new IndiceDeTabla(Ventas, "CCI_Ventas", EsUnico: false, EsRestriccionUnica: false, EsAgrupado: true,
+            [], ["Id", "Total"], Filtro: null, EsColumnar: true);
+
+        Assert.Equal("CREATE CLUSTERED COLUMNSTORE INDEX [CCI_Ventas] ON [dbo].[Ventas];", _generador.GenerarCreacionDeIndice(indice));
+    }
+
+    [Fact]
+    public void GenerarCreacionDeIndice_ColumnarNoAgrupado_ListaSusColumnas()
+    {
+        var indice = new IndiceDeTabla(Ventas, "NCCI_Ventas", EsUnico: false, EsRestriccionUnica: false, EsAgrupado: false,
+            [], ["Fecha", "Total"], Filtro: null, EsColumnar: true);
+
+        Assert.Equal(
+            "CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_Ventas] ON [dbo].[Ventas] ([Fecha], [Total]);",
+            _generador.GenerarCreacionDeIndice(indice));
+    }
+
+    // En otro servidor el inicio de sesión puede no existir: el usuario se crea igual para que sus permisos no fallen
+    [Fact]
+    public void GenerarCreacionDeUsuarioExistente_ConInicioDeSesion_LoUsaSoloSiExisteEnElDestino()
+    {
+        var script = _generador.GenerarCreacionDeUsuarioExistente(new UsuarioDeBaseDeDatos("ana", "SQL_USER", "ana_login"));
+
+        Assert.StartsWith("IF DATABASE_PRINCIPAL_ID(N'ana') IS NULL", script);
+        Assert.Contains("IF SUSER_ID(N'ana_login') IS NOT NULL", script);
+        Assert.Contains("CREATE USER [ana] FOR LOGIN [ana_login];", script);
+        Assert.Contains("CREATE USER [ana] WITHOUT LOGIN;", script);
+    }
+
+    [Fact]
+    public void GenerarCreacionDeUsuarioExistente_SinInicioDeSesion_LoCreaSinEl()
+    {
+        var script = _generador.GenerarCreacionDeUsuarioExistente(new UsuarioDeBaseDeDatos("servicio", "SQL_USER", InicioDeSesion: null));
+
+        Assert.EndsWith("CREATE USER [servicio] WITHOUT LOGIN;", script);
+        Assert.DoesNotContain("FOR LOGIN", script);
+    }
+
+    [Fact]
+    public void GenerarCreacionDeRolYMiembro()
+    {
+        Assert.EndsWith("CREATE ROLE [rol_ventas];", _generador.GenerarCreacionDeRol(new RolDeBaseDeDatos("rol_ventas", EsFijo: false)));
+        Assert.Equal("ALTER ROLE [rol_ventas] ADD MEMBER [ana];", _generador.GenerarMiembroDeRol(new MiembroDeRol("rol_ventas", "ana")));
+    }
+
+    [Theory]
+    [InlineData(false, "SELECT", "dbo", "Ventas", null, false, "GRANT SELECT ON OBJECT::[dbo].[Ventas] TO [ana];")]
+    [InlineData(false, "UPDATE", "dbo", "Ventas", "Total", false, "GRANT UPDATE ON OBJECT::[dbo].[Ventas] ([Total]) TO [ana];")]
+    [InlineData(true, "DELETE", "dbo", "Ventas", null, false, "DENY DELETE ON OBJECT::[dbo].[Ventas] TO [ana];")]
+    [InlineData(false, "EXECUTE", "ventas", null, null, true, "GRANT EXECUTE ON SCHEMA::[ventas] TO [ana] WITH GRANT OPTION;")]
+    [InlineData(false, "VIEW DEFINITION", null, null, null, false, "GRANT VIEW DEFINITION TO [ana];")]
+    public void GenerarPermiso_SegunSuAlcance(bool esDenegacion, string permiso, string? esquema, string? objeto, string? columna, bool puedeOtorgarlo, string esperado)
+    {
+        var script = _generador.GenerarPermiso(new PermisoDeBaseDeDatos(esDenegacion, permiso, esquema, objeto, columna, "ana", puedeOtorgarlo));
+
+        Assert.Equal(esperado, script);
     }
 
     [Fact]

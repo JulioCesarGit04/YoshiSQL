@@ -37,6 +37,36 @@ public sealed class RepositorioDeSesionJsonPruebas : IDisposable
         Assert.True(await _repositorio.RegistrarInicioAsync(CancellationToken.None));
     }
 
+    // Se usa el proceso de las pruebas como si fuera "otro" YoshiSQL abierto (por eso el segundo argumento es 0)
+    [Fact]
+    public void OtraInstanciaSigueAbierta_MismoNumeroYMismoArranque_EsLaMismaVentana()
+    {
+        using var proceso = System.Diagnostics.Process.GetCurrentProcess();
+        var marca = RepositorioDeSesionJson.CrearMarca(proceso.Id, proceso.StartTime);
+
+        Assert.True(RepositorioDeSesionJson.OtraInstanciaSigueAbierta(marca, idDeEsteProceso: 0));
+    }
+
+    // Linux reutiliza los números de proceso: tras un cierre inesperado el número puede ser de otro programa
+    [Fact]
+    public void OtraInstanciaSigueAbierta_NumeroReutilizadoPorOtroProceso_NoLoConfunde()
+    {
+        using var proceso = System.Diagnostics.Process.GetCurrentProcess();
+        var marca = RepositorioDeSesionJson.CrearMarca(proceso.Id, proceso.StartTime.AddHours(-3));
+
+        Assert.False(RepositorioDeSesionJson.OtraInstanciaSigueAbierta(marca, idDeEsteProceso: 0));
+    }
+
+    [Fact]
+    public async Task RegistrarInicio_EscribeUnaMarcaConNumeroYArranque()
+    {
+        await _repositorio.RegistrarInicioAsync(CancellationToken.None);
+
+        var marca = await File.ReadAllTextAsync(_rutas.ArchivoDeEjecucionEnCurso);
+
+        Assert.Matches(@"^\d+;\d+$", marca);
+    }
+
     [Fact]
     public async Task RegistrarInicio_DespuesDeUnCierreCorrecto_NoDetectaProblemas()
     {
