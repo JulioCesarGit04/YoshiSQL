@@ -4,10 +4,12 @@ using Avalonia;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Editing;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using AvaloniaEdit.Search;
@@ -23,6 +25,11 @@ public sealed class EditorSql : TextEditor
 {
     private const string RecursoDeResaltadoOscuro = "ResaltadoTSql.xshd";
     private const string RecursoDeResaltadoClaro = "ResaltadoTSqlClaro.xshd";
+    private const string RecursoDeLaLineaActual = "PincelDeLineaActual";
+    private const string RecursoDeLaSeleccion = "PincelDeSeleccionDeTexto";
+    private const double RadioDeLaSeleccion = 2;
+
+    private static readonly Thickness SeparacionDeLosNumerosDeLinea = new(10, 0, 8, 0);
 
     public static readonly StyledProperty<IProveedorDeSugerencias?> ProveedorDeSugerenciasProperty =
         AvaloniaProperty.Register<EditorSql, IProveedorDeSugerencias?>(nameof(ProveedorDeSugerencias));
@@ -70,9 +77,10 @@ public sealed class EditorSql : TextEditor
         TextArea.TextView.BackgroundRenderers.Add(_subrayadoDeErrores);
         TextChanged += (_, _) => ProgramarAnalisisDeSintaxis();
 
-        AplicarResaltadoDelTema();
-        ActualThemeVariantChanged += (_, _) => AplicarResaltadoDelTema();
+        AplicarColoresDelTema();
+        ActualThemeVariantChanged += (_, _) => AplicarColoresDelTema();
         ShowLineNumbers = true;
+        SepararLosNumerosDeLinea();
         Options.ConvertTabsToSpaces = true;
         Options.IndentationSize = 4;
         Options.HighlightCurrentLine = true;
@@ -124,6 +132,21 @@ public sealed class EditorSql : TextEditor
         if (cambio.Property == SubrayarErroresDeSintaxisProperty)
         {
             ProgramarAnalisisDeSintaxis();
+        }
+
+        // Al mostrar u ocultar los números el editor crea un margen nuevo, sin la separación
+        if (cambio.Property == ShowLineNumbersProperty)
+        {
+            SepararLosNumerosDeLinea();
+        }
+    }
+
+    // De fábrica los números quedan pegados al borde y al código
+    private void SepararLosNumerosDeLinea()
+    {
+        foreach (var margen in TextArea.LeftMargins.OfType<LineNumberMargin>())
+        {
+            margen.Margin = SeparacionDeLosNumerosDeLinea;
         }
     }
 
@@ -550,8 +573,30 @@ public sealed class EditorSql : TextEditor
         double DesplazamientoHorizontal);
 
     // Los colores de sintaxis dependen del fondo: se cambian junto con el tema
-    private void AplicarResaltadoDelTema() =>
+    private void AplicarColoresDelTema()
+    {
         SyntaxHighlighting = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light ? ResaltadoClaro.Value : ResaltadoOscuro.Value;
+
+        // La línea del cursor se marca con un velo apenas visible; el recuadro de fábrica distraía
+        if (Application.Current is { } aplicacion
+            && aplicacion.TryGetResource(RecursoDeLaLineaActual, ActualThemeVariant, out var recurso)
+            && recurso is IBrush pincel)
+        {
+            TextArea.TextView.CurrentLineBackground = pincel;
+            TextArea.TextView.CurrentLineBorder = new Pen(Brushes.Transparent, 0);
+        }
+
+        // Selección azulada y sin cambiar el color del texto: se sigue leyendo la sintaxis dentro de lo seleccionado
+        if (Application.Current is { } laAplicacion
+            && laAplicacion.TryGetResource(RecursoDeLaSeleccion, ActualThemeVariant, out var seleccion)
+            && seleccion is IBrush pincelDeSeleccion)
+        {
+            TextArea.SelectionBrush = pincelDeSeleccion;
+            TextArea.SelectionForeground = null;
+            TextArea.SelectionBorder = null;
+            TextArea.SelectionCornerRadius = RadioDeLaSeleccion;
+        }
+    }
 
     private static IHighlightingDefinition CargarDefinicionDeResaltado(string nombreDelRecurso)
     {

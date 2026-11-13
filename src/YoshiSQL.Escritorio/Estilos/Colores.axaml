@@ -5,50 +5,236 @@
     <!--
         Paleta de YoshiSQL en sus dos versiones. Las vistas usan siempre DynamicResource
         para que el cambio de tema se aplique al instante sin reiniciar.
+
+        Criterio: grises neutros y un solo color de acento (el verde de la marca) que se usa poco:
+        ejecutar, el foco y lo seleccionado. Si el verde aparece en todas partes deja de señalar nada.
+
+        Cada tema define además las claves del tema Fluent (TextControl..., ComboBox..., Button...,
+        DataGrid...) para que cajas de texto, listas, botones y grillas tengan el mismo aspecto en toda
+        la aplicación, diálogos incluidos, sin retocar cada vista. Los recursos de la aplicación
+        tienen prioridad sobre los del tema.
     -->
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="PincelDeFondo" Color="#17191C" />
-            <SolidColorBrush x:Key="PincelDePanel" Color="#1F2124" />
-            <SolidColorBrush x:Key="PincelDePanelElevado" Color="#26292D" />
-            <SolidColorBrush x:Key="PincelDeBorde" Color="#33363B" />
-            <SolidColorBrush x:Key="PincelDeTexto" Color="#E4E6EA" />
-            <SolidColorBrush x:Key="PincelDeTextoSecundario" Color="#959BA3" />
+            <SolidColorBrush x:Key="PincelDeFondo" Color="#16181B" />
+            <SolidColorBrush x:Key="PincelDePanel" Color="#1C1E22" />
+            <SolidColorBrush x:Key="PincelDePanelElevado" Color="#25282D" />
+            <SolidColorBrush x:Key="PincelDeBorde" Color="#2C2F35" />
+            <SolidColorBrush x:Key="PincelDeBordeFuerte" Color="#3B3F47" />
+            <SolidColorBrush x:Key="PincelDeTexto" Color="#DFE2E7" />
+            <SolidColorBrush x:Key="PincelDeTextoSecundario" Color="#8F959E" />
             <SolidColorBrush x:Key="PincelDeAcento" Color="#6CC24A" />
+            <SolidColorBrush x:Key="PincelDeAcentoIntenso" Color="#7BCD5B" />
             <SolidColorBrush x:Key="PincelDeTextoSobreAcento" Color="#10130F" />
             <SolidColorBrush x:Key="PincelDeError" Color="#F07178" />
             <SolidColorBrush x:Key="PincelDeAdvertencia" Color="#E5C07B" />
             <SolidColorBrush x:Key="PincelDeObjeto" Color="#61AFEF" />
-            <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#30353C" />
-            <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#3C4148" />
+            <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#2B2F35" />
+            <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#3B3F47" />
             <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#C08B93A0" />
-            <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#5C6370" />
+            <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#555B66" />
+            <SolidColorBrush x:Key="PincelDeLineaActual" Color="#FFFFFF" Opacity="0.035" />
             <SolidColorBrush x:Key="PincelDeHover" Color="#FFFFFF" Opacity="0.055" />
-            <SolidColorBrush x:Key="PincelDeAcentoSuave" Color="#6CC24A" Opacity="0.20" />
-            <SolidColorBrush x:Key="PincelDeSeleccion" Color="#6CC24A" Opacity="0.28" />
+            <SolidColorBrush x:Key="PincelDeAcentoSuave" Color="#6CC24A" Opacity="0.16" />
+            <SolidColorBrush x:Key="PincelDeAcentoSuaveEncima" Color="#6CC24A" Opacity="0.26" />
+            <SolidColorBrush x:Key="PincelDeSeleccionDeTexto" Color="#2B5A8C" />
+            <SolidColorBrush x:Key="PincelDeSeleccion" Color="#6CC24A" Opacity="0.17" />
+            <SolidColorBrush x:Key="PincelDeCampo" Color="#131518" />
+            <SolidColorBrush x:Key="PincelDeCampoDeshabilitado" Color="#1F2226" />
+            <SolidColorBrush x:Key="PincelDeBoton" Color="#2A2D33" />
+            <SolidColorBrush x:Key="PincelDeBotonEncima" Color="#33373E" />
+            <SolidColorBrush x:Key="PincelDeBotonPresionado" Color="#25282D" />
+
+            <!-- Cajas de texto -->
+            <SolidColorBrush x:Key="TextControlBackground" Color="#131518" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#131518" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#131518" />
+            <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#1F2226" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#3B3F47" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#555B66" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#6CC24A" />
+            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#2C2F35" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#6B717B" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#6B717B" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#6B717B" />
+
+            <!-- Listas desplegables -->
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#131518" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#131518" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#131518" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#1F2226" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundUnfocused" Color="#131518" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#3B3F47" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#555B66" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#6CC24A" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="#2C2F35" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#25282D" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#3B3F47" />
+            <SolidColorBrush x:Key="ComboBoxDropDownGlyphForeground" Color="#8F959E" />
+
+            <!-- Botones -->
+            <SolidColorBrush x:Key="ButtonBackground" Color="#2A2D33" />
+            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#33373E" />
+            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#25282D" />
+            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#1F2226" />
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#3B3F47" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#4A4F58" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#3B3F47" />
+            <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="#2C2F35" />
+
+            <!-- Menús, listas emergentes y ayudas -->
+            <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#25282D" />
+            <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#3B3F47" />
+            <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#FFFFFF" Opacity="0.07" />
+            <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#FFFFFF" Opacity="0.10" />
+            <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#25282D" />
+            <SolidColorBrush x:Key="FlyoutBorderThemeBrush" Color="#3B3F47" />
+            <SolidColorBrush x:Key="ToolTipBackground" Color="#2E3238" />
+            <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#3B3F47" />
+            <SolidColorBrush x:Key="ToolTipForeground" Color="#DFE2E7" />
+
+            <!-- Grillas: la fila elegida se tiñe apenas; un bloque de color macizo tapaba los datos -->
+            <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="#1C1E22" />
+            <SolidColorBrush x:Key="DataGridColumnHeaderHoveredBackgroundBrush" Color="#25282D" />
+            <SolidColorBrush x:Key="DataGridColumnHeaderPressedBackgroundBrush" Color="#2A2D33" />
+            <SolidColorBrush x:Key="DataGridColumnHeaderForegroundBrush" Color="#A3A9B2" />
+            <SolidColorBrush x:Key="DataGridGridLinesBrush" Color="#2C2F35" />
+            <SolidColorBrush x:Key="DataGridFillerColumnGridLinesBrush" Color="#2C2F35" />
+            <SolidColorBrush x:Key="DataGridRowSelectedBackgroundBrush" Color="#6CC24A" />
+            <SolidColorBrush x:Key="DataGridRowSelectedHoveredBackgroundBrush" Color="#6CC24A" />
+            <SolidColorBrush x:Key="DataGridRowSelectedUnfocusedBackgroundBrush" Color="#8F959E" />
+            <SolidColorBrush x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundBrush" Color="#8F959E" />
+            <SolidColorBrush x:Key="DataGridCellFocusVisualPrimaryBrush" Color="#6CC24A" />
+            <SolidColorBrush x:Key="DataGridCellFocusVisualSecondaryBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="DataGridCurrencyVisualPrimaryBrush" Color="#6CC24A" />
+            <Color x:Key="DataGridRowHoveredBackgroundColor">#0DFFFFFF</Color>
+
+            <!-- Barras de desplazamiento discretas -->
+            <SolidColorBrush x:Key="ScrollBarTrackFill" Color="Transparent" />
+            <SolidColorBrush x:Key="ScrollBarTrackFillPointerOver" Color="#FFFFFF" Opacity="0.03" />
+            <Color x:Key="ScrollBarThumbBackgroundColor">#4A4F58</Color>
+            <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#626873" />
+            <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#747B87" />
+            <Color x:Key="ScrollBarPanningThumbBackgroundColor">#4A4F58</Color>
+            <SolidColorBrush x:Key="ScrollBarPanningThumbBackground" Color="#4A4F58" />
+            <SolidColorBrush x:Key="PincelDeBarraDeDesplazamiento" Color="#4A4F58" />
+            <SolidColorBrush x:Key="DataGridRowBackgroundBrush" Color="#16181B" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="PincelDeFondo" Color="#FBFBFC" />
-            <SolidColorBrush x:Key="PincelDePanel" Color="#F0F2F5" />
+            <SolidColorBrush x:Key="PincelDeFondo" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="PincelDePanel" Color="#F5F6F8" />
             <SolidColorBrush x:Key="PincelDePanelElevado" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="PincelDeBorde" Color="#D5D9DF" />
+            <SolidColorBrush x:Key="PincelDeBorde" Color="#E2E5E9" />
+            <SolidColorBrush x:Key="PincelDeBordeFuerte" Color="#C6CBD2" />
             <SolidColorBrush x:Key="PincelDeTexto" Color="#1F2328" />
-            <SolidColorBrush x:Key="PincelDeTextoSecundario" Color="#5F6670" />
-            <SolidColorBrush x:Key="PincelDeAcento" Color="#3E8E2A" />
+            <SolidColorBrush x:Key="PincelDeTextoSecundario" Color="#626A74" />
+            <SolidColorBrush x:Key="PincelDeAcento" Color="#2F8132" />
+            <SolidColorBrush x:Key="PincelDeAcentoIntenso" Color="#27702A" />
             <SolidColorBrush x:Key="PincelDeTextoSobreAcento" Color="#FFFFFF" />
             <SolidColorBrush x:Key="PincelDeError" Color="#C8323C" />
-            <SolidColorBrush x:Key="PincelDeAdvertencia" Color="#9A6700" />
+            <SolidColorBrush x:Key="PincelDeAdvertencia" Color="#8F5F00" />
             <SolidColorBrush x:Key="PincelDeObjeto" Color="#0A66C2" />
-            <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#E8EBEF" />
-            <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#C9CED6" />
+            <SolidColorBrush x:Key="PincelDeEncabezadoDeTarjeta" Color="#EDEFF2" />
+            <SolidColorBrush x:Key="PincelDeBordeDeTarjeta" Color="#C6CBD2" />
             <SolidColorBrush x:Key="PincelDeLineaDeRelacion" Color="#B05F6672" />
-            <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#9AA0A6" />
+            <SolidColorBrush x:Key="PincelDeNumerosDeLinea" Color="#A0A6AE" />
+            <SolidColorBrush x:Key="PincelDeLineaActual" Color="#000000" Opacity="0.035" />
             <SolidColorBrush x:Key="PincelDeHover" Color="#000000" Opacity="0.05" />
-            <SolidColorBrush x:Key="PincelDeAcentoSuave" Color="#3E8E2A" Opacity="0.14" />
-            <SolidColorBrush x:Key="PincelDeSeleccion" Color="#3E8E2A" Opacity="0.20" />
+            <SolidColorBrush x:Key="PincelDeAcentoSuave" Color="#2F8132" Opacity="0.12" />
+            <SolidColorBrush x:Key="PincelDeAcentoSuaveEncima" Color="#2F8132" Opacity="0.20" />
+            <SolidColorBrush x:Key="PincelDeSeleccionDeTexto" Color="#BBD9FB" />
+            <SolidColorBrush x:Key="PincelDeSeleccion" Color="#2F8132" Opacity="0.13" />
+            <SolidColorBrush x:Key="PincelDeCampo" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="PincelDeCampoDeshabilitado" Color="#EEF0F2" />
+            <SolidColorBrush x:Key="PincelDeBoton" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="PincelDeBotonEncima" Color="#F0F2F4" />
+            <SolidColorBrush x:Key="PincelDeBotonPresionado" Color="#E6E9ED" />
+
+            <SolidColorBrush x:Key="TextControlBackground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#EEF0F2" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#C6CBD2" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#9AA1AB" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#2F8132" />
+            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#E2E5E9" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#8C939D" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#8C939D" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#8C939D" />
+
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#EEF0F2" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundUnfocused" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#C6CBD2" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#9AA1AB" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#2F8132" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="#E2E5E9" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#C6CBD2" />
+            <SolidColorBrush x:Key="ComboBoxDropDownGlyphForeground" Color="#626A74" />
+
+            <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F0F2F4" />
+            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#E6E9ED" />
+            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#EEF0F2" />
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#C6CBD2" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#AEB4BD" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#C6CBD2" />
+            <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="#E2E5E9" />
+
+            <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#D3D7DD" />
+            <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#000000" Opacity="0.06" />
+            <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#000000" Opacity="0.09" />
+            <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="FlyoutBorderThemeBrush" Color="#D3D7DD" />
+            <SolidColorBrush x:Key="ToolTipBackground" Color="#2B2F35" />
+            <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#2B2F35" />
+            <SolidColorBrush x:Key="ToolTipForeground" Color="#F2F4F6" />
+
+            <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="#F5F6F8" />
+            <SolidColorBrush x:Key="DataGridColumnHeaderHoveredBackgroundBrush" Color="#ECEEF1" />
+            <SolidColorBrush x:Key="DataGridColumnHeaderPressedBackgroundBrush" Color="#E2E5E9" />
+            <SolidColorBrush x:Key="DataGridColumnHeaderForegroundBrush" Color="#4F5761" />
+            <SolidColorBrush x:Key="DataGridGridLinesBrush" Color="#E7E9ED" />
+            <SolidColorBrush x:Key="DataGridFillerColumnGridLinesBrush" Color="#E7E9ED" />
+            <SolidColorBrush x:Key="DataGridRowSelectedBackgroundBrush" Color="#2F8132" />
+            <SolidColorBrush x:Key="DataGridRowSelectedHoveredBackgroundBrush" Color="#2F8132" />
+            <SolidColorBrush x:Key="DataGridRowSelectedUnfocusedBackgroundBrush" Color="#626A74" />
+            <SolidColorBrush x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundBrush" Color="#626A74" />
+            <SolidColorBrush x:Key="DataGridCellFocusVisualPrimaryBrush" Color="#2F8132" />
+            <SolidColorBrush x:Key="DataGridCellFocusVisualSecondaryBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="DataGridCurrencyVisualPrimaryBrush" Color="#2F8132" />
+            <Color x:Key="DataGridRowHoveredBackgroundColor">#0A000000</Color>
+
+            <SolidColorBrush x:Key="ScrollBarTrackFill" Color="Transparent" />
+            <SolidColorBrush x:Key="ScrollBarTrackFillPointerOver" Color="#000000" Opacity="0.03" />
+            <Color x:Key="ScrollBarThumbBackgroundColor">#C2C7CE</Color>
+            <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#A3A9B2" />
+            <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#8C939D" />
+            <Color x:Key="ScrollBarPanningThumbBackgroundColor">#C2C7CE</Color>
+            <SolidColorBrush x:Key="ScrollBarPanningThumbBackground" Color="#C2C7CE" />
+            <SolidColorBrush x:Key="PincelDeBarraDeDesplazamiento" Color="#C2C7CE" />
+            <SolidColorBrush x:Key="DataGridRowBackgroundBrush" Color="#FFFFFF" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Medidas comunes a los dos temas -->
+    <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+    <CornerRadius x:Key="OverlayCornerRadius">6</CornerRadius>
+    <!-- Con 2 px al enfocar, el texto de la caja daba un salto -->
+    <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+    <Thickness x:Key="TextControlThemePadding">8,5,6,5</Thickness>
+    <sys:Double x:Key="TextControlThemeMinHeight">30</sys:Double>
+    <sys:Double x:Key="ComboBoxMinHeight">30</sys:Double>
+    <Thickness x:Key="ButtonPadding">12,5,12,6</Thickness>
+    <sys:Double x:Key="DataGridRowSelectedBackgroundOpacity">0.18</sys:Double>
+    <sys:Double x:Key="DataGridRowSelectedHoveredBackgroundOpacity">0.24</sys:Double>
+    <sys:Double x:Key="DataGridRowSelectedUnfocusedBackgroundOpacity">0.16</sys:Double>
+    <sys:Double x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundOpacity">0.20</sys:Double>
 
     <FontFamily x:Key="FuenteMonoespaciada">Cascadia Code, Consolas, JetBrains Mono, Ubuntu Mono, DejaVu Sans Mono, monospace</FontFamily>
 

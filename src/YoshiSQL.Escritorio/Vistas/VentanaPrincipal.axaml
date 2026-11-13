@@ -23,7 +23,7 @@
         Title="YoshiSQL"
         Icon="/Recursos/logo.png"
         Width="1360" Height="820"
-        MinWidth="900" MinHeight="560"
+        MinWidth="720" MinHeight="480"
         WindowStartupLocation="CenterScreen">
 
     <!-- Vista de cada tipo de documento que se abre en una pestaña -->
@@ -151,13 +151,13 @@
                 <Button Classes="Herramienta" Command="{Binding ConectarCommand}" ToolTip.Tip="Conectar al servidor" AutomationProperties.Name="Conectar al servidor">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoBarra" Data="{StaticResource IconoConectar}" />
-                        <TextBlock Text="Conectar" VerticalAlignment="Center" />
+                        <TextBlock Classes="Etiqueta" Text="Conectar" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button Classes="Herramienta" Command="{Binding NuevaConsultaCommand}" ToolTip.Tip="Nueva consulta (Ctrl+N)" AutomationProperties.Name="Nueva consulta (Ctrl+N)">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoBarra" Data="{StaticResource IconoNuevaConsulta}" />
-                        <TextBlock Text="Nueva" VerticalAlignment="Center" />
+                        <TextBlock Classes="Etiqueta" Text="Nueva" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button Classes="Herramienta" Command="{Binding AbrirArchivoCommand}" ToolTip.Tip="Abrir archivo (Ctrl+O)" AutomationProperties.Name="Abrir archivo (Ctrl+O)">
@@ -170,7 +170,7 @@
 
                 <Rectangle Width="1" Margin="8,4" Fill="{DynamicResource PincelDeBorde}" />
 
-                <ComboBox MinWidth="180"
+                <ComboBox Classes="BaseDeDatos" MinWidth="180"
                           VerticalAlignment="Center"
                           IsEnabled="{Binding HayConsultaSeleccionada}"
                           ItemsSource="{Binding ConsultaSeleccionada.BasesDeDatosDisponibles}"
@@ -181,7 +181,7 @@
                         IsEnabled="{Binding HayConsultaSeleccionada}" ToolTip.Tip="Ejecutar (F5)" AutomationProperties.Name="Ejecutar (F5)">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoEjecutar" Data="{StaticResource IconoEjecutar}" />
-                        <TextBlock Text="Ejecutar" VerticalAlignment="Center" />
+                        <TextBlock Classes="Etiqueta" Text="Ejecutar" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.CancelarCommand}"
@@ -196,7 +196,7 @@
                         ToolTip.Tip="Ver el plan estimado sin ejecutar (Ctrl+L)" AutomationProperties.Name="Ver el plan estimado sin ejecutar (Ctrl+L)">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoBarra" Data="{StaticResource IconoPlan}" />
-                        <TextBlock Text="Plan" VerticalAlignment="Center" />
+                        <TextBlock Classes="Etiqueta" Text="Plan" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <ToggleButton Classes="Herramienta"
@@ -205,7 +205,7 @@
                               ToolTip.Tip="Incluir el plan real al ejecutar (Ctrl+M)" AutomationProperties.Name="Incluir el plan real al ejecutar (Ctrl+M)">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <Path Classes="Icono IconoBarra" Data="{StaticResource IconoPlanReal}" />
-                        <TextBlock Text="Plan real" VerticalAlignment="Center" />
+                        <TextBlock Classes="Etiqueta" Text="Plan real" VerticalAlignment="Center" />
                     </StackPanel>
                 </ToggleButton>
                 <Button Classes="Herramienta" Command="{Binding ConsultaSeleccionada.FormatearCommand}"
@@ -245,20 +245,24 @@
             <Border DockPanel.Dock="Left" Width="4"
                     Background="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static conv:CadenaHexAPincel.Instancia}}"
                     IsVisible="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" Margin="12,4">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" Margin="12,4" TextElement.FontSize="12">
                 <!-- Punto de estado: gris sin pestañas, verde con conexión, o el color elegido para esa conexión -->
                 <Panel Grid.Column="0" Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
                     <Ellipse Fill="{DynamicResource PincelDeTextoSecundario}" IsVisible="{Binding NoHayDocumentosAbiertos}" />
                     <Ellipse Fill="{DynamicResource PincelDeAcento}" IsVisible="{Binding HayDocumentosAbiertos}" />
                     <Ellipse Fill="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static conv:CadenaHexAPincel.Instancia}}"
                              IsVisible="{Binding DocumentoSeleccionado.ColorDeLaConexion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <!-- Encima de los demás: un punto verde junto a "completada con errores" se contradecía -->
+                    <Ellipse Fill="{DynamicResource PincelDeError}"
+                             IsVisible="{Binding ConsultaSeleccionada.Resultados.TieneErrores, FallbackValue=False}" />
                 </Panel>
-                <TextBlock Grid.Column="1" Text="{Binding DocumentoSeleccionado.TextoDeEstado, FallbackValue='Sin conexión'}" />
-                <TextBlock Grid.Column="2" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
+                <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis"
+                           Text="{Binding DocumentoSeleccionado.TextoDeEstado, FallbackValue='Sin conexión'}" />
+                <TextBlock Grid.Column="2" Classes="DatoSecundario" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding DocumentoSeleccionado.DescripcionDeLaConexion, FallbackValue=''}" />
                 <TextBlock Grid.Column="3" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding ConsultaSeleccionada.BaseDeDatosActual, FallbackValue=''}" />
-                <TextBlock Grid.Column="4" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
+                <TextBlock Grid.Column="4" Classes="DatoSecundario" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding ConsultaSeleccionada.DuracionVisible, FallbackValue=''}" />
                 <TextBlock Grid.Column="5" Margin="24,0,0,0" Foreground="{DynamicResource PincelDeTextoSecundario}"
                            Text="{Binding ConsultaSeleccionada.TotalDeFilas, StringFormat='{}{0} filas', FallbackValue=''}" />
@@ -304,18 +308,49 @@
             <GridSplitter x:Name="SeparadorDelExplorador" Grid.Column="1" ResizeDirection="Columns" />
 
             <Panel Grid.Column="2">
+                <!-- Pantalla de inicio: un bloque sobrio alineado a la izquierda, con lo único que hace falta para empezar -->
                 <StackPanel IsVisible="{Binding NoHayDocumentosAbiertos}"
-                            HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                    <controles:LogoDeYoshiSql Width="88" Height="88" HorizontalAlignment="Center" />
-                    <TextBlock Text="YoshiSQL" FontSize="32" FontWeight="Light"
-                               Foreground="{DynamicResource PincelDeTexto}" HorizontalAlignment="Center" Margin="0,4,0,0" />
-                    <TextBlock Text="Conéctate a un servidor para empezar"
-                               Foreground="{DynamicResource PincelDeTextoSecundario}" HorizontalAlignment="Center" />
-                    <Button Classes="Primario" Content="Conectar al servidor" HorizontalAlignment="Center"
-                            Margin="0,8,0,0" Command="{Binding ConectarCommand}" />
-                    <TextBlock Text="Ctrl+N nueva consulta  ·  F5 ejecutar  ·  Ctrl+Shift+P paleta de comandos"
-                               FontSize="11.5" Margin="0,12,0,0"
-                               Foreground="{DynamicResource PincelDeTextoSecundario}" HorizontalAlignment="Center" />
+                            HorizontalAlignment="Center" VerticalAlignment="Center" Width="330" Margin="24">
+                    <controles:LogoDeYoshiSql Width="52" Height="52" HorizontalAlignment="Left" />
+                    <TextBlock Text="YoshiSQL" FontSize="22" FontWeight="SemiBold" Margin="0,16,0,0" />
+                    <TextBlock Text="Conéctate a un servidor SQL Server para empezar a trabajar."
+                               TextWrapping="Wrap" Margin="0,4,0,0"
+                               Foreground="{DynamicResource PincelDeTextoSecundario}" />
+                    <Button Classes="Primario" Content="Conectar al servidor" HorizontalAlignment="Left"
+                            Margin="0,18,0,0" Command="{Binding ConectarCommand}" />
+
+                    <Border Height="1" Margin="0,26,0,16" Background="{DynamicResource PincelDeBorde}" />
+
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="9">
+                        <Grid.Styles>
+                            <Style Selector="Grid > TextBlock">
+                                <Setter Property="FontSize" Value="12.5" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                                <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSecundario}" />
+                            </Style>
+                        </Grid.Styles>
+                        <TextBlock Grid.Row="0" Text="Nueva consulta" />
+                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                            <Border Classes="Tecla"><TextBlock Text="Ctrl" /></Border>
+                            <Border Classes="Tecla"><TextBlock Text="N" /></Border>
+                        </StackPanel>
+                        <TextBlock Grid.Row="1" Text="Ejecutar la consulta" />
+                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                            <Border Classes="Tecla"><TextBlock Text="F5" /></Border>
+                        </StackPanel>
+                        <TextBlock Grid.Row="2" Text="Paleta de comandos" />
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                            <Border Classes="Tecla"><TextBlock Text="Ctrl" /></Border>
+                            <Border Classes="Tecla"><TextBlock Text="Shift" /></Border>
+                            <Border Classes="Tecla"><TextBlock Text="P" /></Border>
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Text="Buscar en la base de datos" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
+                            <Border Classes="Tecla"><TextBlock Text="Ctrl" /></Border>
+                            <Border Classes="Tecla"><TextBlock Text="Shift" /></Border>
+                            <Border Classes="Tecla"><TextBlock Text="O" /></Border>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
 
                 <TabControl Classes="Documentos"
@@ -345,7 +380,7 @@
                                 <Ellipse Width="7" Height="7" VerticalAlignment="Center"
                                          Fill="{DynamicResource PincelDeAcento}" IsVisible="{Binding EstaOcupado}" />
                                 <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" />
-                                <Button Classes="Herramienta" Padding="4"
+                                <Button Classes="Herramienta CerrarPestana" Padding="4"
                                         ToolTip.Tip="Cerrar (Ctrl+W)" AutomationProperties.Name="Cerrar (Ctrl+W)"
                                         Command="{Binding $parent[TabControl].((vm:VentanaPrincipalModeloDeVista)DataContext).CerrarPestanaCommand}"
                                         CommandParameter="{Binding}">

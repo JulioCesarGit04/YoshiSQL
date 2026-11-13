@@ -17,15 +17,16 @@ internal sealed class DatoDeSugerencia : ICompletionData
 
     private static readonly IBrush ColorDelDetalle = new SolidColorBrush(Color.Parse("#8B93A0"));
 
+    // Marcas en tonos medios: la lista se abre sobre fondo claro u oscuro según el tema y deben verse en ambos.
     // A igual coincidencia se preselecciona la de mayor prioridad: columnas, tablas, palabras clave, funciones
     private static readonly Dictionary<TipoDeSugerencia, (IBrush Color, double Prioridad)> AparienciaPorTipo = new()
     {
-        [TipoDeSugerencia.Columna] = (new SolidColorBrush(Color.Parse("#E5C07B")), 5),
-        [TipoDeSugerencia.Tabla] = (new SolidColorBrush(Color.Parse("#61AFEF")), 4),
-        [TipoDeSugerencia.Vista] = (new SolidColorBrush(Color.Parse("#C678DD")), 4),
-        [TipoDeSugerencia.Esquema] = (new SolidColorBrush(Color.Parse("#98C379")), 3),
-        [TipoDeSugerencia.PalabraClave] = (new SolidColorBrush(Color.Parse("#569CD6")), 2),
-        [TipoDeSugerencia.Funcion] = (new SolidColorBrush(Color.Parse("#D486C9")), 1)
+        [TipoDeSugerencia.Columna] = (new SolidColorBrush(Color.Parse("#C9972B")), 5),
+        [TipoDeSugerencia.Tabla] = (new SolidColorBrush(Color.Parse("#3B8FD9")), 4),
+        [TipoDeSugerencia.Vista] = (new SolidColorBrush(Color.Parse("#A85CC7")), 4),
+        [TipoDeSugerencia.Esquema] = (new SolidColorBrush(Color.Parse("#5FA04E")), 3),
+        [TipoDeSugerencia.PalabraClave] = (new SolidColorBrush(Color.Parse("#4A86C5")), 2),
+        [TipoDeSugerencia.Funcion] = (new SolidColorBrush(Color.Parse("#BF62B0")), 1)
     };
 
     private readonly Sugerencia _sugerencia;

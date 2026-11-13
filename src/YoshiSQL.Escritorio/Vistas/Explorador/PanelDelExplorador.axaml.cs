@@ -14,6 +14,16 @@ public partial class PanelDelExplorador : UserControl
         // En fase de túnel porque el menú se abre antes de llegar a los manejadores del propio nodo,
         // y en el evento Opening el menú todavía no tiene el nodo como DataContext (siempre aparece vacío)
         ArbolDeObjetos.AddHandler(ContextRequestedEvent, AlPedirMenuContextual, RoutingStrategies.Tunnel);
+        ActualThemeVariantChanged += (_, _) => VolverADibujarLosIconos();
+    }
+
+    // El color de cada icono depende del tema y se calcula al crear el nodo: al cambiar de tema se recrean.
+    // Lo que estaba desplegado se conserva porque vive en el modelo, no en el control.
+    private void VolverADibujarLosIconos()
+    {
+        var servidores = ArbolDeObjetos.ItemsSource;
+        ArbolDeObjetos.ItemsSource = null;
+        ArbolDeObjetos.ItemsSource = servidores;
     }
 
     // Los nodos sin acciones (columnas, índices) no deben mostrar un menú vacío

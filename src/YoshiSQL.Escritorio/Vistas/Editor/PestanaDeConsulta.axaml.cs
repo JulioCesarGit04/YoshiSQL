@@ -15,6 +15,10 @@ public partial class PestanaDeConsulta : UserControl
     private const int FilaDeResultados = 2;
     private const double AltoDelSeparador = 5;
 
+    // En una ventana baja, el panel de resultados (de alto fijo) dejaba el editor en dos líneas
+    private const double ProporcionMaximaDeResultados = 0.6;
+    private const double AltoMinimoDeResultados = 90;
+
     private PestanaDeConsultaModeloDeVista? _pestanaObservada;
     private ResultadosModeloDeVista? _resultadosObservados;
     private DisposicionDeLaInterfaz? _disposicion;
@@ -23,6 +27,11 @@ public partial class PestanaDeConsulta : UserControl
     {
         InitializeComponent();
         SeparadorDeResultados.DragCompleted += (_, _) => RecordarAltoDeResultados();
+
+        // Solo es un tope: el alto que eligió el usuario se conserva y vuelve al agrandar la ventana
+        Cuadricula.SizeChanged += (_, argumentos) =>
+            Cuadricula.RowDefinitions[FilaDeResultados].MaxHeight =
+                Math.Max(AltoMinimoDeResultados, argumentos.NewSize.Height * ProporcionMaximaDeResultados);
     }
 
     /// <summary>

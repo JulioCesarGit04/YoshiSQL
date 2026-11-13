@@ -13,6 +13,14 @@ public partial class VentanaPrincipal : Window
     private const int ColumnaDelSeparador = 1;
     private const double AnchoDelSeparador = 5;
 
+    // Por debajo de este ancho la barra de herramientas con sus textos ya no cabe entera
+    private const double AnchoMinimoParaLaBarraCompleta = 1080;
+    private const string ClaseDeVentanaAngosta = "Angosta";
+
+    // En una ventana angosta el explorador no debe comerse el espacio del editor
+    private const double ProporcionMaximaDelExplorador = 0.45;
+    private const double AnchoMinimoDelExplorador = 180;
+
     private bool _cierreConfirmado;
     private DisposicionDeLaInterfaz? _disposicion;
 
@@ -20,6 +28,12 @@ public partial class VentanaPrincipal : Window
     {
         InitializeComponent();
         Opened += AlAbrirLaVentana;
+        SizeChanged += (_, argumentos) =>
+        {
+            Classes.Set(ClaseDeVentanaAngosta, argumentos.NewSize.Width < AnchoMinimoParaLaBarraCompleta);
+            CuadriculaPrincipal.ColumnDefinitions[ColumnaDelExplorador].MaxWidth =
+                Math.Max(AnchoMinimoDelExplorador, argumentos.NewSize.Width * ProporcionMaximaDelExplorador);
+        };
     }
 
     private async void AlAbrirLaVentana(object? remitente, EventArgs argumentos)

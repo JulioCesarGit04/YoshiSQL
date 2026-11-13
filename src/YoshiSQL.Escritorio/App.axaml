@@ -17,16 +17,17 @@
             <FluentTheme.Palettes>
                 <ColorPaletteResources x:Key="Dark"
                                        Accent="#6CC24A"
-                                       AltHigh="#17191C"
-                                       RegionColor="#1B1D20"
-                                       ChromeMediumLow="#232529"
-                                       ChromeMedium="#2A2D31"
-                                       ChromeLow="#2E3136"
-                                       BaseHigh="#E4E6EA"
+                                       AltHigh="#16181B"
+                                       RegionColor="#1C1E22"
+                                       ChromeMediumLow="#25282D"
+                                       ChromeMedium="#2A2D33"
+                                       ChromeLow="#2E3238"
+                                       BaseHigh="#DFE2E7"
                                        ErrorText="#F07178" />
                 <ColorPaletteResources x:Key="Light"
-                                       Accent="#3E8E2A"
-                                       RegionColor="#FBFBFC"
+                                       Accent="#2F8132"
+                                       RegionColor="#FFFFFF"
+                                       BaseHigh="#1F2328"
                                        ErrorText="#C8323C" />
             </FluentTheme.Palettes>
         </FluentTheme>

@@ -14,7 +14,7 @@
             <Panel>
                 <TextBlock IsVisible="{Binding NoTieneConjuntos}"
                            Margin="12" Foreground="{DynamicResource PincelDeTextoSecundario}"
-                           Text="La consulta no devolvió resultados." />
+                           Text="{Binding TextoSinResultados}" />
 
                 <resultados:GrillaDeResultados IsVisible="{Binding MostrarGrillaUnica}"
                                                Conjunto="{Binding ConjuntoUnico}" />
@@ -40,8 +40,17 @@
             </Panel>
         </TabItem>
 
-        <TabItem Header="Mensajes">
-            <ListBox x:Name="ListaDeMensajes"
+        <TabItem AutomationProperties.Name="Mensajes">
+            <TabItem.Header>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Mensajes" VerticalAlignment="Center" />
+                    <Border Classes="Insignia" IsVisible="{Binding TieneErrores}"
+                            ToolTip.Tip="Errores en la última ejecución">
+                        <TextBlock Text="{Binding CantidadDeErrores}" />
+                    </Border>
+                </StackPanel>
+            </TabItem.Header>
+            <ListBox x:Name="ListaDeMensajes" Classes="Consola" Padding="0,6"
                      ItemsSource="{Binding Mensajes}"
                      Background="Transparent"
                      DoubleTapped="AlHacerDobleClicEnMensaje">

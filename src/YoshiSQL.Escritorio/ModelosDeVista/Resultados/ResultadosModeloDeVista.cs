@@ -78,6 +78,15 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
 
     public bool NoTieneConjuntos => Conjuntos.Count == 0;
 
+    public int CantidadDeErrores => Mensajes.Count(mensaje => mensaje.EsError);
+
+    public bool TieneErrores => CantidadDeErrores > 0;
+
+    // Antes de ejecutar nada el panel decía "La consulta no devolvió resultados", como si ya se hubiera ejecutado
+    public string TextoSinResultados => Mensajes.Count == 0
+        ? "Ejecuta la consulta (F5) para ver aquí sus resultados."
+        : "La consulta no devolvió filas. El detalle está en la pestaña Mensajes.";
+
     public bool MostrarGrillaUnica => !MostrarComoTexto && TieneUnSoloConjunto;
 
     public bool MostrarVariasGrillas => !MostrarComoTexto && TieneVariosConjuntos;
@@ -151,6 +160,9 @@ public sealed partial class ResultadosModeloDeVista : ModeloDeVistaBase
         OnPropertyChanged(nameof(TieneUnSoloConjunto));
         OnPropertyChanged(nameof(TieneVariosConjuntos));
         OnPropertyChanged(nameof(NoTieneConjuntos));
+        OnPropertyChanged(nameof(TextoSinResultados));
+        OnPropertyChanged(nameof(CantidadDeErrores));
+        OnPropertyChanged(nameof(TieneErrores));
         OnPropertyChanged(nameof(MostrarGrillaUnica));
         OnPropertyChanged(nameof(MostrarVariasGrillas));
         OnPropertyChanged(nameof(MostrarTexto));

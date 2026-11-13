@@ -83,7 +83,7 @@
                 <!-- Índices fragmentados -->
                 <StackPanel Spacing="6">
                     <TextBlock Text="Índices más fragmentados" FontWeight="SemiBold" />
-                    <TextBlock Text="No hay índices con fragmentación importante. 👍" Foreground="{DynamicResource PincelDeTextoSecundario}"
+                    <TextBlock Text="No hay índices con fragmentación importante." Foreground="{DynamicResource PincelDeTextoSecundario}"
                                IsVisible="{Binding IndicesFragmentados, Converter={x:Static conv:HayElementos.Instancia}, ConverterParameter=vacio}" />
                     <DataGrid ItemsSource="{Binding IndicesFragmentados}" IsReadOnly="True" MaxHeight="260"
                               IsVisible="{Binding IndicesFragmentados, Converter={x:Static conv:HayElementos.Instancia}}"

@@ -11,18 +11,19 @@
                 BorderBrush="{DynamicResource PincelDeBorde}"
                 BorderThickness="0,0,0,1"
                 Padding="8,4">
-            <Grid ColumnDefinitions="Auto,220,*,Auto">
+            <!-- WrapPanel: en una ventana angosta los grupos bajan a otra línea en vez de cortarse -->
+            <WrapPanel>
                 <StackPanel Orientation="Horizontal" Spacing="2">
                     <Button Classes="Herramienta" Content="Agregar fila" Command="{Binding AgregarFilaCommand}" />
                     <Button Classes="Herramienta" Content="{Binding TextoDeEliminarFila}" Command="{Binding EliminarFilaCommand}" />
                     <Button Classes="Herramienta" Content="Recargar" Command="{Binding CargarCommand}" />
                 </StackPanel>
 
-                <TextBox Grid.Column="1" Margin="8,0,0,0" Text="{Binding FiltroDeFilas}"
+                <TextBox Width="220" Margin="8,2,0,2" Text="{Binding FiltroDeFilas}"
                          PlaceholderText="Filtrar filas cargadas..."
                          ToolTip.Tip="Oculta al instante las filas que no contengan este texto (no vuelve a consultar)" />
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="16,0" VerticalAlignment="Center" ClipToBounds="True">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="16,0" VerticalAlignment="Center">
                     <StackPanel.Styles>
                         <Style Selector="TextBlock">
                             <Setter Property="FontSize" Value="11.5" />
@@ -39,12 +40,12 @@
                     <TextBlock Text="se eliminará" />
                 </StackPanel>
 
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2">
                     <CheckBox Content="Guardar al cambiar de fila" IsChecked="{Binding GuardarAlCambiarDeFila}" VerticalAlignment="Center"
                               ToolTip.Tip="Guarda cada fila modificada al salir de ella (las filas nuevas se guardan con el botón)" />
                     <Button Classes="Primario" Content="Guardar cambios" Command="{Binding GuardarCambiosCommand}" />
                 </StackPanel>
-            </Grid>
+            </WrapPanel>
         </Border>
 
         <Border DockPanel.Dock="Top"

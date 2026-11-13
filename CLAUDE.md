@@ -11,7 +11,7 @@ que **no existe**; toda la documentación vive en esos dos archivos.
 
 ```bash
 dotnet build                                   # compilar (advertencias = errores)
-dotnet test                                    # 289 pruebas xUnit
+dotnet test                                    # 309 pruebas xUnit
 dotnet run --project src/YoshiSQL.Escritorio   # ejecutar la app
 ```
 
@@ -227,6 +227,14 @@ Revisión visual con capturas de la ventana real. Lo que cambia cómo se trabaja
 - `empaquetar-linux.sh`: versión tomada de `Directory.Build.props`; dependencias para Ubuntu 22.04–25.04 y Debian 12.
 - Sin probar en un Linux real: la ventana, los diálogos de archivos (necesitan xdg-desktop-portal o GTK) y el `.deb`.
 
+### Caso real en Ubuntu (2026-11-13): "Invalid object name 'sp_X'" con CREATE OR ALTER
+No era un bug de YoshiSQL. El servidor del usuario tenía copias de los `sp_...` en `master` (el script corrió alguna vez
+estando en master). SQL Server busca los `sp_` primero en master, CREATE OR ALTER cree que existen y hace un ALTER en la
+base actual → mensaje 208, estado 6. Reproducido en local. YoshiSQL ahora lo resuelve solo (B-66): el rechazo llega como
+mensaje, no como excepción (`FireInfoMessageEventOnUserErrors`), así que `SesionDeConsultaSqlServer` lo anota, repite el
+lote con CREATE (`ReparadorDeCreateOrAlter.QuitarOrAlter`) y deja un aviso. Solo aplica a procedimientos `sp_`: los
+demás nombres no se buscan en master (comprobado). `PistasDeErrores` explica el caso que no se puede reparar (ALTER a secas).
+
 ### Otros pendientes (según README / ESTRUCTURA)
 - Instalador Linux: existe `empaquetar-linux.sh` (.deb) pero falta probarlo en Linux; AppImage no está hecho.
 - Probar todo contra servidor real y en Windows 11.
@@ -360,6 +368,35 @@ es prioridad en P4.
   la ventana principal arma la lista en `ConstruirComandosDePaleta` (globales + de la consulta activa). Resuelve
   la baja descubribilidad (muchas acciones solo estaban en el clic derecho).
 - PENDIENTE de pulido: iconos en menús contextuales, estados hover/selección más marcados en árbol/listas.
+
+## Renovación visual (2026-11-13) — hecho, sin commit
+Revisado con capturas reales en claro y oscuro (ventana, diálogos, edición de filas, diseñador, diagrama, salud).
+- **Toda la apariencia sale de `Estilos/Colores.axaml`**: además de los `PincelDe...`, cada tema redefine las claves del
+  tema Fluent (`TextControl...`, `ComboBox...`, `Button...`, `DataGrid...`, `MenuFlyout...`, `ToolTip...`). Así cajas,
+  listas, botones, grillas y menús cambian en toda la app sin tocar cada vista. Para cambiar un color, hacerlo ahí
+  (en los DOS temas), no en la vista.
+- Criterio: grises neutros y el verde solo para ejecutar, el foco y lo seleccionado. Lo seleccionado se TIÑE (15-18 %),
+  nunca un bloque macizo. Sin emojis ni degradados en la interfaz.
+- Grillas: 26 px por fila y letra 12.5 (el tema traía 32 px y 15). Pestañas de documentos: la activa toma el fondo del
+  editor con una línea de acento arriba (`TabControl.Documentos`).
+- **Ventana angosta**: la ventana se pone la clase `Angosta` por debajo de 1080 px (`VentanaPrincipal.axaml.cs`); los
+  estilos ocultan `TextBlock.Etiqueta` (textos de la barra) y `TextBlock.DatoSecundario` (barra de estado). El explorador
+  no pasa del 45 % del ancho ni los resultados del 60 % del alto (son topes: el tamaño elegido se conserva). La barra de
+  "Editar filas" es un `WrapPanel`. Tamaño mínimo de la ventana: 720x480.
+- Iconos del árbol: `CatalogoDeIconos.ObtenerColor` oscurece los tonos en el tema claro; al cambiar de tema el explorador
+  recrea los nodos (`VolverADibujarLosIconos`). Editor: línea actual con `PincelDeLineaActual`, números de línea separados.
+- Ojo con los selectores de estilo sin `>`: los menús contextuales cuelgan (árbol lógico) del control que los abre y
+  heredan sus estilos (los iconos del menú del árbol salían verdes por un selector de las pestañas laterales).
+- Para capturar otras pantallas de la copia de prueba: enviar clics con `PostMessage` a su ventana (no mueve el cursor
+  del usuario) y capturar cada ventana del proceso con `EnumWindows` + `PrintWindow` (los menús son ventanas aparte).
+- Segunda pasada (mismo día): pantalla de inicio sobria, alineada a la izquierda y con los atajos como teclas
+  (`Border.Tecla`); "Ejecutar" es el único botón de la barra con fondo; en la grilla de resultados los NULL van
+  atenuados y en cursiva y los números a la derecha (`ColumnaDeResultados`, `DataGridCell.Numerica`); la pestaña
+  Mensajes muestra una insignia con la cantidad de errores (`ResultadosModeloDeVista.CantidadDeErrores`) y sus
+  renglones van seguidos como consola (`ListBox.Consola`); el punto de la barra de estado sale rojo si la última
+  ejecución tuvo errores; la X de las pestañas inactivas aparece solo al pasar el cursor; el explorador ya no repite
+  el rótulo "Explorador de objetos"; selección del editor azulada sin tapar la sintaxis (`PincelDeSeleccionDeTexto`).
+- Sin ver en Linux. La barra de título es la del sistema (no se dibuja una propia, para no arriesgar Linux).
 
 ## Bug corregido (2026-10-08): tipos CLR (geography/geometry/hierarchyid/UDT)
 Leer tablas con columnas de tipos CLR (ej. AdventureWorks: `SpatialLocation` geography, `OrganizationNode`

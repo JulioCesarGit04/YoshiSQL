@@ -27,7 +27,14 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
     private readonly SqlConnection _conexion;
     private readonly List<MensajeDeEjecucion> _mensajesDeLaEjecucion = [];
     private int _lineaInicialDelLoteActual = 1;
+    private const string ExplicacionDeLaCopiaEnMaster =
+        "Hay otro con el mismo nombre en la base master y, como empieza con \"sp_\", el servidor lo confunde con este. "
+        + "YoshiSQL ya lo resolvió; para que no se repita, borra de master los que no deban estar ahí. Para verlos: "
+        + "SELECT name FROM master.sys.procedures WHERE name LIKE 'sp[_]%' AND is_ms_shipped = 0;";
+
     private bool _elLoteActualDefineUnModulo;
+    private string _textoDelLoteActual = string.Empty;
+    private string? _textoSinOrAlterDelLoteRechazado;
     private int _ejecucionEnCurso;
 
     // La base en uso (por USE o por la lista de bases). Si se cae la conexión, al reabrir se vuelve a ella:
@@ -244,7 +251,7 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
             {
                 try
                 {
-                    await EjecutarLoteAsync(lote, conjuntosDeResultados, tokenDeCancelacion);
+                    await EjecutarLoteSalvandoCreateOrAlterAsync(lote, conjuntosDeResultados, tokenDeCancelacion);
                 }
                 catch (Exception excepcion) when (tokenDeCancelacion.IsCancellationRequested
                     && excepcion is OperationCanceledException or SqlException)
@@ -268,12 +275,70 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
         return EstadoDeEjecucion.Completada;
     }
 
+    /// <summary>
+    /// Si el servidor rechaza un "CREATE OR ALTER PROCEDURE sp_..." porque hay una copia en master, lo crea con
+    /// CREATE: antes fallaban uno por uno todos los procedimientos del script. Ver <see cref="ReparadorDeCreateOrAlter"/>.
+    /// </summary>
+    private async Task EjecutarLoteSalvandoCreateOrAlterAsync(
+        LoteSql lote,
+        List<ConjuntoDeResultados> conjuntosDeResultados,
+        CancellationToken tokenDeCancelacion)
+    {
+        _textoSinOrAlterDelLoteRechazado = null;
+
+        await EjecutarLoteAsync(lote, conjuntosDeResultados, tokenDeCancelacion);
+
+        if (_textoSinOrAlterDelLoteRechazado is not { } textoSinOrAlter)
+        {
+            return;
+        }
+
+        _textoSinOrAlterDelLoteRechazado = null;
+
+        var erroresAntes = ContarErrores();
+
+        await EjecutarLoteAsync(lote with { Texto = textoSinOrAlter }, conjuntosDeResultados, tokenDeCancelacion);
+
+        // Si el CREATE falló, el procedimiento tiene un error propio: ya quedó en los mensajes y no se creó nada
+        if (ContarErrores() > erroresAntes)
+        {
+            return;
+        }
+
+        // Un script puede traer decenas de procedimientos: la explicación larga va solo en el primero
+        var yaSeExplico = _mensajesDeLaEjecucion.Any(mensaje => mensaje.Texto.Contains(ExplicacionDeLaCopiaEnMaster, StringComparison.Ordinal));
+        var texto = $"Línea {lote.LineaInicial}: procedimiento creado con CREATE, porque SQL Server rechazó CREATE OR ALTER.";
+        var aviso = MensajeDeEjecucion.Advertencia(yaSeExplico ? texto : $"{texto} {ExplicacionDeLaCopiaEnMaster}");
+        _mensajesDeLaEjecucion.Add(aviso);
+        MensajeRecibido?.Invoke(this, aviso);
+    }
+
+    private int ContarErrores() => _mensajesDeLaEjecucion.Count(mensaje => mensaje.Tipo == TipoDeMensaje.Error);
+
+    /// <summary>
+    /// El rechazo llega como mensaje (no como excepción) y el lote no se puede repetir desde aquí, con el lector
+    /// abierto: se anota para repetirlo al terminar y el error no se muestra, porque se va a resolver.
+    /// </summary>
+    private bool SeVaAReintentarSinOrAlter(SqlError error)
+    {
+        if (!ReparadorDeCreateOrAlter.EsAlterDeUnSpQueNoEstaEnLaBase(error.Number, error.State, error.Procedure)
+            || ReparadorDeCreateOrAlter.QuitarOrAlter(_textoDelLoteActual, error.Procedure) is not { } textoSinOrAlter)
+        {
+            return false;
+        }
+
+        _textoSinOrAlterDelLoteRechazado = textoSinOrAlter;
+
+        return true;
+    }
+
     private async Task EjecutarLoteAsync(
         LoteSql lote,
         List<ConjuntoDeResultados> conjuntosDeResultados,
         CancellationToken tokenDeCancelacion)
     {
         _lineaInicialDelLoteActual = lote.LineaInicial;
+        _textoDelLoteActual = lote.Texto;
         _elLoteActualDefineUnModulo = ExpresionDeDefinicionDeModulo().IsMatch(lote.Texto);
 
         await using var comando = new SqlCommand(lote.Texto, _conexion)
@@ -403,6 +468,11 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
     {
         foreach (SqlError error in argumentos.Errors)
         {
+            if (SeVaAReintentarSinOrAlter(error))
+            {
+                continue;
+            }
+
             var mensaje = ConvertirEnMensaje(error);
             _mensajesDeLaEjecucion.Add(mensaje);
             MensajeRecibido?.Invoke(this, mensaje);
@@ -438,6 +508,11 @@ internal sealed partial class SesionDeConsultaSqlServer : ISesionDeConsulta
         var lineaEnElEditor = _lineaInicialDelLoteActual + error.LineNumber - 1;
         var procedimiento = string.IsNullOrEmpty(error.Procedure) ? string.Empty : $"Procedimiento {error.Procedure}, ";
         var texto = $"Mensaje {error.Number}, Nivel {error.Class}, Estado {error.State}, {procedimiento}Línea {lineaEnElEditor}\n{error.Message}";
+
+        if (PistasDeErrores.Obtener(error.Number, error.State, error.Procedure) is { } pista)
+        {
+            texto += $"\n{pista}";
+        }
 
         return MensajeDeEjecucion.Error(texto, lineaEnElEditor);
     }

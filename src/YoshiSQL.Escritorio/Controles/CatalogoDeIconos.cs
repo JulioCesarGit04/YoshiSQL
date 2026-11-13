@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Media;
+using Avalonia.Styling;
 using YoshiSQL.Escritorio.ModelosDeVista.Explorador;
 
 namespace YoshiSQL.Escritorio.Controles;
@@ -34,7 +36,28 @@ public static class CatalogoDeIconos
 
     public static Geometry ObtenerForma(TipoDeNodo tipo) => Iconos[tipo].Forma;
 
-    public static IBrush ObtenerColor(TipoDeNodo tipo) => Iconos[tipo].Color;
+    // Los tonos pastel se eligieron para fondo oscuro; sobre blanco casi no se ven, así que en el tema claro
+    // se usa el mismo tono oscurecido
+    private const double FactorDeOscurecimientoParaTemaClaro = 0.6;
+
+    private static readonly Dictionary<TipoDeNodo, IBrush> ColoresParaTemaClaro =
+        Iconos.ToDictionary(par => par.Key, par => Oscurecer(par.Value.Color));
+
+    public static IBrush ObtenerColor(TipoDeNodo tipo) =>
+        Application.Current?.ActualThemeVariant == ThemeVariant.Light ? ColoresParaTemaClaro[tipo] : Iconos[tipo].Color;
+
+    private static IBrush Oscurecer(IBrush pincel)
+    {
+        if (pincel is not ISolidColorBrush { Color: var color })
+        {
+            return pincel;
+        }
+
+        return new SolidColorBrush(Color.FromRgb(
+            (byte)(color.R * FactorDeOscurecimientoParaTemaClaro),
+            (byte)(color.G * FactorDeOscurecimientoParaTemaClaro),
+            (byte)(color.B * FactorDeOscurecimientoParaTemaClaro)));
+    }
 
     private static (Geometry Forma, IBrush Color) Crear(string datosDeLaForma, string colorHexadecimal) =>
         (StreamGeometry.Parse(datosDeLaForma), new SolidColorBrush(Color.Parse(colorHexadecimal)));

@@ -72,21 +72,21 @@
                 <DataGridTextColumn Header="Valor predeterminado" Binding="{Binding ValorPredeterminado}" Width="2*"
                                     FontFamily="{StaticResource FuenteMonoespaciada}" />
                 <!-- Casillas dentro de la celda para marcarlas con un solo clic -->
-                <DataGridTemplateColumn Header="Permite nulos" Width="*">
+                <DataGridTemplateColumn Header="Permite nulos" Width="118">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
                             <CheckBox IsChecked="{Binding AdmiteNulos}" HorizontalAlignment="Center" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Llave primaria" Width="*">
+                <DataGridTemplateColumn Header="Llave primaria" Width="118">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
                             <CheckBox IsChecked="{Binding EsLlavePrimaria}" HorizontalAlignment="Center" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Identidad" Width="*">
+                <DataGridTemplateColumn Header="Identidad" Width="118">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate x:DataType="vm:ColumnaEnDisenoModeloDeVista">
                             <CheckBox IsChecked="{Binding EsIdentidad}" HorizontalAlignment="Center" />

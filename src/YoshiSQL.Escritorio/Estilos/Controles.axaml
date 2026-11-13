@@ -24,7 +24,16 @@
         <Setter Property="FontSize" Value="12.5" />
     </Style>
     <Style Selector="Button.Herramienta:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource PincelDePanelElevado}" />
+        <Setter Property="Background" Value="{DynamicResource PincelDeHover}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.Herramienta:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcentoSuave}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="ToggleButton.Herramienta:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeHover}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="Button.Herramienta:disabled /template/ ContentPresenter">
         <Setter Property="Background" Value="Transparent" />
@@ -36,8 +45,9 @@
     <Style Selector="ToggleButton.Herramienta:disabled">
         <Setter Property="Opacity" Value="0.38" />
     </Style>
+    <!-- Activado: se tiñe con el acento en vez de volverse un bloque verde macizo -->
     <Style Selector="ToggleButton.Herramienta:checked Path.IconoBarra">
-        <Setter Property="Stroke" Value="{DynamicResource PincelDeTextoSobreAcento}" />
+        <Setter Property="Stroke" Value="{DynamicResource PincelDeAcento}" />
     </Style>
 
     <Style Selector="ToggleButton.Herramienta">
@@ -48,22 +58,132 @@
         <Setter Property="FontSize" Value="12.5" />
     </Style>
     <Style Selector="ToggleButton.Herramienta:checked /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource PincelDeAcento}" />
-        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSobreAcento}" />
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcentoSuave}" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
     <Style Selector="ToggleButton.Herramienta:disabled /template/ ContentPresenter">
         <Setter Property="Background" Value="Transparent" />
     </Style>
 
+    <!-- Ejecutar es la acción principal de la barra: es el único botón con fondo -->
     <Style Selector="Button.Ejecutar">
         <Setter Property="Foreground" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcentoSuave}" />
         <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="11,5,13,5" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+    </Style>
+    <Style Selector="Button.Ejecutar:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcentoSuaveEncima}" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeAcento}" />
+    </Style>
+    <Style Selector="Button.Ejecutar:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcentoSuaveEncima}" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeAcento}" />
+    </Style>
+
+    <!-- Tecla de un atajo, en la pantalla de inicio -->
+    <Style Selector="Border.Tecla">
+        <Setter Property="Background" Value="{DynamicResource PincelDePanelElevado}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PincelDeBordeFuerte}" />
+        <Setter Property="BorderThickness" Value="1,1,1,2" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,1,6,2" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+        <Setter Property="MinWidth" Value="24" />
+    </Style>
+    <Style Selector="Border.Tecla > TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSecundario}" />
+    </Style>
+
+    <!-- La X de una pestaña solo se ve en la activa o al pasar el cursor: con muchas pestañas era ruido -->
+    <Style Selector="TabControl.Documentos > TabItem:not(:selected):not(:pointerover) Button.CerrarPestana">
+        <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!-- Insignia con un número, ej. los errores en la pestaña Mensajes -->
+    <Style Selector="Border.Insignia">
+        <Setter Property="Background" Value="{DynamicResource PincelDeError}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="5,0" />
+        <Setter Property="MinWidth" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.Insignia > TextBlock">
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Lista de mensajes: renglones seguidos como en una consola, no tarjetas separadas -->
+    <Style Selector="ListBox.Consola ListBoxItem">
+        <Setter Property="Padding" Value="12,2" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <!-- Números a la derecha, como en cualquier hoja de cálculo: se comparan de un vistazo -->
+    <Style Selector="DataGridCell.Numerica">
+        <Setter Property="HorizontalContentAlignment" Value="Right" />
     </Style>
 
     <Style Selector="Button.Primario">
         <Setter Property="Background" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PincelDeAcento}" />
         <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSobreAcento}" />
         <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <!-- Sin esto el tema lo volvía gris al pasar el cursor, como un botón cualquiera -->
+    <Style Selector="Button.Primario:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcentoIntenso}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PincelDeAcentoIntenso}" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSobreAcento}" />
+    </Style>
+    <Style Selector="Button.Primario:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSobreAcento}" />
+    </Style>
+    <Style Selector="Button.Primario:disabled">
+        <Setter Property="Opacity" Value="0.45" />
+    </Style>
+    <Style Selector="Button.Primario:disabled /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PincelDeAcento}" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSobreAcento}" />
+    </Style>
+
+    <!-- Ventana angosta: la barra deja solo los iconos (el nombre sigue en la ayuda emergente) y la barra de
+         estado suelta los datos secundarios, en vez de cortarse por la derecha -->
+    <Style Selector="Window.Angosta TextBlock.Etiqueta">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Window.Angosta TextBlock.DatoSecundario">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Window.Angosta ComboBox.BaseDeDatos">
+        <Setter Property="MinWidth" Value="130" />
+    </Style>
+
+    <Style Selector="Menu > MenuItem">
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="TextBox">
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ToolTip">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="8,5" />
     </Style>
 
     <Style Selector="Path.Icono">
@@ -109,6 +229,17 @@
         <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
 
+    <!-- Barras de desplazamiento: el tema las dibujaba casi negras sobre el fondo claro -->
+    <Style Selector="ScrollBar /template/ Thumb">
+        <Setter Property="Background" Value="{DynamicResource PincelDeBarraDeDesplazamiento}" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb:pointerover">
+        <Setter Property="Background" Value="{DynamicResource ScrollBarThumbFillPointerOver}" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb:pressed">
+        <Setter Property="Background" Value="{DynamicResource ScrollBarThumbFillPressed}" />
+    </Style>
+
     <!-- Cuadrito de color de una leyenda -->
     <Style Selector="Border.MuestraDeColor">
         <Setter Property="Width" Value="10" />
@@ -117,10 +248,32 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <!-- Pestañas de documentos: la activa toma el fondo del editor y una línea de acento arriba, así se lee
+         como parte del documento. El subrayado suelto del tema las hacía parecer enlaces. -->
+    <Style Selector="TabControl.Documentos">
+        <Setter Property="Background" Value="{DynamicResource PincelDePanel}" />
+    </Style>
     <Style Selector="TabControl.Documentos > TabItem">
         <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="MinHeight" Value="34" />
         <Setter Property="Padding" Value="12,0,6,0" />
+        <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="TabControl.Documentos > TabItem:not(:selected) TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSecundario}" />
+    </Style>
+    <Style Selector="TabControl.Documentos > TabItem:pointerover /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource PincelDeHover}" />
+    </Style>
+    <Style Selector="TabControl.Documentos > TabItem:selected /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource PincelDeFondo}" />
+    </Style>
+    <!-- Los márgenes negativos igualan el relleno de la pestaña para que la línea la cruce entera -->
+    <Style Selector="TabControl.Documentos > TabItem /template/ Border#PART_SelectedPipe">
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="-12,0,-6,0" />
+        <Setter Property="Height" Value="2" />
+        <Setter Property="CornerRadius" Value="0" />
     </Style>
 
     <Style Selector="TabControl.Resultados > TabItem">
@@ -136,18 +289,41 @@
         <Setter Property="Padding" Value="8,0" />
     </Style>
     <!-- Pestaña lateral seleccionada: el icono toma el color de acento -->
-    <Style Selector="TabControl.Laterales TabItem:selected Path.IconoBarra">
+    <!-- Con ">" a propósito: los menús del árbol también cuelgan de la pestaña y se pintaban de verde -->
+    <Style Selector="TabControl.Laterales > TabItem:selected > StackPanel > Path.IconoBarra">
         <Setter Property="Stroke" Value="{DynamicResource PincelDeAcento}" />
     </Style>
-    <Style Selector="TabControl.Laterales TabItem:not(:selected) TextBlock">
+    <Style Selector="TabControl.Laterales > TabItem:not(:selected) > StackPanel > TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSecundario}" />
     </Style>
 
     <Style Selector="DataGrid">
         <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="RowHeight" Value="26" />
+        <Setter Property="ColumnHeaderHeight" Value="30" />
         <Setter Property="GridLinesVisibility" Value="All" />
-        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource PincelDeBorde}" />
-        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource PincelDeBorde}" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource DataGridGridLinesBrush}" />
+        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource DataGridGridLinesBrush}" />
+        <!-- Mismo tono que los encabezados: las esquinas (sobre los números de fila y sobre la barra de
+             desplazamiento) no quedan como parches de otro color. Las filas tienen su propio fondo. -->
+        <Setter Property="Background" Value="{DynamicResource DataGridColumnHeaderBackgroundBrush}" />
+    </Style>
+    <!-- El tema pone las celdas a 15 px y 32 de alto: en una grilla de datos cabían la mitad de las filas -->
+    <Style Selector="DataGridCell">
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="MinHeight" Value="26" />
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="MinHeight" Value="30" />
+    </Style>
+    <!-- Número de fila: discreto y con sitio para varias cifras -->
+    <Style Selector="DataGridRowHeader">
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="MinWidth" Value="40" />
+        <Setter Property="Foreground" Value="{DynamicResource PincelDeTextoSecundario}" />
+        <Setter Property="Background" Value="{DynamicResource DataGridColumnHeaderBackgroundBrush}" />
     </Style>
 
     <Style Selector="TreeViewItem">

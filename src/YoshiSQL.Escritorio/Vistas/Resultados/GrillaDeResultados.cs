@@ -188,7 +188,7 @@ public sealed class GrillaDeResultados : UserControl
 
     private static MenuItem CrearOpcion(string texto, ICommand comando) => new() { Header = texto, Command = comando };
 
-    private static DataGridTextColumn CrearColumna(ColumnaDeResultado columna, int posicion) => new()
+    private static DataGridTextColumn CrearColumna(ColumnaDeResultado columna, int posicion) => new ColumnaDeResultados(posicion, columna.NombreDelTipo)
     {
         Header = columna.Nombre,
         // El Tag guarda la posición del valor en la fila; lo usa "Ver valor de la celda"
